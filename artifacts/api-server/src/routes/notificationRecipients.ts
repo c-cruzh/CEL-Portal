@@ -6,10 +6,14 @@ import {
   AddNotificationRecipientBody,
   AddNotificationRecipientResponse,
   TestNotificationRecipientsResponse,
+  ListNotificationLogResponse,
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
 import { requirePM } from "../middlewares/requirePM";
-import { sendTestNotification } from "../lib/notifications";
+import {
+  sendTestNotification,
+  listRecentNotificationLog,
+} from "../lib/notifications";
 
 const router: IRouter = Router();
 
@@ -111,6 +115,16 @@ router.post(
     });
 
     res.json(TestNotificationRecipientsResponse.parse(result));
+  },
+);
+
+router.get(
+  "/admin/notification-log",
+  requireAuth,
+  requirePM,
+  async (_req, res): Promise<void> => {
+    const entries = await listRecentNotificationLog(20);
+    res.json(ListNotificationLogResponse.parse(entries));
   },
 );
 

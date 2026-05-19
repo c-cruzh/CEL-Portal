@@ -27,6 +27,7 @@ import type {
   HealthStatus,
   Member,
   MemberMe,
+  NotificationLogEntry,
   NotificationPrefsInput,
   NotificationRecipient,
   NotificationRecipientInput,
@@ -1310,6 +1311,83 @@ export const useTestNotificationRecipients = <TError = ErrorType<ErrorResponse>,
       > => {
       return useMutation(getTestNotificationRecipientsMutationOptions(options));
     }
+
+export const getListNotificationLogUrl = () => {
+
+
+
+
+  return `/api/admin/notification-log`
+}
+
+/**
+ * @summary List recent team notification log entries (PM only)
+ */
+export const listNotificationLog = async ( options?: RequestInit): Promise<NotificationLogEntry[]> => {
+
+  return customFetch<NotificationLogEntry[]>(getListNotificationLogUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListNotificationLogQueryKey = () => {
+    return [
+    `/api/admin/notification-log`
+    ] as const;
+    }
+
+
+export const getListNotificationLogQueryOptions = <TData = Awaited<ReturnType<typeof listNotificationLog>>, TError = ErrorType<ErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listNotificationLog>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListNotificationLogQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listNotificationLog>>> = ({ signal }) => listNotificationLog({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listNotificationLog>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListNotificationLogQueryResult = NonNullable<Awaited<ReturnType<typeof listNotificationLog>>>
+export type ListNotificationLogQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary List recent team notification log entries (PM only)
+ */
+
+export function useListNotificationLog<TData = Awaited<ReturnType<typeof listNotificationLog>>, TError = ErrorType<ErrorResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listNotificationLog>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListNotificationLogQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getDeleteNotificationRecipientUrl = (email: string,) => {
 

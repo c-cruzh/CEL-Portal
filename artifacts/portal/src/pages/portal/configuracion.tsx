@@ -5,8 +5,11 @@ import {
   useAddNotificationRecipient,
   useDeleteNotificationRecipient,
   useTestNotificationRecipients,
+  useListNotificationLog,
   getListNotificationRecipientsQueryKey,
+  getListNotificationLogQueryKey,
   ApiError,
+  type NotificationLogEntry,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -54,6 +57,7 @@ export default function Configuracion() {
         </p>
       </div>
       <NotificationRecipientsSection />
+      <NotificationLogSection />
     </div>
   );
 }
@@ -70,6 +74,7 @@ function NotificationRecipientsSection() {
   const handleTest = async () => {
     try {
       const result = await testMutation.mutateAsync();
+      void invalidateLog();
       const variant =
         result.status === "sent"
           ? "default"
@@ -107,6 +112,11 @@ function NotificationRecipientsSection() {
   const invalidate = () =>
     queryClient.invalidateQueries({
       queryKey: getListNotificationRecipientsQueryKey(),
+    });
+
+  const invalidateLog = () =>
+    queryClient.invalidateQueries({
+      queryKey: getListNotificationLogQueryKey(),
     });
 
   const handleAdd = async (e: React.FormEvent) => {
@@ -250,6 +260,150 @@ function NotificationRecipientsSection() {
                 </div>
               </div>
             ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+const EVENT_LABELS: Record<string, string> = {
+  member_joined: "Nuevo miembro",
+  cv_uploaded: "CV actualizado",
+  roles_changed: "Cambio de roles",
+  test: "Correo de prueba",
+};
+
+const STATUS_LABELS: Record<string, string> = {
+  sent: "Enviado",
+  no_provider: "Sin proveedor",
+  no_recipients: "Sin destinatarios",
+  failed: "Falló",
+};
+
+function formatDateTime(value: Date | string): string {
+  const d = value instanceof Date ? value : new Date(value);
+  return d.toLocaleString("es-SV", {
+    dateStyle: "short",
+    timeStyle: "short",
+  });
+}
+
+function StatusBadge({ status }: { status: NotificationLogEntry["status"] }) {
+  const label = STATUS_LABELS[status] ?? status;
+  if (status === "failed") {
+    return <Badge variant="destructive">{label}</Badge>;
+  }
+  if (status === "sent") {
+    return (
+      <Badge className="bg-emerald-600 hover:bg-emerald-600 text-white">
+        {label}
+      </Badge>
+    );
+  }
+  return <Badge variant="secondary">{label}</Badge>;
+}
+
+function NotificationLogSection() {
+  const { data, isLoading, refetch, isFetching } = useListNotificationLog({
+    query: {
+      queryKey: getListNotificationLogQueryKey(),
+      refetchInterval: 30_000,
+    },
+  });
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+          <div className="space-y-1.5">
+            <CardTitle>Historial de avisos enviados</CardTitle>
+            <CardDescription>
+              Últimos intentos de envío (eventos reales y pruebas). Si un envío
+              falla por una mala API key o un destinatario rebotado, aparece
+              destacado aquí. Se muestran los 20 más recientes.
+            </CardDescription>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => refetch()}
+            disabled={isFetching}
+            className="shrink-0"
+          >
+            {isFetching ? "Actualizando..." : "Actualizar"}
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="border rounded-lg divide-y">
+          {isLoading && (
+            <div className="p-4 space-y-2">
+              <Skeleton className="h-5 w-3/4" />
+              <Skeleton className="h-5 w-2/3" />
+              <Skeleton className="h-5 w-1/2" />
+            </div>
+          )}
+          {!isLoading && (!data || data.length === 0) && (
+            <div className="p-6 text-center text-sm text-muted-foreground">
+              Todavía no hay envíos registrados. Envía un correo de prueba o
+              espera al próximo evento del equipo.
+            </div>
+          )}
+          {!isLoading &&
+            data?.map((entry) => {
+              const isFailed = entry.status === "failed";
+              return (
+                <div
+                  key={entry.id}
+                  className={`p-4 space-y-2 ${
+                    isFailed ? "bg-destructive/5" : ""
+                  }`}
+                >
+                  <div className="flex flex-wrap items-center gap-2 justify-between">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span className="font-medium text-sm">
+                        {EVENT_LABELS[entry.eventKind] ?? entry.eventKind}
+                      </span>
+                      <StatusBadge status={entry.status} />
+                    </div>
+                    <span className="text-xs text-muted-foreground shrink-0">
+                      {formatDateTime(entry.createdAt)}
+                    </span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    {entry.recipientCount} destinatario
+                    {entry.recipientCount === 1 ? "" : "s"}
+                    {entry.recipients.length > 0 && (
+                      <>
+                        {": "}
+                        <span className="break-all">
+                          {entry.recipients.slice(0, 5).join(", ")}
+                          {entry.recipients.length > 5 &&
+                            ` y ${entry.recipients.length - 5} más`}
+                        </span>
+                      </>
+                    )}
+                  </p>
+                  {entry.triggeredBy && (
+                    <p className="text-xs text-muted-foreground truncate">
+                      Origen: {entry.triggeredBy}
+                    </p>
+                  )}
+                  {entry.providerMessage && (
+                    <p
+                      className={`text-xs ${
+                        isFailed
+                          ? "text-destructive"
+                          : "text-muted-foreground"
+                      }`}
+                    >
+                      {entry.providerMessage}
+                    </p>
+                  )}
+                </div>
+              );
+            })}
         </div>
       </CardContent>
     </Card>

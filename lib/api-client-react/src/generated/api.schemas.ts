@@ -125,6 +125,29 @@ export interface TestNotificationResult {
   message: string;
 }
 
+export type NotificationLogEntryStatus = typeof NotificationLogEntryStatus[keyof typeof NotificationLogEntryStatus];
+
+
+export const NotificationLogEntryStatus = {
+  sent: 'sent',
+  no_provider: 'no_provider',
+  no_recipients: 'no_recipients',
+  failed: 'failed',
+} as const;
+
+export interface NotificationLogEntry {
+  id: string;
+  eventKind: string;
+  recipients: string[];
+  recipientCount: number;
+  status: NotificationLogEntryStatus;
+  /** @nullable */
+  providerMessage?: string | null;
+  /** @nullable */
+  triggeredBy?: string | null;
+  createdAt: string;
+}
+
 export interface NotificationRecipientInput {
   /** @minLength 3 */
   email: string;

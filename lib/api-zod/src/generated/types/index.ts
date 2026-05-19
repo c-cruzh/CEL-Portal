@@ -13,6 +13,8 @@ export * from './errorResponse';
 export * from './healthStatus';
 export * from './member';
 export * from './memberMe';
+export * from './notificationLogEntry';
+export * from './notificationLogEntryStatus';
 export * from './notificationPrefsInput';
 export * from './notificationRecipient';
 export * from './notificationRecipientInput';

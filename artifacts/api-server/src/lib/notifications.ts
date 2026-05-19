@@ -1,5 +1,10 @@
-import { ne } from "drizzle-orm";
-import { db, usersTable, notificationRecipientsTable } from "@workspace/db";
+import { desc, ne } from "drizzle-orm";
+import {
+  db,
+  usersTable,
+  notificationRecipientsTable,
+  notificationLogTable,
+} from "@workspace/db";
 import { logger } from "./logger";
 
 type NotificationEvent =
@@ -18,6 +23,12 @@ type NotificationEvent =
       previousRoles: string[];
       newRoles: string[];
     };
+
+export type NotificationStatus =
+  | "sent"
+  | "no_provider"
+  | "no_recipients"
+  | "failed";
 
 function renderEmail(ev: NotificationEvent): {
   subject: string;
@@ -100,13 +111,34 @@ async function resolveRecipients(actorId: string): Promise<string[]> {
   return Array.from(set);
 }
 
+async function recordLog(entry: {
+  eventKind: string;
+  recipients: string[];
+  status: NotificationStatus;
+  providerMessage: string | null;
+  triggeredBy: string | null;
+}): Promise<void> {
+  try {
+    await db.insert(notificationLogTable).values({
+      eventKind: entry.eventKind,
+      recipients: entry.recipients,
+      recipientCount: entry.recipients.length,
+      status: entry.status,
+      providerMessage: entry.providerMessage,
+      triggeredBy: entry.triggeredBy,
+    });
+  } catch (err) {
+    logger.error({ err }, "Failed to record notification log entry");
+  }
+}
+
 async function sendViaResend(
   to: string[],
   subject: string,
   text: string,
-): Promise<boolean> {
+): Promise<{ ok: boolean; message: string | null }> {
   const apiKey = process.env.RESEND_API_KEY;
-  if (!apiKey) return false;
+  if (!apiKey) return { ok: false, message: "RESEND_API_KEY no configurada" };
   const from =
     process.env.TEAM_NOTIFICATION_FROM ?? "Portal CEL <onboarding@resend.dev>";
   try {
@@ -124,12 +156,16 @@ async function sendViaResend(
         { status: res.status, body },
         "Resend API returned non-OK status",
       );
-      return false;
+      return {
+        ok: false,
+        message: `HTTP ${res.status}: ${body.slice(0, 500)}`,
+      };
     }
-    return true;
+    return { ok: true, message: null };
   } catch (err) {
     logger.error({ err }, "Resend API request failed");
-    return false;
+    const message = err instanceof Error ? err.message : String(err);
+    return { ok: false, message };
   }
 }
 
@@ -139,17 +175,24 @@ export async function sendTeamNotification(
   try {
     const recipients = await resolveRecipients(ev.actor.id);
     const { subject, text } = renderEmail(ev);
+    const triggeredBy = `${ev.actor.displayName} <${ev.actor.email}>`;
 
     if (recipients.length === 0) {
       logger.info(
         { kind: ev.kind, actorId: ev.actor.id },
         "No recipients for team notification; skipping send",
       );
+      await recordLog({
+        eventKind: ev.kind,
+        recipients,
+        status: "no_recipients",
+        providerMessage: "Sin destinatarios configurados",
+        triggeredBy,
+      });
       return;
     }
 
-    const sent = await sendViaResend(recipients, subject, text);
-    if (!sent) {
+    if (!process.env.RESEND_API_KEY) {
       logger.info(
         {
           kind: ev.kind,
@@ -160,14 +203,47 @@ export async function sendTeamNotification(
         },
         "Team notification (no email provider configured; logged only)",
       );
+      await recordLog({
+        eventKind: ev.kind,
+        recipients,
+        status: "no_provider",
+        providerMessage: "RESEND_API_KEY no configurada",
+        triggeredBy,
+      });
+      return;
+    }
+
+    const result = await sendViaResend(recipients, subject, text);
+    if (!result.ok) {
+      await recordLog({
+        eventKind: ev.kind,
+        recipients,
+        status: "failed",
+        providerMessage: result.message,
+        triggeredBy,
+      });
     } else {
       logger.info(
         { kind: ev.kind, actorId: ev.actor.id, recipients: recipients.length },
         "Team notification sent",
       );
+      await recordLog({
+        eventKind: ev.kind,
+        recipients,
+        status: "sent",
+        providerMessage: null,
+        triggeredBy,
+      });
     }
   } catch (err) {
     logger.error({ err, kind: ev.kind }, "Failed to send team notification");
+    await recordLog({
+      eventKind: ev.kind,
+      recipients: [],
+      status: "failed",
+      providerMessage: err instanceof Error ? err.message : String(err),
+      triggeredBy: `${ev.actor.displayName} <${ev.actor.email}>`,
+    });
   }
 }
 
@@ -184,14 +260,23 @@ export type TestNotificationResult =
 export async function sendTestNotification(opts: {
   triggeredBy: { email: string; displayName: string };
 }): Promise<TestNotificationResult> {
+  const triggeredBy = `${opts.triggeredBy.displayName} <${opts.triggeredBy.email}>`;
   const recipients = await resolveRecipients("");
   if (recipients.length === 0) {
+    const message =
+      "No hay destinatarios configurados. Agrega correos fijos o registra miembros con avisos activados.";
+    await recordLog({
+      eventKind: "test",
+      recipients,
+      status: "no_recipients",
+      providerMessage: message,
+      triggeredBy,
+    });
     return {
       status: "no_recipients",
       recipientCount: 0,
       recipients: [],
-      message:
-        "No hay destinatarios configurados. Agrega correos fijos o registra miembros con avisos activados.",
+      message,
     };
   }
 
@@ -207,17 +292,32 @@ export async function sendTestNotification(opts: {
       { recipients, subject },
       "Test notification skipped: RESEND_API_KEY not configured",
     );
+    const message =
+      "La variable RESEND_API_KEY no está configurada en el servidor, así que no se envió ningún correo real. Configúrala para activar el envío.";
+    await recordLog({
+      eventKind: "test",
+      recipients,
+      status: "no_provider",
+      providerMessage: "RESEND_API_KEY no configurada",
+      triggeredBy,
+    });
     return {
       status: "no_provider",
       recipientCount: recipients.length,
       recipients,
-      message:
-        "La variable RESEND_API_KEY no está configurada en el servidor, así que no se envió ningún correo real. Configúrala para activar el envío.",
+      message,
     };
   }
 
-  const sent = await sendViaResend(recipients, subject, text);
-  if (!sent) {
+  const result = await sendViaResend(recipients, subject, text);
+  if (!result.ok) {
+    await recordLog({
+      eventKind: "test",
+      recipients,
+      status: "failed",
+      providerMessage: result.message,
+      triggeredBy,
+    });
     return {
       status: "failed",
       recipientCount: recipients.length,
@@ -231,10 +331,48 @@ export async function sendTestNotification(opts: {
     { recipients: recipients.length, triggeredBy: opts.triggeredBy.email },
     "Test team notification sent",
   );
+  await recordLog({
+    eventKind: "test",
+    recipients,
+    status: "sent",
+    providerMessage: null,
+    triggeredBy,
+  });
   return {
     status: "sent",
     recipientCount: recipients.length,
     recipients,
     message: `Correo de prueba enviado a ${recipients.length} destinatario${recipients.length === 1 ? "" : "s"}.`,
   };
+}
+
+export async function listRecentNotificationLog(
+  limit = 20,
+): Promise<
+  Array<{
+    id: string;
+    eventKind: string;
+    recipients: string[];
+    recipientCount: number;
+    status: NotificationStatus;
+    providerMessage: string | null;
+    triggeredBy: string | null;
+    createdAt: Date;
+  }>
+> {
+  const rows = await db
+    .select()
+    .from(notificationLogTable)
+    .orderBy(desc(notificationLogTable.createdAt))
+    .limit(limit);
+  return rows.map((r) => ({
+    id: r.id,
+    eventKind: r.eventKind,
+    recipients: r.recipients ?? [],
+    recipientCount: r.recipientCount,
+    status: r.status as NotificationStatus,
+    providerMessage: r.providerMessage,
+    triggeredBy: r.triggeredBy,
+    createdAt: r.createdAt,
+  }));
 }

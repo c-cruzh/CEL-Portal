@@ -259,6 +259,22 @@ export const TestNotificationRecipientsResponse = zod.object({
 
 
 /**
+ * @summary List recent team notification log entries (PM only)
+ */
+export const ListNotificationLogResponseItem = zod.object({
+  "id": zod.string(),
+  "eventKind": zod.string(),
+  "recipients": zod.array(zod.string()),
+  "recipientCount": zod.number(),
+  "status": zod.enum(['sent', 'no_provider', 'no_recipients', 'failed']),
+  "providerMessage": zod.string().nullish(),
+  "triggeredBy": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+})
+export const ListNotificationLogResponse = zod.array(ListNotificationLogResponseItem)
+
+
+/**
  * @summary Remove a fixed notification recipient (PM only)
  */
 export const DeleteNotificationRecipientParams = zod.object({
