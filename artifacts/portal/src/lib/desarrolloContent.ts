@@ -316,6 +316,85 @@ export const VISUALIZACION = {
   },
 };
 
+export const INFRA_TECNICA_INTRO =
+  "Este capítulo consolida las decisiones técnicas e informáticas que dan soporte al desarrollo y operación diaria del sistema: entorno de desarrollo y lenguajes, bases de datos y almacenamiento en el silo de IA, integración con servicios externos (con costos marginales o nulos), y consideraciones de seguridad y disponibilidad. Complementa la arquitectura on-premise con los componentes de cómputo (GPU) y los puntos de integración con APIs externas necesarios para la ingesta y operación.";
+
+export interface InfraTecnicaBlock {
+  id: string;
+  title: string;
+  body: string;
+  bullets?: string[];
+}
+
+export const INFRA_TECNICA_BLOCKS: InfraTecnicaBlock[] = [
+  {
+    id: "entorno",
+    title: "Entorno de desarrollo y lenguajes",
+    body: "La implementación del modelo LSTM y de inundación se realizará en Python, aprovechando bibliotecas científicas (NumPy, Pandas, GeoPandas) y de deep learning (PyTorch, NeuralHydrology). El entorno Node.js/React existente en CEL se utilizará para el dashboard web, conectado a las nuevas bases de datos vía APIs seguras. La orquestación y automatización del flujo se gestiona con Mage y se versiona con Git/GitLab.",
+  },
+  {
+    id: "bases-datos",
+    title: "Bases de datos y almacenamiento",
+    body: "Se utilizarán MongoDB y PostgreSQL/PostGIS residentes en el nuevo Nodo de Datos & ETL dedicado. Esta configuración asegura que las operaciones intensivas de lectura/escritura del proyecto de IA no afecten el rendimiento de las bases de datos productivas existentes de CEL. El esquema de respaldo se gestiona a través del nodo NAS dedicado.",
+  },
+  {
+    id: "gpu",
+    title: "Recursos GPU para entrenamiento e inferencia",
+    body: "El entrenamiento y la inferencia del LSTM se ejecutan localmente en el silo de IA sobre GPU dedicada (ver capítulo de Silo de IA y BOM para especificaciones). Esto permite tiempos de inferencia de segundos a minutos en operación diaria y elimina costos recurrentes y dependencias de servicios cloud para el cómputo del modelo.",
+  },
+];
+
+export interface ExternalService {
+  id: string;
+  name: string;
+  category: "Meteorología" | "Mapas" | "Notificaciones" | "Procesamiento satelital";
+  scope: string;
+  detail: string;
+  cost: "Gratuito" | "Costo marginal" | "Opcional";
+}
+
+export const EXTERNAL_SERVICES: ExternalService[] = [
+  {
+    id: "meteo",
+    name: "Copernicus / ECMWF + NASA POWER / IMERG",
+    category: "Meteorología",
+    scope: "Obtención de pronósticos meteorológicos y datos de lluvia observada.",
+    detail:
+      "APIs abiertas y gratuitas. Se requiere conexión a internet estable y mecanismos de redundancia y reintentos en los scripts de ingesta para garantizar disponibilidad.",
+    cost: "Gratuito",
+  },
+  {
+    id: "mapas",
+    name: "Mapbox / OpenStreetMap",
+    category: "Mapas",
+    scope: "Servicios de mapas base para la visualización en el dashboard web.",
+    detail:
+      "Se evaluará Mapbox vs. una solución de código abierto (OpenStreetMap) para eliminar costos recurrentes. La decisión se tomará junto a CEL según requerimientos visuales y políticas de TI.",
+    cost: "Opcional",
+  },
+  {
+    id: "notif",
+    name: "Twilio (SMS) + SMTP CEL (Email)",
+    category: "Notificaciones",
+    scope: "Envío de alertas críticas por SMS y correos electrónicos.",
+    detail:
+      "Los correos se envían a través del servidor SMTP existente de CEL. Para SMS críticos se utilizará un gateway como Twilio, cuyo costo es insignificante dado el bajo volumen de alertas esperado.",
+    cost: "Costo marginal",
+  },
+  {
+    id: "gee",
+    name: "Google Earth Engine (GEE)",
+    category: "Procesamiento satelital",
+    scope: "Apoyo opcional durante la fase de desarrollo para análisis geoespaciales.",
+    detail:
+      "Uso únicamente exploratorio para acelerar análisis. No se integra al flujo de producción para mantener la independencia respecto de servicios cloud.",
+    cost: "Opcional",
+  },
+];
+
+export const INFRA_TECNICA_SEGURIDAD =
+  "La aplicación web y las bases de datos residen en los servidores del silo de IA, protegidas por los firewalls de CEL. La redundancia se logra a nivel de componentes de hardware (PSU, RAID) y con una política robusta de respaldos en el nodo NAS. No se contempla replicación en la nube para el piloto. Esta arquitectura on-premise cumple las políticas de seguridad y soberanía de datos de CEL, maximiza la inversión en capacidad interna y minimiza dependencias y costos recurrentes de servicios externos.";
+
 export const RACI_INTRO =
   "Este capítulo consolida el equipo del piloto: estructura operativa con asignación de esfuerzo (FTE), perfiles técnicos con personas asignadas, detalle de tareas por fase y matriz RACI completa. Refleja el refresh acordado con CEL en abril de 2026, que enmarca a la Unidad de Informática como Comité Consultivo de gobernanza y centraliza la ejecución operativa en un único Ingeniero DevOps de enlace.";
 

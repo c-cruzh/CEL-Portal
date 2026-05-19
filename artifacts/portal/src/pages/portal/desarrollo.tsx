@@ -52,6 +52,10 @@ import {
   INFRA_SOFTWARE,
   INFRA_COMMISSIONING,
   INFRA_BACKUP_POLICIES,
+  INFRA_TECNICA_INTRO,
+  INFRA_TECNICA_BLOCKS,
+  INFRA_TECNICA_SEGURIDAD,
+  EXTERNAL_SERVICES,
   LEMPA,
   type InfraStatus,
 } from "@/lib/desarrolloContent";
@@ -65,6 +69,7 @@ type ChapterId =
   | "decisiones"
   | "operacion"
   | "visualizacion"
+  | "infra-tecnica"
   | "raci"
   | "infraestructura"
   | "anexo-lempa";
@@ -88,9 +93,10 @@ const CHAPTERS: ChapterDef[] = [
   { id: "decisiones", num: "6", shortLabel: "Decisiones técnicas", title: "Decisiones técnicas", Icon: FileText, Component: DecisionesSection, toc: [] },
   { id: "operacion", num: "7", shortLabel: "Operación diaria", title: "Operación diaria", Icon: Play, Component: OperacionSection, toc: [{ id: "operacion-scheduling", label: "Programación" }, { id: "operacion-flujo", label: "Flujo diario" }, { id: "operacion-monitoreo", label: "Monitoreo y errores" }] },
   { id: "visualizacion", num: "8", shortLabel: "Visualización y alertas", title: "Visualización y alertas", Icon: Activity, Component: VisualizacionSection, toc: [{ id: "visualizacion-features", label: "Funcionalidades" }, { id: "visualizacion-alertas", label: "Sistema de alertas" }] },
-  { id: "raci", num: "9", shortLabel: "Equipo y Roles (RACI)", title: "Equipo, FTE y matriz RACI", Icon: AlignLeft, Component: RaciSection, toc: [{ id: "raci-fte", label: "Estructura operativa y FTE" }, { id: "raci-perfiles", label: "Perfiles del equipo" }, { id: "raci-comite", label: "Comité de Informática" }, { id: "raci-tareas", label: "Tareas por fase" }, { id: "raci-matriz", label: "Matriz RACI" }] },
-  { id: "infraestructura", num: "10", shortLabel: "Infraestructura y BOM", title: "Infraestructura local — Silo de IA", Icon: Server, Component: InfraSection, toc: [{ id: "infra-arquitectura", label: "Arquitectura" }, { id: "infra-hardware", label: "BOM hardware" }, { id: "infra-software", label: "BOM software" }, { id: "infra-comisionamiento", label: "Comisionamiento" }, { id: "infra-respaldo", label: "Respaldo y seguridad" }] },
-  { id: "anexo-lempa", num: "11", shortLabel: "Cuenca del Lempa", title: "Anexo — Cuenca del Río Lempa", Icon: MapIcon, Component: LempaSection, toc: [] },
+  { id: "infra-tecnica", num: "9", shortLabel: "Infraestructura técnica y servicios externos", title: "Infraestructura técnica, recursos GPU y servicios externos", Icon: Server, Component: InfraTecnicaSection, toc: [{ id: "infra-tec-entorno", label: "Entorno y stack" }, { id: "infra-tec-servicios", label: "Servicios externos" }, { id: "infra-tec-seguridad", label: "Seguridad y disponibilidad" }] },
+  { id: "anexo-lempa", num: "10", shortLabel: "Cuenca del Lempa", title: "Anexo — Cuenca del Río Lempa", Icon: MapIcon, Component: LempaSection, toc: [] },
+  { id: "raci", num: "11", shortLabel: "Equipo y Roles (RACI)", title: "Equipo, FTE y matriz RACI", Icon: AlignLeft, Component: RaciSection, toc: [{ id: "raci-fte", label: "Estructura operativa y FTE" }, { id: "raci-perfiles", label: "Perfiles del equipo" }, { id: "raci-comite", label: "Comité de Informática" }, { id: "raci-tareas", label: "Tareas por fase" }, { id: "raci-matriz", label: "Matriz RACI" }] },
+  { id: "infraestructura", num: "12", shortLabel: "Silo de IA y BOM", title: "Silo de IA — Infraestructura local y BOM", Icon: Server, Component: InfraSection, toc: [{ id: "infra-arquitectura", label: "Arquitectura" }, { id: "infra-hardware", label: "BOM hardware" }, { id: "infra-software", label: "BOM software" }, { id: "infra-comisionamiento", label: "Comisionamiento" }, { id: "infra-respaldo", label: "Respaldo y seguridad" }] },
 ];
 
 const ANEXO_GROUPS: { id: string; title: string; chapters: ChapterId[] }[] = [
@@ -106,12 +112,13 @@ const ANEXO_GROUPS: { id: string; title: string; chapters: ChapterId[] }[] = [
       "decisiones",
       "operacion",
       "visualizacion",
+      "infra-tecnica",
     ],
   },
   {
-    id: "silo-ia",
-    title: "Silo de IA y BOM",
-    chapters: ["infraestructura"],
+    id: "lempa",
+    title: "Especificidades del Lempa (Anexo E)",
+    chapters: ["anexo-lempa"],
   },
   {
     id: "equipo-roles",
@@ -119,9 +126,9 @@ const ANEXO_GROUPS: { id: string; title: string; chapters: ChapterId[] }[] = [
     chapters: ["raci"],
   },
   {
-    id: "lempa",
-    title: "Especificidades del Lempa (Anexo E)",
-    chapters: ["anexo-lempa"],
+    id: "silo-ia",
+    title: "Silo de IA y BOM",
+    chapters: ["infraestructura"],
   },
 ];
 
@@ -129,9 +136,9 @@ export default function Desarrollo() {
   const [activeId, setActiveId] = useState<ChapterId>("flujo");
   const [expanded, setExpanded] = useState<Record<string, boolean>>({
     "decisiones-tecnicas": true,
-    "silo-ia": false,
-    "equipo-roles": false,
     "lempa": false,
+    "equipo-roles": false,
+    "silo-ia": false,
   });
   const [query, setQuery] = useState("");
 
@@ -679,11 +686,25 @@ const RACI_COLORS: Record<string, string> = {
   I: "bg-slate-300 dark:bg-slate-600 text-slate-700 dark:text-slate-100",
 };
 
+const RACI_LABEL: Record<string, string> = {
+  R: "Responsable",
+  A: "Aprobador",
+  C: "Consultado",
+  I: "Informado",
+};
+
+function raciAriaLabel(letters: string[]) {
+  return letters.map((l) => RACI_LABEL[l] ?? l).join(" / ");
+}
+
 function RaciBadge({ letter, className = "" }: { letter: string; className?: string }) {
   const color = RACI_COLORS[letter] ?? "bg-muted text-muted-foreground";
   return (
     <span
       className={`inline-flex items-center justify-center h-7 w-7 rounded-full text-[11px] font-bold shadow-sm ${color} ${className}`}
+      role="img"
+      aria-label={RACI_LABEL[letter] ?? letter}
+      title={RACI_LABEL[letter] ?? letter}
     >
       {letter}
     </span>
@@ -691,32 +712,71 @@ function RaciBadge({ letter, className = "" }: { letter: string; className?: str
 }
 
 function RaciCell({ value }: { value: string }) {
-  if (value === "—") {
-    return <span className="text-xs font-mono text-muted-foreground">—</span>;
+  if (!value || value === "—") {
+    return (
+      <span className="text-xs font-mono text-muted-foreground" aria-label="Sin asignación">
+        —
+      </span>
+    );
   }
-  const letters = value.split("/").map((s) => s.trim()).filter(Boolean);
+  const letters = value
+    .split("/")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (letters.length === 0) {
+    return (
+      <span className="text-xs font-mono text-muted-foreground" aria-label="Sin asignación">
+        —
+      </span>
+    );
+  }
   if (letters.length === 1) {
     return <RaciBadge letter={letters[0]} />;
   }
-  // Split badge: two halves of a circle with each letter
-  const [a, b] = letters;
-  const colorA = RACI_COLORS[a] ?? "bg-muted text-muted-foreground";
-  const colorB = RACI_COLORS[b] ?? "bg-muted text-muted-foreground";
+  if (letters.length === 2) {
+    const [a, b] = letters;
+    const colorA = RACI_COLORS[a] ?? "bg-muted text-muted-foreground";
+    const colorB = RACI_COLORS[b] ?? "bg-muted text-muted-foreground";
+    const ariaLabel = raciAriaLabel(letters);
+    return (
+      <span
+        className="relative inline-flex items-center justify-center h-7 w-7 rounded-full overflow-hidden shadow-sm"
+        role="img"
+        aria-label={ariaLabel}
+        title={ariaLabel}
+      >
+        <span
+          className={`absolute inset-y-0 left-0 w-1/2 flex items-center justify-end pr-0.5 text-[10px] font-bold ${colorA}`}
+        >
+          {a}
+        </span>
+        <span
+          className={`absolute inset-y-0 right-0 w-1/2 flex items-center justify-start pl-0.5 text-[10px] font-bold ${colorB}`}
+        >
+          {b}
+        </span>
+      </span>
+    );
+  }
+  // 3+ letters: render compact pill stack so nothing is silently dropped
+  const ariaLabel = raciAriaLabel(letters);
   return (
     <span
-      className="relative inline-flex items-center justify-center h-7 w-7 rounded-full overflow-hidden shadow-sm"
-      title={`${a} / ${b}`}
+      className="inline-flex items-center gap-0.5"
+      role="img"
+      aria-label={ariaLabel}
+      title={ariaLabel}
     >
-      <span
-        className={`absolute inset-y-0 left-0 w-1/2 flex items-center justify-end pr-0.5 text-[10px] font-bold ${colorA}`}
-      >
-        {a}
-      </span>
-      <span
-        className={`absolute inset-y-0 right-0 w-1/2 flex items-center justify-start pl-0.5 text-[10px] font-bold ${colorB}`}
-      >
-        {b}
-      </span>
+      {letters.map((l, i) => (
+        <span
+          key={`${l}-${i}`}
+          className={`inline-flex items-center justify-center h-5 w-5 rounded-full text-[9px] font-bold shadow-sm ${
+            RACI_COLORS[l] ?? "bg-muted text-muted-foreground"
+          }`}
+        >
+          {l}
+        </span>
+      ))}
     </span>
   );
 }
@@ -966,6 +1026,91 @@ function StatusBadge({ status }: { status: InfraStatus }) {
     <span className="inline-block text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-900 dark:text-amber-200 whitespace-nowrap">
       Por confirmar con CEL
     </span>
+  );
+}
+
+function InfraTecnicaSection() {
+  const costTone: Record<string, string> = {
+    Gratuito: "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-200",
+    "Costo marginal": "bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200",
+    Opcional: "bg-slate-100 dark:bg-slate-800/40 text-slate-700 dark:text-slate-200",
+  };
+  return (
+    <div className="space-y-8">
+      <p className="text-base text-muted-foreground leading-relaxed">{INFRA_TECNICA_INTRO}</p>
+
+      <section id="infra-tec-entorno" className="space-y-4 scroll-mt-24">
+        <h2 className="text-xl font-semibold text-foreground">Entorno y stack</h2>
+        <div className="grid gap-4 md:grid-cols-3">
+          {INFRA_TECNICA_BLOCKS.map((b) => (
+            <Card key={b.id} className="border-border">
+              <CardHeader>
+                <CardTitle className="text-base text-foreground">{b.title}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground leading-relaxed">{b.body}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </section>
+
+      <section id="infra-tec-servicios" className="space-y-4 scroll-mt-24">
+        <h2 className="text-xl font-semibold text-foreground">Integración con servicios externos</h2>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          Aunque la infraestructura principal es interna, el sistema seguirá dependiendo de
+          servicios externos para tareas específicas, con costos marginales o nulos.
+        </p>
+        <Card className="border-border overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/40 text-muted-foreground">
+                <tr>
+                  <th className="text-left font-medium px-4 py-3">Servicio</th>
+                  <th className="text-left font-medium px-4 py-3">Categoría</th>
+                  <th className="text-left font-medium px-4 py-3">Uso</th>
+                  <th className="text-left font-medium px-4 py-3">Costo</th>
+                </tr>
+              </thead>
+              <tbody>
+                {EXTERNAL_SERVICES.map((s) => (
+                  <tr key={s.id} className="border-t border-border align-top">
+                    <td className="px-4 py-3">
+                      <div className="font-medium text-foreground">{s.name}</div>
+                      <div className="text-xs text-muted-foreground mt-1">{s.scope}</div>
+                    </td>
+                    <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
+                      {s.category}
+                    </td>
+                    <td className="px-4 py-3 text-xs text-muted-foreground leading-relaxed max-w-md">
+                      {s.detail}
+                    </td>
+                    <td className="px-4 py-3">
+                      <span
+                        className={`text-xs font-medium px-2 py-1 rounded ${costTone[s.cost]}`}
+                      >
+                        {s.cost}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      </section>
+
+      <section id="infra-tec-seguridad" className="space-y-3 scroll-mt-24">
+        <h2 className="text-xl font-semibold text-foreground">Seguridad y disponibilidad</h2>
+        <Card className="border-border">
+          <CardContent className="pt-6">
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              {INFRA_TECNICA_SEGURIDAD}
+            </p>
+          </CardContent>
+        </Card>
+      </section>
+    </div>
   );
 }
 
