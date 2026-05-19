@@ -11,4 +11,13 @@ export interface RoleCoverage {
   label: string;
   count: number;
   assignees: string[];
+  /** True when the role is part of the agreed governance structure but the
+  actual person is still pending designation (e.g. awaiting the CEL
+  Comité de Dirección). The UI should render a "TBD" placeholder.
+   */
+  tbd: boolean;
+  /** True when closing this role depends on a decision from the CEL
+  Comité de Dirección.
+   */
+  pendingOnCommittee: boolean;
 }

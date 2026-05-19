@@ -1399,7 +1399,7 @@ components:
 
     RoleCoverage:
       type: object
-      required: [roleId, label, count, assignees]
+      required: [roleId, label, count, assignees, tbd, pendingOnCommittee]
       properties:
         roleId:
           type: string
@@ -1411,6 +1411,17 @@ components:
           type: array
           items:
             type: string
+        tbd:
+          type: boolean
+          description: |
+            True when the role is part of the agreed governance structure but the
+            actual person is still pending designation (e.g. awaiting the CEL
+            Comité de Dirección). The UI should render a "TBD" placeholder.
+        pendingOnCommittee:
+          type: boolean
+          description: |
+            True when closing this role depends on a decision from the CEL
+            Comité de Dirección.
 
     TeamSummary:
       type: object

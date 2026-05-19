@@ -89,6 +89,8 @@ export default function Equipo() {
                 const assignees = coverage?.assignees ?? [];
                 const count = assignees.length;
                 const shared = count > 1;
+                const tbd = !!coverage?.tbd;
+                const pendingOnCommittee = !!coverage?.pendingOnCommittee;
                 const holders = assignees.map((name) => {
                   const m = members?.find((mm) => mm.displayName === name);
                   return { name, email: m?.email };
@@ -100,9 +102,11 @@ export default function Equipo() {
                   >
                     <div className="flex items-center justify-between gap-2">
                       <span className="font-medium text-sm">{role.label}</span>
-                      <Badge variant={count > 0 ? (shared ? "default" : "secondary") : "outline"}>
+                      <Badge variant={count > 0 ? (shared ? "default" : "secondary") : tbd ? "secondary" : "outline"}>
                         {count === 0
-                          ? "Sin asignar"
+                          ? tbd
+                            ? "Por determinar (TBD)"
+                            : "Sin asignar"
                           : shared
                             ? `Compartido · ${count}`
                             : "1 persona"}
@@ -125,8 +129,20 @@ export default function Equipo() {
                           </div>
                         ))}
                       </div>
+                    ) : tbd ? (
+                      <p className="text-xs text-muted-foreground italic">
+                        Por determinar (TBD)
+                      </p>
                     ) : (
                       <p className="text-xs text-muted-foreground italic">Sin asignar</p>
+                    )}
+                    {pendingOnCommittee && (
+                      <Badge
+                        variant="outline"
+                        className="self-start text-[10px] border-amber-500/40 text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30"
+                      >
+                        Pendiente Comité de Dirección CEL
+                      </Badge>
                     )}
                   </div>
                 );

@@ -6,6 +6,7 @@ import {
   rolesTable,
   userRolesTable,
   userCvsTable,
+  GOVERNANCE_BY_ROLE,
 } from "@workspace/db";
 import {
   ListTeamMembersResponse,
@@ -120,12 +121,26 @@ router.get(
       assigneesByRole.set(a.roleId, arr);
     }
 
-    const coverage = roles.map((r) => ({
-      roleId: r.id,
-      label: r.label,
-      count: assigneesByRole.get(r.id)?.length ?? 0,
-      assignees: assigneesByRole.get(r.id) ?? [],
-    }));
+    const coverage = roles.map((r) => {
+      const dbAssignees = assigneesByRole.get(r.id) ?? [];
+      const governance = GOVERNANCE_BY_ROLE.get(r.id);
+      const seen = new Set<string>();
+      const merged: string[] = [];
+      for (const name of [...dbAssignees, ...(governance?.assignees ?? [])]) {
+        if (!seen.has(name)) {
+          seen.add(name);
+          merged.push(name);
+        }
+      }
+      return {
+        roleId: r.id,
+        label: r.label,
+        count: merged.length,
+        assignees: merged,
+        tbd: !!governance?.tbd && merged.length === 0,
+        pendingOnCommittee: !!governance?.pendingOnCommittee,
+      };
+    });
 
     const rolesFilled = coverage.filter((c) => c.count > 0).length;
 

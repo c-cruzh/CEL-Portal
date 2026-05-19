@@ -230,7 +230,9 @@ export const GetTeamSummaryResponse = zod.object({
   "roleId": zod.string(),
   "label": zod.string(),
   "count": zod.number(),
-  "assignees": zod.array(zod.string())
+  "assignees": zod.array(zod.string()),
+  "tbd": zod.boolean().describe('True when the role is part of the agreed governance structure but the\nactual person is still pending designation (e.g. awaiting the CEL\nComité de Dirección). The UI should render a \"TBD\" placeholder.\n'),
+  "pendingOnCommittee": zod.boolean().describe('True when closing this role depends on a decision from the CEL\nComité de Dirección.\n')
 }))
 })
 

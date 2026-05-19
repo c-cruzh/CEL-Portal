@@ -25,7 +25,12 @@ export default function Cronograma() {
   const roleAssignees = useMemo(() => {
     const map = new Map<string, string[]>();
     for (const c of teamSummary?.coverage ?? []) {
-      map.set(c.roleId, c.assignees ?? []);
+      const list = c.assignees ?? [];
+      if (list.length === 0 && c.tbd) {
+        map.set(c.roleId, ["Por determinar (TBD)"]);
+      } else {
+        map.set(c.roleId, list);
+      }
     }
     return map;
   }, [teamSummary]);
