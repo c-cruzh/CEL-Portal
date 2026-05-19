@@ -41,10 +41,10 @@ const clerkAppearance = {
   options: {
     logoPlacement: "inside" as const,
     logoLinkUrl: basePath || "/",
-    logoImageUrl: `${window.location.origin}${basePath}/logo.svg`,
+    logoImageUrl: `${window.location.origin}${basePath}/cel-logo.svg`,
   },
   variables: {
-    colorPrimary: "hsl(201 96% 32%)",
+    colorPrimary: "hsl(214 68% 15%)",
     colorForeground: "hsl(222 47% 11%)",
     colorMutedForeground: "hsl(215.4 16.3% 46.9%)",
     colorDanger: "hsl(0 84.2% 60.2%)",

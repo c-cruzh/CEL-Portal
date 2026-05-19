@@ -1,0 +1,1198 @@
+De ahi necesito un technical development tab 
+Ahi deberia de ir el 1. Flujo completo del sistema
+Una version digerible con el mismo contenido (it just needs to be navigable.digestible or something):
+El sistema de pronóstico hidrológico basado en IA seguirá un flujo de procesamiento de
+extremo a extremo, desde la recopilación de datos hasta la generación de alertas tempranas
+de inundación. En términos generales, se compone de cuatro subsistemas principales –
+similares a los implementados por Google Flood Hub (Nevo et al., 2022)– integrados en la
+plataforma de CEL: (1) Adquisición y validación de datos, (2) Pronóstico de caudales (modelo
+LSTM), (3) Modelado de inundación, y (4) Distribución de alertas (Nevo et al., 2022).
+Previo al inicio de este ciclo operativo, el proyecto arranca con una Fase 0: Configuración de
+Infraestructura y Entorno. Esta etapa inicial y fundamental se dedica a la construcción y
+comisionamiento de la infraestructura de servidores on-premise dedicada, la cual garantizará
+un entorno de alto rendimiento, seguro y escalable. La finalización exitosa de esta fase, que
+incluye la instalación del hardware y la configuración del stack de software, es el requisito
+indispensable para dar paso a la primera etapa operativa de ingesta de datos.
+
+En la primera etapa (Data Ingestion), se recopilan automáticamente datos meteorológicos,
+hidrológicos y geoespaciales de múltiples fuentes (detalladas en la siguiente sección) y se
+someten a controles de calidad y transformaciones necesarias. Estos datos crudos son
+ingeridos mediante procesos ETL (Extract-Transform-Load) orquestados con un framework
+moderno como Mage, que utiliza pipelines definidos en Python. Esta aproximación reemplaza a
+Pentaho PDI, mejorando la fiabilidad, el versionamiento y la mantenibilidad del código, a la vez
+que asegura una estandarización temporal y espacial robusta antes del almacenamiento en las
+bases de datos de CEL.
+En la segunda etapa (Pronóstico de caudales), el sistema utiliza modelos de redes neuronales
+recurrentes LSTM entrenados con datos históricos para pronosticar los caudales o niveles
+futuros en puntos clave del río (e.g. estaciones de aforo o “gauges” virtuales). El modelo LSTM
+procesa series temporales de precipitaciones pronosticadas y observadas, caudales recientes y
+otros atributos, para estimar el flujo de los próximos días (hasta un horizonte de 7 días). Este
+enfoque de aprendizaje automático ha demostrado mayor precisión que modelos lineales
+tradicionales, mejorando la capacidad de predicción de crecientes repentinas (Nevo et al.,
+2022).
+La tercera etapa (Modelado de inundación) traduce las predicciones de caudal en información
+de áreas inundadas. Aquí se emplearán dos enfoques complementarios inspirados en Google
+Flood Hub (Nevo et al., 2022): (a) un modelo de umbral que, dado un caudal o nivel
+proyectado, calcula la extensión espacial de inundación esperada mediante mapas predefinidos
+y elevaciones críticas; y (b) un modelo de inundación por “manifold” (aprendizaje automático
+avanzado) capaz de estimar tanto la extensión como la profundidad de la inundación
+directamente a partir de las predicciones hidrológicas (Nevo et al., 2022). Ambos métodos
+serán entrenados y calibrados con datos locales y evaluados para asegurar su fiabilidad
+operacional.
+Finalmente, en la cuarta etapa (Alertas y visualización), los resultados se integran en un
+tablero web interactivo y se distribuyen notificaciones de alerta. El dashboard (desarrollado en
+la plataforma Node.js/React de CEL) mostrará en tiempo real los mapas de inundación
+previstos sobre una interfaz geográfica, así como las curvas de caudal pronosticado vs.
+umbrales de alerta en puntos de control. Si un pronóstico excede los niveles críticos
+predefinidos, el sistema activará alertas automáticas – por correo electrónico, SMS u otros
+canales – dirigidas a los responsables y comunidades pertinentes. Este esquema de
+notificación temprana permite acciones proactivas para mitigar el impacto de las crecidas. En
+síntesis, el flujo integral va “de datos a decisión”: captura datos brutos multisectoriales, los
+convierte mediante IA en pronósticos de caudal confiables, traduce esos pronósticos en zonas
+de inundación probables, y comunica oportunamente las alertas a quienes las necesitan.
+2. Datos de entrada del sistema
+El sistema aprovechará fuentes de datos heterogéneas – meteorológicas, hidrológicas,
+geoespaciales y de características de cuenca – para alimentar los modelos de pronóstico. A
+continuación, se detallan los insumos principales en cada categoría:
+●
+Datos meteorológicos: Se utilizarán productos globales de prestigio para obtener
+precipitaciones y otras variables climáticas. En particular, se integrarán pronósticos
+numéricos del modelo global ECMWF (Centro Europeo) para horizontes de hasta 7 días,
+así como reanálisis históricos ERA5 para series climáticas de largo plazo. Además, se
+incorporarán estimaciones satelitales de lluvia en tiempo casi real como NASA
+GPM/IMERG, que ofrecen cobertura global de precipitación por radar satelital con
+pocas horas de retraso. Estos datos proporcionan las series de precipitación y
+temperatura de entrada al modelo LSTM (Google Research & Cohen, 2024). Por
+ejemplo, el reanálisis ERA5-Land brinda datos consistentes de lluvia y temperatura
+desde 1980 a la fecha (Google Research & Cohen, 2024), útiles para entrenar el modelo,
+mientras que los pronósticos ECMWF e IMERG alimentarán la ejecución diaria para
+pronosticar caudales futuros. En caso necesario, se complementará con otras fuentes
+abiertas como CHIRPS (precipitación interpolada para Mesoamérica) para robustez en
+zonas con escasa cobertura de estaciones. Todo este conjunto meteorológico provee
+información redundante y robusta, reduciendo la incertidumbre de los pronósticos al
+combinar múltiples productos (Google Research & Cohen, 2024).
+●
+Datos hidrológicos: Incluyen principalmente los caudales observados en el río Lempa y
+sus tributarios, que sirven para entrenar y calibrar el modelo de predicción. Se
+emplearán registros históricos de estaciones hidrométricas locales (p. ej., datos de CEL
+y autoridades hidro-meteorológicas de El Salvador, Guatemala y Honduras) y datos
+abiertos como la base global GRDC (Global Runoff Data Centre)(Google Research &
+Cohen, 2024). GRDC recopila series de caudal diarias de miles de ríos a nivel mundial, y
+contiene información que permitirá contrastar y extender los datos locales.
+Adicionalmente, el sistema está diseñado para generar “gauges” virtuales, es decir,
+puntos de pronóstico en ubicaciones donde no existe una estación física de medición
+(Google Research & Cohen, 2024). Estos gauges virtuales heredan conocimiento de la
+red hidrográfica y los patrones de lluvia para ofrecer estimaciones de nivel/caudal en
+sitios críticos (p. ej., desembocadura en el Bajo Lempa) aún sin sensores instalados. Si
+bien sus pronósticos no pueden validarse directamente por falta de observaciones,
+constituyen insumos valiosos para análisis en regiones sin cobertura gauge (Google
+Research & Cohen, 2024). En la operación diaria, también se incorporarán
+observaciones hidrológicas en tiempo real (donde existan) para actualizar el estado
+inicial del río y eventualmente realizar asimilación de datos que corrija desvíos del
+modelo con respecto a la realidad.
+●
+Datos geoespaciales: Sirven tanto para caracterizar la cuenca en los modelos como
+para la etapa de inundación. Se utilizará un Modelo Digital de Elevaciones (MDE) de alta
+resolución – por ejemplo, SRTM de ~30 m o datos LiDAR locales si están disponibles –
+
+para conocer la topografía detallada de la planicie de inundación. Este MDE permite
+delinear las zonas que quedarían bajo agua para un determinado nivel del río, por lo que
+es fundamental para el modelo de inundación basado en umbrales (identificando cotas
+críticas). Asimismo, se emplearán imágenes satelitales de Sentinel-1 (radar SAR) para
+obtener mapas históricos de inundaciones efectivas; el radar de apertura sintética
+detecta agua superficial aún bajo nubes, por lo que a partir de imágenes Sentinel-1
+históricas se pueden derivar extensiones de inundaciones pasadas en el Bajo Lempa.
+Estas observaciones satelitales se usarán para calibrar y validar los modelos de
+inundación (e.g., ajustando el modelo para que reproduzca extents similares a las
+detectadas por SAR en eventos históricos). Adicionalmente, se aprovecharán datos de
+uso del suelo y cobertura terrestre (por ejemplo, CORINE Land Cover o mapas
+nacionales) para entender la interacción agua-terreno (p.ej., identificar áreas urbanas o
+agrícolas que puedan modificar la dinámica de escorrentía e inundación).
+●
+Características de la cuenca: Se compilarán atributos fisiográficos e hidrológicos de la
+cuenca Lempa que enriquecen el modelo de IA. A través de recursos abiertos como
+HydroATLAS/HydroSheds, se obtendrán datos como: área de drenaje de subcuencas,
+elevación media, pendiente de laderas, tipo de suelo, parámetros climáticos medios,
+cobertura vegetal, entre otros (Google Research & Cohen, 2024). Estos rasgos
+estáticos se incorporan como features en el modelo LSTM para contextualizar el
+comportamiento hidrológico del Lempa frente a otras cuencas. En la metodología de
+Google, alimentar la red con atributos de cuenca le permitió generalizar a sitios no
+calibrados (Google Research & Cohen, 2024). En nuestro caso, dichos atributos
+ayudarán a regionalizar el modelo (por ejemplo, transfiriendo el aprendizaje desde
+cuencas similares hacia segmentos del Lempa con pocos datos locales) y a diferenciar
+el comportamiento de distintas subcuencas dentro del sistema. Por último, se
+delimitarán las sub-cuencas y áreas de aporte principales (p. ej., cuenca alta en
+Guatemala, cuenca media con embalses, cuenca baja en El Salvador) usando
+herramientas GIS sobre el MDE, para asociar los datos meteorológicos espacialmente a
+cada región hidrológica relevante.
+En síntesis, el sistema manejará un volumen significativo de datos de entradas diversas. Todas
+las fuentes mencionadas son abiertas o de acceso público, evitando costos de licenciamiento.
+La combinación de múltiples insumos meteorológicos y la inclusión de datos geoespaciales
+enriquecen la robustez del pronóstico, permitiendo al modelo LSTM aprender de la lluvia y
+caudales históricos, y al componente de inundación disponer de mapas base precisos para
+delinear las alertas.
+3. Preprocesamiento y canalizaciones ETL: Orquestación de Datos y Pipelines con Python
+(Mage)
+
+Para convertir los datos brutos de múltiples orígenes en insumos listos para la modelación, se
+implementará una robusta canalización de datos utilizando un framework moderno de
+orquestación basado en Python, como Mage. Esta decisión estratégica reemplaza el uso de
+Pentaho PDI para este proyecto, con el fin de mejorar la fiabilidad, la observabilidad y,
+fundamentalmente, la capacidad de versionamiento del código de los flujos de trabajo,
+abordando directamente las limitaciones operativas identificadas. La definición de los pipelines
+como "código" permite una integración nativa con sistemas de control de versiones (Git) y
+facilita la automatización, el mantenimiento y la escalabilidad a largo plazo.
+Esta metodología moderna se conecta con los sistemas existentes de CEL de forma segura y
+estándar. El nuevo "Nodo de Datos & ETL" actuará como un cliente dentro de la red de CEL,
+utilizando conectores de base de datos para consultar (en modo de solo lectura) la información
+de los servidores PostgreSQL y MongoDB existentes. Todo el procesamiento y la
+transformación de datos se ejecutarán en el nuevo hardware dedicado, asegurando que los
+sistemas originales no se vean sobrecargados y que la soberanía de los datos se mantenga en
+todo momento.
+El preprocesamiento abarcará las siguientes etapas, ejecutadas como código Python
+orquestado por Mage:
+●
+Extracción automática de datos: Se desarrollarán scripts en Python dentro de Mage
+para conectarse de forma programada y automática a las diversas fuentes de datos.
+Esto incluye el consumo de APIs para datos meteorológicos (e.g., archivos
+GRIB/NetCDF de ECMWF) y la descarga de imágenes satelitales (GPM, Sentinel-1)
+utilizando librerías como requests. Asimismo, se automatizará la extracción de datos
+hidrológicos de los sistemas de CEL, conectándose a las bases de datos existentes
+mediante conectores específicos como psycopg2 para PostgreSQL y pymongo para
+MongoDB. Los datos crudos se cargarán en un área de "staging" dentro de las nuevas
+bases de datos del silo de IA para su posterior transformación.
+●
+Transformación y limpieza: Una vez obtenidos, los datos pasan por etapas de data
+cleaning y reformateo utilizando el poder del ecosistema de Python, principalmente
+con librerías como Pandas, GeoPandas y NumPy. Estas transformaciones incluirán:
+○
+Conversión y Homogeneización: Convertir unidades (p. ej. de mm a m³/s),
+estandarizar zonas horarias y referencias temporales (crítico al combinar
+pronósticos y observaciones), y re-muestrear series temporales a un paso
+común (diario) utilizando las capacidades de manipulación de series de tiempo
+de Pandas. Se aplicará relleno de lagunas (gap-filling) en series históricas
+usando métodos apropiados (interpolación lineal, media estacional, etc.).
+○
+Procesamiento Geoespacial: Para datos meteorológicos en formato ráster, se
+ejecutarán transformaciones geoespaciales con librerías como rasterio y
+geopandas. Se calculará la precipitación media areal sobre la cuenca o
+subcuencas del Lempa superponiendo las máscaras de cuenca (derivadas del
+
+MDE) sobre los campos de lluvia diarios de ERA5/GPM. De igual forma, en el
+caso de imágenes Sentinel-1 para inundaciones, el preprocesamiento implica
+aplicar algoritmos de clasificación de agua (p.ej., umbral de backscatter) para
+derivar polígonos de áreas inundadas históricamente, los cuales luego se
+almacenan como capas vectoriales.
+○
+Ingeniería de Características: Se crearán variables adicionales para el modelo,
+como indicadores temporales (día del año) o el cálculo de la evapotranspiración
+potencial (ET) con fórmulas empíricas.
+●
+Carga en las bases de datos: Tras la transformación, los resultados se cargan (Load) en
+los repositorios de datos dedicados del silo de IA. Conforme a la arquitectura definida,
+se distinguirán dos destinos:
+○
+Una base NoSQL MongoDB alojará los datos operativos de tiempo real, como las
+últimas mediciones de lluvia, caudales recientes y las predicciones diarias
+generadas. MongoDB es idónea para almacenar documentos JSON con
+estructuras flexibles, permitiendo que el frontend (Node.js/React) consulte
+rápidamente el estado más reciente.
+○
+La base relacional PostgreSQL, extendida con PostGIS para datos
+geoespaciales, almacenará los datos históricos depurados y las capas estáticas.
+Las series largas de precipitación y caudal se guardarán en tablas históricas para
+análisis y re-entrenamiento, mientras que las geometrías de la cuenca y los
+mapas de inundación se almacenarán como tipos de datos espaciales.
+Durante todo el proceso, se implementarán controles de calidad automáticos (QA/QC). Cada
+script de Python incluirá aserciones y rutinas de validación para verificar la consistencia de los
+datos (e.g., que el caudal no sea negativo, que los acumulados de lluvia estén dentro de rangos
+esperados). La interfaz de Mage proporcionará un monitoreo detallado del estado de cada
+ejecución, con registros (logs) y notificaciones de error, garantizando que solo datos confiables
+alimenten a los modelos de IA.
+En resumen, mediante el uso de Mage y el ecosistema de Python, el sistema realizará una
+canalización de datos moderna, robusta y reproducible. Esta aproximación no solo se integra de
+forma segura con la infraestructura existente de CEL, sino que también establece una base
+sólida para el futuro, minimizando la necesidad de nuevas plataformas y promoviendo las
+mejores prácticas de ingeniería de datos. Al final de esta etapa, dispondremos de un "lago de
+datos" unificado y listo para alimentar los algoritmos de predicción y visualización operacional.
+4. Arquitectura y entrenamiento de los modelos de predicción
+En esta sección se documenta la metodología de modelado basada en redes neuronales para
+pronosticar los caudales del río Lempa y derivar las áreas inundadas correspondientes. El
+enfoque principal consiste en emplear redes LSTM (Long Short-Term Memory) para el
+pronóstico hidrológico, complementadas por modelos de inundación que traduzcan esos
+
+resultados a impactos geoespaciales. A continuación, se detalla la arquitectura de estos
+modelos y el plan de entrenamiento:
+4.1 Modelo LSTM para predicción de caudales
+El modelo hidrológico se basa en una red neuronal recurrente tipo LSTM, elegida por su
+eficacia en capturar dependencias temporales a largo plazo en series hidrológicas
+(precipitación-escorrentía). Estudios previos han demostrado que las LSTM superan a modelos
+hidrológicos conceptuales calibrados tradicionalmente, incluso al generalizar a cuencas no
+usadas en entrenamiento. Para la cuenca del Lempa, se implementará un LSTM multivariable
+capaz de ingerir las secuencias temporales de entrada (precipitaciones, temperaturas y
+caudales recientes) y producir como salida la serie pronosticada de caudales para los próximos
+días. En concreto, el LSTM tomará como features por cada paso de tiempo: (i) precipitaciones
+diarias acumuladas sobre la cuenca (y potencialmente otras variables climatológicas como
+temperatura media), (ii) caudal/nivel del río en el día actual (autoregresión, si datos
+disponibles), y (iii) indicadores temporales (p. ej., día del año para capturar estacionalidad).
+Adicionalmente, se incorporan atributos estáticos de la cuenca – como área de drenaje,
+pendiente media, uso del suelo – que se concatenan o usan para inicializar el estado oculto de
+la red, tal como sugiere la literatura (Google Research & Cohen, 2024). Esto permite al modelo
+“conocer” las características físicas del Río Lempa (y de sub-cuencas) que modulan su
+respuesta hidrológica, mejorando la generalización espacial del pronóstico.
+La arquitectura detallada del LSTM consistirá en una o más capas LSTM con un cierto número
+de neuronas ocultas (hiperparámetro a definir), seguidas de capas densas que generan la salida
+deseada. Posiblemente se utilice un esquema sequence-to-sequence, donde la red procesa
+una secuencia de entrada (ej. últimos N días) y emite una secuencia de salida (próximos 7 días
+de caudal). Alternativamente, se puede entrenar para predecir un día por vez y encadenar
+predicciones, aunque el primer enfoque suele ser más eficiente. El tamaño de la ventana de
+entrada (N días usados para predecir) y la profundidad de la red se determinarán mediante
+experimentación.
+Para construir este modelo de forma eficiente, se adoptará un framework de código abierto
+especializado en hidrología. En particular, se propone emplear la librería NeuralHydrology
+(desarrollada por Kratzert et al.), que proporciona implementaciones estándar de LSTM para
+pronóstico de caudal (Nearing et al., 2024). NeuralHydrology facilita la definición de
+arquitecturas, lectura de datos hidroclimáticos y cálculo de métricas, acelerando el desarrollo y
+asegurando reproducibilidad. El componente central para el cómputo acelerado será la GPU
+NVIDIA RTX 4090 (24 GB VRAM), especificada como parte integral de la arquitectura
+recomendada para el nuevo silo de IA, se entrenará el modelo con PyTorch/NeuralHydrology,
+beneficiándose del paralelismo de la GPU para manejar grandes volúmenes de datos en menos
+tiempo.
+El entrenamiento se realizará usando los datos históricos integrados: varios años de registros
+diarios de lluvia y caudal, asegurando incluir una diversidad de eventos (temporada seca, lluvias
+extremas, paso de huracanes, operación de embalses, etc.). Se dividirán los datos en períodos
+de entrenamiento, validación y prueba, respetando la secuencia temporal para evitar
+filtraciones del futuro (p. ej., usando validación con origen rodante, descrita más adelante). La
+función de pérdida primaria puede ser el error cuadrático medio (MSE) entre caudal
+pronosticado y observado, aunque se evaluarán también métricas hidrológicas como el
+coeficiente de Nash-Sutcliffe (NSE) durante la validación. Dado que se buscan pronósticos
+probabilísticos a 7 días, se explorará entrenar la red no solo para un valor medio sino para
+distribuir resultados (p. ej., mediante ensambles con perturbaciones de entrada o incorporando
+la dispersión de pronósticos meteorológicos). No obstante, inicialmente el foco estará en
+obtener el mejor pronóstico determinista posible.
+Ajuste de hiperparámetros: Para optimizar el rendimiento del LSTM, se implementará una
+búsqueda automatizada de hiperparámetros, idealmente mediante métodos eficientes como la
+búsqueda Bayesiana. Aspectos a calibrar incluyen: el número de unidades ocultas en la(s)
+capa(s) LSTM, la longitud de secuencia de entrada (ventana temporal de días), la tasa de
+aprendizaje y regularización, etc. Se aprovecharán frameworks de optimización (por ejemplo
+Optuna) que integran con PyTorch para explorar sistemáticamente las combinaciones. La
+propuesta es realizar decenas de corridas de prueba para converger en la configuración óptima,
+considerando la capacidad computacional disponible. Esta práctica, mencionada también en la
+planificación original , busca maximizar la precisión del modelo antes de su despliegue
+operativo.
+Tras entrenar el modelo LSTM, se obtendrá un modelo validado de pronóstico a 7 días (como
+se detalla en la sección de validación) capaz de generalizar razonablemente a situaciones fuera
+de lo visto. Cabe destacar que la red LSTM, al estar entrenada con datos históricos incluyendo
+la influencia de embalses, aprenderá implícitamente ese comportamiento. No obstante, se
+considerará integrar reglas adicionales o inputs específicos para representar la operación de
+embalses (por ejemplo, incluir el nivel del embalse como entrada si se dispone, o segmentar el
+río en dos tramos: arriba y abajo de la presa principal). En todo caso, el modelo LSTM
+constituirá el núcleo predictivo hidrológico del sistema, entregando diariamente pronósticos
+de caudal/escenario que alimentarán la siguiente etapa.
+4.2 Modelo de inundación (extensión de la anegación)
+Este componente toma las salidas del modelo hidrológico (caudales o niveles pronosticados) y
+estima qué áreas geográficas serían afectadas por inundaciones bajo esos escenarios. Se
+implementarán dos enfoques complementarios, siguiendo la metodología de Google Flood Hub
+(Nevo et al., 2022), para asegurar precisión y rapidez:
+●
+Modelo de Umbral (Thresholding): Consiste en un método basado en reglas fijas que
+relaciona un nivel de río con una extensión de inundación predefinida. En la práctica, se
+elaborarán mapas de inundación para niveles umbral mediante análisis geoespacial: por
+ejemplo, usando el MDE se puede determinar qué áreas del Bajo Lempa quedan bajo
+agua cuando el río alcanza cierto nivel (ej. 5 metros en la estación X). Estos mapas
+umbral pueden provenir de simulaciones hidráulicas estáticas o de observaciones
+históricas (p. ej., el área máxima inundada observada en la tormenta Stan podría
+asociarse al caudal pico medido de 3000 m³/s). Una vez preparados estos escenarios, el
+modelo en sí es simple: si el pronóstico de caudal/nivel excede un umbral crítico, se
+activa la correspondiente capa de inundación. Por ejemplo: “Si caudal pronosticado en
+San Marcos > 2500 m³/s, entonces inundar polígono de zona baja en San Vicente”
+.
+Este modelo es computacionalmente ligero y garantiza que ante condiciones extremas
+el sistema muestre inmediatamente la zona potencial de impacto. Se pueden definir
+varios umbrales (alerta verde, amarilla, roja) con mapas incrementales de área inundada.
+La calibración de estos umbrales se hará combinando conocimiento de expertos locales
+y análisis de imágenes satelitales de eventos pasados. Aunque es un método
+simplificado (no modela hidráulica en tiempo real), en operaciones globales ha
+demostrado desempeño suficiente para extención de inundaciones (Nevo et al., 2022),
+y sirve como baseline inmediato mientras se desarrolla el modelo más complejo.
+●
+Modelo de Inundación por Manifold (ML avanzado): Es un modelo de aprendizaje
+automático que busca aproximar el comportamiento de un modelo hidráulico 2D sin
+necesidad de resolver explícitamente las ecuaciones de flujo. El concepto presentado
+por Google es construir un espacio latente (manifold) de posibles configuraciones de
+inundación, y entrenar un modelo (p. ej. una red neuronal) que mapee las condiciones
+hidrológicas de entrada a ese espacio latente, generando como salida la inundación
+prevista (tanto extensión como potencialmente profundidad). En términos prácticos,
+emprenderemos el desarrollo de un modelo ML que tome como entrada variables como:
+caudal pico pronosticado, volumen excedente esperado, estado del suelo previo (proxy
+de saturación) y quizá otros (como indicadores de pendiente del terreno, ancho del
+valle, etc.), y produzca como salida una máscara de áreas inundadas (por ejemplo, en
+una grilla binaria de alta resolución marcando inundado/no-inundado, o una lista de
+polígonos inundados con sus profundidades promedio). Para entrenar este modelo, se
+requiere un conjunto de “verdades terreno” de inundación para diversos eventos. Estas
+verdades se obtendrán de imágenes Sentinel-1 históricas clasificadas y/o simulaciones
+hidráulicas de eventos extremos. Por ejemplo, se puede alimentar al modelo con datos
+de varias tormentas (precipitación y caudales medidos) junto con el mapa de
+inundación observado en cada caso, para que aprenda la relación no lineal entre la
+magnitud del evento y las áreas afectadas. Dado el limitado número de eventos
+extremos registrados, es probable que se use transfer learning desde datos sintéticos:
+generar múltiples escenarios mediante un modelo hidráulico (p. ej., HEC-RAS 2D)
+alterando caudales pico y condiciones, para crear un banco de mapas de inundación
+simulados. Estos mapas, reducidos dimensionalmente (de ahí el término manifold),
+servirían para entrenar una red (posiblemente un modelo tipo autoencoder o una CNN)
+23que reconozca patrones de inundación.
+En la fase operativa, el modelo manifold recibiría el pronóstico específico (por ejemplo:
+“crecida de 1000 m³/s con suelos saturados”) y produciría rápidamente el mapa de
+inundación asociado, mucho más rápido que correr un modelo físico en tiempo real. Si
+bien este enfoque es complejo, la investigación indica que puede lograr precisión similar
+a la de modelos hidráulicos tradicionales (Nevo et al., 2022). En nuestro piloto,
+buscaremos implementar una versión simplificada de este concepto: inicialmente,
+generar mapas de profundidad para casos de diseño (5, 10, 50 años de período de
+retorno) y entrenar quizás un modelo de regresión o árbol de decisión que
+seleccione/extrapole entre esos mapas según el caudal pronosticado. A medida que se
+recopilen más datos de inundaciones observadas, se podrá ir refinando hacia la solución
+completa de manifold ML.
+Tanto el modelo de umbral como el de manifold serán validados frente a datos históricos. Se
+espera que sus desempeños sean similares en cuanto a acierto en extensión inundada (Nevo et
+al., 2022), con la diferencia de que el modelo ML puede también dar profundidades estimadas
+en cada punto (valor agregado importante para evaluación de daños). Para no introducir
+riesgos, inicialmente se podría operar con el modelo de umbral (más interpretable) y usar el
+modelo ML en paralelo para evaluación interna hasta asegurarnos de su confiabilidad. Una vez
+listo, el modelo de inundación ML proveerá mapas más detallados y adaptativos.
+Integración con el LSTM: Es importante resaltar cómo se acoplarán ambos modelos. El LSTM
+proveerá un hidrograma pronosticado (caudal vs. tiempo) en ciertos puntos de control (p.ej.,
+salida de embalses, entrada de zonas críticas). De ese hidrograma, el sistema extraerá los
+valores relevantes para inundación, típicamente el caudal pico previsto y su timing. Esos
+valores se introducirán al modelo de inundación: en el caso del umbral, se comparan con los
+umbrales definidos; en el caso del ML manifold, se escalan las entradas del modelo.
+Adicionalmente, podría incorporarse la duración esperada de caudales altos, ya que
+inundaciones prolongadas afectan áreas más extensas (p. ej. saturan humedales). El modelo
+manifold puede aceptar esto de forma natural si se incluye el volumen o duración como input.
+Toda esta arquitectura modelo-compuesto (LSTM + inundación) será implementada de manera
+modular para facilitar ajustes.
+En suma, la combinación de un modelo LSTM para pronosticar el comportamiento hidrológico
+y un modelo de inundación para traducirlo en impactos territoriales, replica la metodología de
+Google adaptada al contexto local. Esta dupla proporcionará tanto pronósticos numéricos
+(caudales, niveles) como productos geoespaciales (mapas de riesgo) en un flujo unificado.
+5. Validación cruzada, métricas de evaluación y pruebas fuera de muestra
+La validación rigurosa del sistema es crucial para garantizar confianza en sus pronósticos. Se
+implementará un esquema de validación cruzada temporal y evaluación con métricas
+especializadas, incluyendo pruebas fuera de muestra que emulen condiciones reales no vistas
+durante el entrenamiento.
+Validación del modelo LSTM (caudal): Dado que los datos temporales no son independientes,
+se usará una estrategia de validación con origen rodante (rolling origin) . Esto implica dividir la
+serie histórica en múltiples segmentos cronológicos: por ejemplo, entrenar el modelo con datos
+hasta el año X y validar pronosticando el año X+1; luego ampliar la ventana y repetir. Así se
+generan varios folds de validación secuencial que prueban el modelo en periodos posteriores
+no usados en el ajuste de parámetros. Esto imita la situación de pronosticar el futuro con solo
+datos del pasado. Cada iteración de validación proporcionará métricas de desempeño (error,
+NSE, etc.) que luego se promedian para estimar la capacidad predictiva robusta del LSTM.
+Adicionalmente, se reservará un conjunto de prueba final (out-of-sample) – idealmente los
+eventos más recientes o significativos no incluidos en ningún entrenamiento – para hacer una
+prueba ciega del sistema completo al final. Por ejemplo, podríamos apartar datos de los últimos
+1-2 años (o de un evento extremo específico) y usarlos solo al final para verificar cómo el
+modelo pronostica algo que nunca “vio”
+.
+Las métricas de evaluación para caudal incluirán:
+●
+Coeficiente Nash-Sutcliffe (NSE): mide la eficiencia del pronóstico respecto a la media
+observada (NSE=1 es perfecto, NSE=0 equivale a usar la media histórica). Es una
+métrica estándar en hidrología para caudal (Nevo et al., 2022).
+●
+RMSE y MAE: el error cuadrático medio y el error absoluto medio, en unidades de
+caudal (m³/s), para cuantificar la desviación típica de las predicciones.
+●
+Coeficiente de determinación (R²): para evaluar la correlación entre predicho y
+observado.
+●
+Skill score vs. persistencia: compararemos el modelo contra una línea base trivial (por
+ejemplo,
+“pronóstico igual al valor de ayer”
+– persistencia). Se puede calcular un NSE de
+persistencia o simplemente indicar cuánto porcentaje mejora el RMSE respecto a
+asumir caudal constante (Nevo et al., 2022). Esto demuestra el valor añadido de la IA.
+●
+Detección de crecidas (POD/FAR): en contexto de alertas, evaluaremos si el modelo
+acierta la ocurrencia de eventos de creciente. Se definirán umbrales de caudal para
+eventos de inundación y se calculará la probabilidad de detección (POD) – porcentaje
+de eventos de inundación observados que fueron pronosticados correctamente – y la
+tasa de falsas alarmas (FAR) – porcentaje de alertas emitidas que no se materializaron.
+Un buen sistema debe lograr POD alto con FAR bajo, optimizando ambos. Estas
+métricas se pueden extraer de la serie de pronósticos comparada con registros de
+inundaciones históricas.
+Durante la validación, se generarán gráficos comparativos de hidrogramas pronosticados vs
+observados para eventos pasados importantes (p. ej., crecidas por tormentas tropicales). Así,
+visualmente se evaluará si el modelo anticipa bien el pico (timing y magnitud) y el volumen
+total. Se ajustarán parámetros si se ve sesgo sistemático (por ejemplo, si siempre subestima
+picos altos, podría mejorarse la representación de precipitación extrema o añadir algún factor
+de corrección).
+Validación del modelo de inundación: Este aspecto requiere comparar las áreas inundadas
+pronosticadas con registros de inundaciones reales. Se dispone de varios mecanismos:
+imágenes satelitales históricas (Sentinel-1, Landsat) con las que se puede reconstruir la huella
+de inundación de ciertos eventos, reportes de campo y mapas de entidades de protección civil
+del “Bajo Lempa” para inundaciones pasadas, y/o resultados de modelos hidráulicos de
+referencia. Para evaluar el desempeño, se emplearán métricas espaciales como:
+●
+Índice de Jaccard (Intersection over Union): proporción de área donde pronóstico y
+realidad coinciden dividido entre el área total bajo al menos uno de ellos. Un valor 1
+indica coincidencia perfecta del polígono inundado.
+●
+Tasa de omisión y comisión: porcentaje de área inundada real que no fue predicha
+(omisiones), y porcentaje de área predicha que en realidad no se inundó (comisión).
+Estas métricas complementan la percepción de falsos negativos/positivos espaciales.
+●
+Distribución de profundidades (si aplica): si el modelo produce profundidades
+estimadas, se puede comparar la estadística de esas profundidades con mediciones
+puntuales o con niveles históricos. Por ejemplo, verificar si predijo ~0.5 m en tal
+comunidad cuando se reportó ~0.4-0.6 m en realidad.
+Debido a la escasez de datos extensivos de validación para inundación (especialmente en
+cuencas no instrumentadas), adoptaremos también la técnica usada por Google: validación
+indirecta por eventos detectados en SAR (Google Research & Cohen, 2024). Es decir,
+corroborar que cuando el modelo pronostica una inundación, exista evidencia satelital de
+anegamiento, y viceversa (cuando hay imágenes que muestran inundación, el modelo la había
+pronosticado). Google reporta un método donde con Sentinel-1 y clasificación GMM
+determinan si hubo inundación en una fecha, y verifican si su modelo hidrológico mostró
+evento extremo simultáneo (Google Research & Cohen, 2024). Nosotros aplicaremos una
+versión local: por ejemplo, tomar imágenes SAR de la baja cuenca que muestren inundación
+(píxeles “agua”) y confirmar que en esas fechas el LSTM + modelo inundación habrían generado
+alerta para esa zona. Con un registro suficiente de casos, esto permitirá “marcar” puntos de
+
+pronóstico (gauges virtuales) como validados si pasan esta prueba al menos una vez (Google
+Research & Cohen, 2024).
+Pruebas fuera de muestra (Pilotaje): Tras completar el desarrollo y calibración con datos
+históricos, se llevará a cabo un ensayo general en tiempo real, utilizando datos recientes nunca
+vistos por el sistema. Por ejemplo, se podría ejecutar el sistema usando los pronósticos
+meteorológicos del último año (2025) para generar pronósticos y compararlos con lo ocurrido
+realmente ese año. Esto emula la operación en vivo sin intervenir, y sirve para afinar detalles
+operativos. Adicionalmente, durante el piloto se planificará responder preguntas como: ¿con
+cuánta anticipación está dando alertas el modelo vs lo deseado? ¿Hubo falsos positivos
+significativos que deban ajustar umbrales? ¿El tiempo de cómputo diario es el esperado? Estas
+pruebas permiten hacer ajustes finales antes de la puesta en producción continua. Es
+importante involucrar a los usuarios finales (equipos de CEL operativos, protección civil) en
+esta etapa, para incorporar su retroalimentación sobre la utilidad de las alertas generadas y la
+claridad de la visualización.
+En cuanto a los criterios de éxito, se espera lograr al menos un NSE medianamente alto (por
+ejemplo >0.8) en la predicción de caudales a 3 días y >0.7 a 7 días, lo cual equivaldría a cumplir
+la meta de >80% de precisión establecida en la propuesta . Para inundaciones, el objetivo es
+detectar todos los eventos de inundación mayor (POD ~100%) con un falso alarmismo mínimo
+aceptable (ideal FAR < 20%). Estas metas cuantitativas se refinarán conforme a los resultados
+de la validación. Todos los hallazgos de la evaluación se documentarán en un informe técnico,
+identificando las fortalezas del sistema y las limitaciones a mejorar en futuras iteraciones.
+
+DE AHI UNA SECCION DE DECISIONES TECNICAS/INFORMATICAS:
+Entorno de desarrollo y lenguajes
+La implementación del modelo LSTM y de inundación se realizará en Python, aprovechando
+bibliotecas científicas (NumPy, Pandas, GeoPandas) y de deep learning (PyTorch,
+NeuralHydrology). El entorno Node.js/React existente en CEL será utilizado para desarrollar la
+interfaz de usuario (dashboard web), que se conectará a las nuevas bases de datos a través de
+APIs seguras. La orquestación y automatización de todo el flujo de trabajo se gestionará con
+Mage y se versionará utilizando un repositorio Git (ej. GitLab).
+Bases de datos y almacenamiento
+Como se explicó en la sección de ETL, se utilizarán las bases de datos MongoDB y
+PostgreSQL/PostGIS, pero estas residirán en el nuevo "Nodo de Datos & ETL" dedicado. Esta
+configuración asegura que las operaciones intensivas de lectura/escritura del proyecto de IA
+no afecten el rendimiento de las bases de datos productivas existentes de CEL. El esquema de
+respaldo se gestionará a través del nodo NAS dedicado.
+Integración con servicios externos
+Aunque la infraestructura principal es interna, el sistema seguirá dependiendo de servicios
+externos para tareas específicas, con costos marginales o nulos:
+●
+Obtención de datos meteorológicos (Externo, APIs abiertas): Se consumirán servicios
+gratuitos de Copernicus/ECMWF y NASA POWER/IMERG. Se requiere una conexión a
+internet estable y se deben considerar mecanismos de redundancia y reintentos en los
+scripts de ingesta.
+●
+Servicios de mapas base (Externo): Para la visualización en el dashboard, se podrán
+utilizar APIs de mapas como Mapbox o una solución de código abierto como
+OpenStreetMap para eliminar costos recurrentes. La decisión se tomará en conjunto
+con CEL según los requerimientos visuales y políticas de TI.
+●
+Notificaciones SMS/Email (Externo para SMS): El envío de correos se realizará a través
+del servidor SMTP de CEL. Para las alertas críticas por SMS, se utilizará un gateway
+como Twilio, cuyo costo es insignificante dado el bajo volumen de alertas esperado.
+●
+Servicios de procesamiento satelital (Opcional, Externo): Se podrá emplear Google
+Earth Engine (GEE) únicamente como herramienta de apoyo durante la fase de
+desarrollo para acelerar análisis geoespaciales, sin integrarlo en el flujo de producción
+para mantener la independencia de la nube.
+●
+Seguridad y disponibilidad: La aplicación web y las bases de datos residirán en los
+servidores del silo de IA, protegidos por los firewalls de CEL. La redundancia se logrará a
+nivel de componentes de hardware (PSU, RAID) y con una robusta política de respaldos
+en el nodo NAS. No se contempla una replicación en la nube para el piloto.
+En conclusión, esta arquitectura de infraestructura dedicada y on-premise cumple con las
+políticas de seguridad y soberanía de datos de CEL, a la vez que proporciona un entorno
+potente, escalable y optimizado para las necesidades específicas de este proyecto de
+inteligencia artificial. Se maximiza la inversión en capacidad interna y se minimizan las
+dependencias y costos recurrentes de servicios externos.
+7. Automatización y operación diaria del sistema
+Para que el sistema funcione de manera fiable en el día a día, se implementará un flujo de
+automatización donde las distintas tareas (ingesta de datos, ejecución de modelos, generación
+de productos y difusión de alertas) se realicen de forma programada y con mínima intervención
+manual. A continuación, se describe cómo operará diariamente el sistema:
+Programación de Ejecuciones
+Se establecerán horarios fijos diarios para correr el pronóstico. Dado que los pronósticos
+meteorológicos globales suelen actualizarse hacia las 00:00 y 12:00 UTC, se programarán dos
+ciclos de ejecución al día: uno temprano en la mañana (e.g., 6:00 a.m. hora local) utilizando la
+salida del modelo de las 00 UTC, y otro en la tarde (e.g., 6:00 p.m.) con la actualización de las
+12 UTC. En épocas de eventos críticos (tormentas intensas), la frecuencia podría aumentarse si
+la situación lo amerita.
+La orquestación de estos cronogramas se realizará mediante Mage, que permite definir
+"pipelines" con dependencias complejas entre tareas (DAGs - Directed Acyclic Graphs) y
+programar su ejecución de forma precisa y fiable, superando las capacidades de un simple
+cron.
+Flujo Diario de Ingesta y Pronóstico
+Cada ciclo de ejecución seguirá una secuencia automatizada de pasos, donde cada tarea se
+dispara tras la finalización exitosa de la anterior:
+1. Descarga de Pronósticos Meteorológicos: El pipeline de Mage iniciará la ejecución de
+un script Python para conectarse a las fuentes de datos (ej. API de ECMWF) y obtener
+el pronóstico de lluvia/temperatura para los próximos 7 días, así como los datos de lluvia
+observada de las últimas 24 horas (ej. satélite GPM).
+2. Preprocesamiento ETL: A continuación, otro script dentro del mismo pipeline ejecutará
+las transformaciones necesarias: cálculo de la precipitación media en la cuenca,
+agregación de datos y estructuración del input para el modelo LSTM. Este paso incluye
+la normalización de variables según los mismos parámetros usados en el entrenamiento.
+3. Ejecución del Modelo LSTM: Una vez preparados los datos de entrada, el pipeline de
+Mage activará el script de predicción. Este cargará los pesos del modelo entrenado en la
+GPU y computará los caudales pronosticados. Este proceso, acelerado por la GPU, es
+extremadamente rápido (del orden de segundos o minutos). Los resultados se pasarán a
+la siguiente etapa.
+4. Cálculo de Inundación y Alertas: Con el pronóstico de caudales disponible, se alimenta
+al modelo de inundación. Este script compara los valores pronosticados con los
+umbrales críticos predefinidos y, si se supera alguno, genera las alertas estructuradas y
+determina la capa geográfica de inundación correspondiente.
+5. Actualización de Bases de Datos: Los pronósticos y las alertas generadas se almacenan
+de forma estructurada en las bases de datos dedicadas (MongoDB para datos en
+tiempo real y PostgreSQL para el histórico), asegurando la trazabilidad y disponibilidad
+para el dashboard y análisis futuros.
+6. Notificación y Visualización: Finalmente, el sistema ejecuta las acciones de salida. Si se
+generaron alertas de nivel amarillo o rojo, se disparan automáticamente las
+notificaciones por correo electrónico y SMS a las listas de distribución predefinidas.
+Simultáneamente, el dashboard web se actualiza para reflejar los nuevos pronósticos y
+mapas de inundación.
+Monitoreo y Gestión de Errores
+La nueva arquitectura ofrece un manejo de excepciones superior. Mage proporciona una
+interfaz de monitoreo visual donde se puede rastrear el estado de cada ejecución en tiempo
+real. La gestión de errores se define como código dentro de los pipelines, permitiendo
+configurar políticas de reintento (retries), timeouts y lógica de contingencia. En caso de un
+fallo irrecuperable (ej. una API externa no responde), el sistema notificará automáticamente a
+los administradores (vía email o Slack) y registrará el evento detalladamente para su posterior
+análisis, garantizando una alta disponibilidad y una rápida capacidad de respuesta ante
+incidentes.
+Operación Continua y Ajustes
+Una vez en marcha, el sistema operará de forma autónoma. Sin embargo, durante los primeros
+meses se mantendrá en modo semi-supervisado, donde el equipo técnico de CEL revisará
+diariamente los resultados para detectar posibles sesgos y validar el rendimiento del modelo en
+condiciones reales.
+Se definirá una política de actualización del modelo: podría ser trimestral o semestral, donde
+se re-entrenará el LSTM incluyendo los datos más recientes para que aprenda de nuevos
+eventos hidrológicos. Este proceso de re-entrenamiento, gestionado también a través de Mage
+y versionado en Git, asegurará que el modelo evolucione y mantenga su precisión en el tiempo.
+Cada nueva versión del modelo será validada para confirmar que su rendimiento es igual o
+superior al anterior antes de pasar a producción.
+En suma, la operación diaria estará altamente automatizada mediante pipelines de datos
+definidos como código, requiriendo mínima intervención manual. Esto liberará a los
+especialistas de CEL de las tareas repetitivas de recolección y procesamiento, permitiéndoles
+enfocarse en la interpretación de resultados y la toma de decisiones estratégicas. Esta
+integración fluida de automatización robusta y supervisión humana es fundamental para la
+sostenibilidad y el éxito a largo plazo del sistema.
+8. Visualización de resultados y sistema de alerta
+La interfaz de usuario y los mecanismos de alerta son la cara visible del sistema, fundamentales
+para que la información generada apoye efectivamente la toma de decisiones. En este apartado
+se describe cómo se materializará la inteligencia generada en un dashboard interactivo que
+servirá como única fuente de verdad (single source of truth) para todos los stakeholders, y
+cómo un sistema de alertas proactivo asegurará que la información crítica llegue a los usuarios
+clave de forma oportuna.
+Dashboard Web Interactivo (Node/React)
+Se desarrollará un tablero de control web integrado al portal interno de CEL (posiblemente en
+la misma aplicación React existente para la Gerencia Comercial u otro módulo, para mantener
+consistencia de UX). Este dashboard estará diseñado para una audiencia mixta
+técnica-operativa, con enfoque en claridad y síntesis de la información. Sus características
+principales incluyen:
+●
+Mapa de la Cuenca con Capas Dinámicas: Al centro habrá un mapa interactivo
+(utilizando librerías como Leaflet o Mapbox GL JS en React). Sobre este mapa se
+dibujará la cuenca del Río Lempa y se destacarán elementos relevantes: el trazo del río
+principal, la ubicación de embalses y estaciones de monitoreo, y las zonas vulnerables
+(p.ej., planicie del Bajo Lempa). Cuando el sistema genere un pronóstico de inundación,
+se superpondrá una capa semitransparente coloreada indicando el área inundable
+prevista. Al interactuar con esta capa, se podrán mostrar detalles como el área estimada
+inundada y la profundidad máxima.
+●
+Gráficos de Series Temporales: En un panel lateral o inferior, se mostrarán hidrogramas
+pronosticados comparados con históricos. Para cada punto de interés, un gráfico de
+línea mostrará la evolución del caudal o nivel para los próximos 7 días, contrastado con
+los valores observados recientes y los umbrales de alerta. Si se dispone de pronósticos
+probabilísticos (p. ej., percentiles 25-75), se sombreará el rango de incertidumbre para
+comunicar la confianza del modelo. Los gráficos serán interactivos, permitiendo al
+usuario alternar entre puntos de pronóstico y ver la información correspondiente
+reflejada en el mapa.
+●
+Tablas Resumidas y Cifras Clave: Para usuarios operativos, se presentará un resumen
+tipo semáforo en una tabla de "Estado de Alertas"
+, listando cada sitio con su nivel de
+riesgo actual (ej: “Bajo Lempa – Alerta Roja en 3 días”). Estas tablas se actualizarán en
+tiempo real y mostrarán contadores clave como “Días para posible desborde: 3” para
+enfatizar la anticipación.
+●
+Funcionalidades Interactivas Adicionales: El dashboard incluirá opciones para que el
+usuario pueda seleccionar diferentes escenarios meteorológicos, consultar el historial
+de pronósticos y superponer capas de vulnerabilidad (poblaciones, infraestructura)
+sobre el mapa de inundación.
+Aunque el dashboard es la herramienta principal, las alertas proactivas vía correo electrónico y
+SMS asegurarán que la información crítica llegue de inmediato. El sistema de alertas se
+configurará de la siguiente manera:
+●
+Definición de Umbrales y Destinatarios: En coordinación con los equipos internos de
+CEL, se definirán umbrales cuantitativos para distintos niveles de alerta (ej. Alerta
+Amarilla para periodo de retorno de 5 años). Estos umbrales serán fácilmente ajustables.
+A cada nivel de alerta se asociará una lista de destinatarios específica dentro de la
+organización.
+●
+Contenido de las Notificaciones: Los correos y SMS serán claros, concisos y
+estrictamente descriptivos. El objetivo es notificar sobre una condición pronosticada y
+dirigir al usuario al dashboard para su análisis. Por ejemplo:
+○
+Email: "Asunto: Alerta Roja de Inundación – Bajo Lempa. Cuerpo: Según el
+sistema de pronóstico IA de CEL, se anticipa que el río Lempa alcance un caudal
+de ~3000 m³/s el próximo miércoles a las 03:00, superando el umbral de alerta
+roja. Se insta a revisar el dashboard para un análisis detallado de la situación.
+"
+○
+SMS: “ALERTA ROJA: Pronóstico de caudal >3000 m³/s en Bajo Lempa en 3
+días. Revise el dashboard para más detalles. Info: [enlace_corto]”
+.
+●
+Envío Automático y Lógica Anti-Spam: La lógica del sistema detectará cuando un
+pronóstico cruza un umbral y enviará la notificación. Para evitar fatiga de alertas, no se
+reenviará el mismo aviso repetidamente; en su lugar, se enviarán actualizaciones solo si
+el nivel de riesgo cambia significativamente.
+●
+Confirmaciones y Escalamiento: Como potencial mejora futura, se podría implementar
+un sistema de confirmación de recibido (ACK). Inicialmente, se llevará un registro
+detallado de todas las alertas enviadas para fines de auditoría.
+Integración y Adopción del Sistema
+●
+Integración con Protocolos Existentes: Es fundamental alinear este sistema con los
+protocolos de emergencia vigentes de CEL. Se coordinará con la Gerencia de
+Operaciones para que las alertas generadas se integren en la cadena de comunicación
+oficial. Una alerta roja del sistema IA, por ejemplo, podría actuar como el disparador
+formal para que CEL convoque su comité de emergencia hídrica y active los
+procedimientos internos correspondientes.
+●
+Ejercicios y Capacitación de Usuarios: La adopción exitosa de la herramienta se
+asegurará mediante un proceso de diseño centrado en el usuario (UCD). Se realizarán
+sesiones de validación de prototipos en etapas tempranas y talleres de capacitación
+antes del despliegue final para enseñar a los usuarios a interpretar la información (p. ej.,
+entender que una zona coloreada en el mapa es un área de riesgo potencial, no una
+certeza absoluta).
+En resumen, el dashboard React proveerá una ventana intuitiva al estado actual y futuro del río,
+mientras que el subsistema de alertas garantizará que ninguna predicción crítica pase
+inadvertida. Juntos, conforman la interfaz humana del sistema de IA, traduciendo datos
+complejos en información accionable para la toma de decisiones, la gestión oportuna de
+crecidas e influjos, respuesta anticipada ante eventos hidrológicos extremos y por
+consecuencia la optimización de la operación hidrológica.
+
+DE AHI OTRA TAB QUE DOCUMENTE LAS ESPECIFICIDADES DEL LEMPA:
+9. Consideraciones operativas específicas del Río Lempa
+La implementación para la cuenca del Río Lempa conlleva retos y particularidades que deben
+ser considerados para garantizar la efectividad del sistema en contexto real. A continuación se
+abordan las principales consideraciones operativas, derivadas de la naturaleza trinacional de la
+cuenca, sus zonas críticas de inundación y la presencia de infraestructura hidráulica:
+Coordinación trinacional y datos transfronterizos: El Río Lempa atraviesa Guatemala,
+Honduras y El Salvador, con una cuenca de ~18,200 km² compartida entre los tres países. Esto
+implica que eventos hidrológicos en la parte alta (Guatemala/Honduras) repercuten aguas
+abajo en El Salvador. Un desafío es la disponibilidad de datos en las secciones transfronterizas.
+Idealmente, se establecerá intercambio de datos en tiempo real con las entidades homólogas
+(p. ej., INSIVUMEH en Guatemala, SMN en Honduras) sobre lluvias y caudales en la cuenca alta.
+En la práctica, tal coordinación puede requerir convenios o acuerdos diplomáticos. Mientras
+eso se consolida, el sistema está diseñado para suplir la falta de datos mediante fuentes
+globales: las precipitaciones satelitales (GPM/CHIRPS) cubren toda la cuenca
+independientemente de fronteras, y los pronósticos globales (ECMWF) igualmente abarcan
+Guatemala y Honduras. Así, aunque no lleguen datos locales de esos países, el modelo podrá
+estimar caudales entrantes. No obstante, se recomienda en paralelo avanzar en acuerdos para
+obtener lecturas de caudal de ríos tributarios que ingresan a El Salvador, lo que permitiría afinar
+el modelo con datos directos. Otro punto es el idioma y la comunicación: las alertas
+probablemente deban compartirse con contrapartes en los países vecinos en caso de eventos
+que los afecten (por ejemplo, una crecida que inunde parte de Ocotepeque, Honduras). Se
+prevé generar reportes bilingües (o en español estándar comprensible regionalmente) para
+facilitar este intercambio. Además, el sistema podría ampliarse a futuro para dar pronósticos en
+puntos dentro de Guatemala u Honduras, si hay interés y colaboración, haciendo del Lempa un
+piloto de alerta temprana regional.
+Zonas críticas de inundación – enfoque en el Bajo Lempa: La zona del Bajo Lempa en El
+Salvador (parte baja de la cuenca, departamentos de San Vicente y Usulután) es reconocida
+por su alta vulnerabilidad a inundaciones. Terrenos planos, comunidades agrícolas densamente
+asentadas y antecedentes de eventos severos (ej. Huracán Mitch 1998, Tormenta Ida 2009,
+etc.) la convierten en prioridad. El sistema se calibrará cuidadosamente para esta zona: el
+modelo de inundación incluirá las llanuras aluviales del Bajo Lempa con el mayor detalle
+disponible (DEM refinado, inclusión de diques y bordos de contención en los datos
+geoespaciales). Es crucial incorporar la existencia de infraestructura de protección: en Bajo
+Lempa existen bordos/levées construidos para contener inundaciones hasta cierto nivel. Estos
+bordos serán mapeados y sus cotas añadidas al DEM para que el modelo de inundación no
+“inunde” detrás de ellos hasta que el nivel supere su altura. También se identificarán puntos de
+quiebre: lugares donde históricamente se rompen los diques cuando hay crecidas
+extraordinarias. Toda esta información local se integrará en los escenarios de inundación.
+Además, se consultará a expertos locales de SNET y Protección Civil sobre umbrales empíricos
+(por ej: “con 1500 m³/s ya se sale el río en sector X”), para validar los umbrales teóricos
+calculados. Operativamente, en temporada de lluvias intensas se podría activar un monitoreo
+reforzado en Bajo Lempa: por ejemplo, aumentando la frecuencia de pronóstico a 6 horas si un
+huracán está impactando, y asegurando que la comunicación con líderes comunales esté lista
+vía las alertas. Como la zona es agrícola, se valorará también la posibilidad de que el dashboard
+muestre parcelas o caseríos en riesgo para facilitar la respuesta (posible con capas GIS
+adicionales).
+Influencia de embalses y regulación hidráulica (La “Garganta de Cuscatlán”): En la cuenca
+media del Lempa se encuentran varios embalses hidroeléctricos administrados por CEL (como
+5 de Noviembre, Cerrón Grande, 15 de Septiembre). En particular, el embalse Cerrón Grande –
+a veces referido por su estrecho de salida como la “Garganta de Cuscatlán”
+– juega un papel
+doble: por un lado, amortigua crecidas al retener parte del flujo, pero por otro, requiere
+descargas controladas que si no se gestionan proactivamente pueden agravar una inundación
+aguas abajo. El sistema de pronóstico se implementará de la mano con el centro de control de
+embalses para aprovecharlo en la optimización de la operación de represas. Esto significa que,
+con varios días de anticipación de una crecida, CEL podría decidir aumentar generación o abrir
+compuertas moderadamente para bajar el nivel del embalse y ganar capacidad de
+almacenamiento antes de la llegada del pico (esto ya se menciona como beneficio esperado
+en la propuesta ). Nuestro modelo LSTM deberá, por tanto, pronosticar los caudales afluentes
+a los embalses con precisión, y con eso, podremos simular escenarios de operación. Aunque el
+modelo en sí no optimiza la presa, los operadores, al ver el pronóstico, podrán determinar un
+plan óptimo (posiblemente asistidos por alguna regla sugerida, e.g.,
+“liberar X m³/s por Y
+horas”). La integración consiste en que el dashboard resaltará el nivel previsto del embalse si
+se aproxima al máximo operativo, para que se tomen acciones.
+En cuanto a la modelación, las presas introducen discontinuidades: por ejemplo, si el embalse
+está muy bajo, puede absorber toda una avenida sin soltar nada hasta cierto punto, pero si está
+lleno, cualquier excedente se va a vertir aguas abajo. Estas condiciones se pueden codificar en
+el modelo. Una forma es segmentar el río en tramos: caudal afluente (pronosticado por LSTM)
+-> modelo simple de embalse (balance volumen con nivel, usando curvas de capacidad) ->
+caudal efluente. Podríamos implementar un sub-módulo que dado un pronóstico de afluencia,
+calcule la respuesta del embalse según su nivel actual y política de operación (por ejemplo:
+turbinar máximo hasta que suba a nivel X, luego abrir compuertas). Si CEL provee sus curvas de
+operación y datos nivel-volumen, esto se puede incorporar. Durante el piloto, se podrá hacer
+pruebas con y sin esa lógica para ver diferencias. En cualquier caso, la Garganta de Cuscatlán
+se convierte en un punto de control clave: allí mediremos qué tanto lograremos reducir el pico
+con acciones, comparando escenarios. Esta funcionalidad tiene un gran valor estratégico para
+CEL, pues no solo es alerta temprana sino también optimización hidroeléctrica – evitar
+vertidos de emergencia y aprovechar el agua para generación .
+Comunicación interinstitucional: Operativamente, el éxito depende de la comunicación entre
+áreas de CEL (operadores de centrales, unidad de gestión de riesgo) y externamente con
+Protección Civil y gobiernos locales. Se propondrá la creación de un procedimiento operativo
+estándar (SOP) que indique qué hacer cuando el sistema emite una alerta. Por ejemplo: “Si
+alerta roja pronosticada a 3 días, convocar comité de emergencia hídrica de CEL en 12 horas;
+informar a Protección Civil para posible alerta pública 48 horas antes; preparar cierre
+preventivo de compuertas de riego en Bajo Lempa”
+, etc. Este SOP se puede anexar al plan de
+emergencia de CEL y será afinado con los involucrados. En pruebas piloto, se simularán
+escenarios (ej. un taller de simulación de inundación) para practicar esta coordinación.
+Factores externos locales: Hay particularidades como la acumulación de sedimentos en cauce
+bajo, deforestación en cuenca alta, mareas altas coincidentes en la desembocadura, etc., que
+pueden influir en inundaciones. Estos factores son difíciles de incluir explícitamente en el
+modelo de IA pero deben tenerse en cuenta en la interpretación. Por ejemplo, si se sabe que
+justo cuando hay marea alta el Lempa desagua más lento, un operador experto puede añadir
+ese juicio ante un pronóstico. Se buscará recopilar este conocimiento empírico local para
+documentarlo en manuales de uso del sistema. También, tras eventos, se hará post-mortem: ¿el
+modelo falló por algo no considerado, como un dique roto o un deslizamiento bloqueando el
+cauce? Esos aprendizajes se incorporarán, tal vez ajustando modelos (ej.: si se identifica que
+con suelos saturados de 15 días el comportamiento cambia, se podría añadir esa variable).
+En suma, la aplicación en el Río Lempa requiere un enfoque integral: regional (3 países), local
+(Bajo Lempa) y operativo (presas). Las configuraciones del sistema se personalizarán para
+reflejar esa realidad: pronósticos probables en secciones transfronterizas, mapas detallados en
+zonas críticas, integración con manejo de embalses en Garganta de Cuscatlán. Este pilotaje
+servirá para mostrar cómo un modelo global de IA se adapta a las condiciones concretas de una
+cuenca, potenciando la resiliencia hídrica con conocimiento tanto tecnológico como
+tradicional local.
+
+
+DE AHI UN TALENT TAB Q YA HABIAMOS CNCEPTUALIZADO, DEBE INCLUIR ESTO TMB:
+10. Recursos humanos y perfiles técnicos necesarios
+La implementación y operación exitosa de este sistema de pronóstico hidrológico con
+inteligencia artificial requerirá un equipo multidisciplinario que combine el liderazgo estratégico
+de una consultora externa con el talento técnico y el conocimiento local del personal de CEL.
+La naturaleza de este proyecto será fundamentalmente colaborativa, donde la consultora,
+operando de forma remota, proveerá el diseño, la arquitectura y la guía experta, mientras que el
+equipo de CEL será responsable de la ejecución, implementación y validación en el entorno
+local.
+A continuación, se detallan con profundidad los perfiles clave y la naturaleza de su
+involucramiento:
+Consultora Líder en IA e Ingeniería de Datos (externo): Este rol será desempeñado por
+la consultora externa. Será responsable directa del diseño, desarrollo e implementación
+del modelo basado en redes neuronales LSTM, la estrategia de ingeniería de datos
+utilizando Mage, y el diseño del dashboard web. A lo largo de todas las fases, guiará
+remotamente al equipo de CEL, proporcionando especificaciones técnicas, liderando
+sesiones de co-desarrollo de código y supervisando la correcta implementación de la
+arquitectura. Finalmente, liderará la documentación técnica exhaustiva del proyecto.
+●
+Líder Técnico en Hidrología y Gerente de Proyecto (interno CEL): Como Gerente de
+Proyecto, supervisará integralmente su ejecución, manejando cronogramas,
+comunicación interinstitucional y asignación de recursos. Como Líder Técnico en
+Hidrología, proporcionará la orientación experta y el conocimiento empírico del río
+Lempa, siendo fundamental para interpretar la dinámica hidrológica, validar los
+resultados del modelo y asegurar que las predicciones sean coherentes y
+operativamente útiles.
+●
+Administrador de Sistemas / Ingeniero DevOps (interno CEL: Su rol será protagónico
+durante la Fase 0. Liderará la implementación física y configuración de la nueva
+infraestructura de servidores (“AI Silo”), incluyendo el ‘racking’
+, la conexión de red y la
+instalación inicial, siguiendo las especificaciones y la guía remota de la consultora. Dada
+su extensa experiencia en DevOps, será responsable de establecer el entorno para la
+nueva herramienta de orquestación (Mage) y de configurar el repositorio Git/GitLab
+para el control de versiones del código, sentando las bases para la automatización
+(CI/CD) y la mantenibilidad del sistema.
+●
+Ingenieros de Datos y Backend (interno CEL): Como expertos en el stack de datos de
+CEL, su rol será crucial en la migración de la lógica de negocio a los nuevos pipelines de
+Python en Mage. Trabajarán en sesiones de desarrollo colaborativo (pair programming)
+con la consultora para desarrollar, probar y desplegar los flujos de ETL como código,
+aprovechando su experiencia en Python, SQL y bases de datos. Serán los responsables
+de ejecutar las pruebas de validación para asegurar que los nuevos pipelines se integren
+correctamente con las fuentes de datos existentes.
+●
+Especialista SIG/Teledetección (interno CEL): Trabajará en estrecha colaboración con
+la consultora para manejar los aspectos geoespaciales del proyecto. Será responsable
+de la ejecución local del procesamiento de imágenes satelitales (Sentinel-1) y la
+preparación del Modelo Digital de Elevación (DEM), siguiendo las metodologías y scripts
+proporcionados.
+●
+Hidrólogo Operativo (interno CEL): Este profesional operativo aportará conocimiento
+empírico crucial durante todo el proyecto. Será el usuario principal del sistema,
+encargado de monitorear diariamente su desempeño, interpretar las alertas y servir
+como validador final de que los resultados del modelo son coherentes y útiles para la
+operación diaria.
+Este esquema de equipo no solo asegura una ejecución técnica robusta, sino que está
+diseñado para una transferencia de conocimiento efectiva, posicionando a CEL con
+capacidades internas sólidas para operar, mantener y evolucionar esta solución de inteligencia
+artificial, fortaleciendo significativamente la gestión oportuna de crecidas e influjos, respuesta
+anticipada ante eventos hidrológicos extremos y por consecuencia la optimización de la
+operación hidrológica en la cuenca del río Lempa.
+
+^DE AQUI TIENES Q SACAR GRAN PARTE DE LOS ROLES DEL PORTAL. 
+
+NEXT UNA SECCION DE LA RACI, HAY OTRA RACI MAS UPDATED QUE TE TENGO QUE DAR. PERO FOR NOW AQUI ESTA LA OG:
+
+Detalle de Tareas y Matriz de Roles (RACI)
+Con el objetivo de asegurar una implementación técnica robusta y una transferencia de
+conocimiento efectiva, se estructura a continuación el desglose detallado de tareas por fase,
+así como la matriz de roles y responsabilidades asociadas al equipo multidisciplinario
+involucrado en el proyecto de pronóstico hidrológico con inteligencia artificial.
+Tabla de tareas por fase del proyecto
+Fase Tarea Principal Responsable Apoyo / Observaciones
+Fase 0: Infraestructura Diseño del entorno técnico y
+arquitectura general
+Consultora IA Define especificaciones
+para AI Silo, Git, Mage
+Montaje físico de servidores e
+infraestructura (AI Silo)
+Administrador de
+Sistemas / Ingeniero
+DevOps (CEL)
+Siguiendo guía remota de
+la consultora
+Configuración de red aislada,
+accesos VPN, usuarios
+Administrador de
+Sistemas / Ingeniero
+DevOps (CEL)
+Validación remota por la
+consultora
+Instalación de Mage, GitLab y
+entorno base de orquestación
+Administrador de
+Sistemas / Ingeniero
+DevOps (CEL)
+Consultora provee
+documentación y soporte
+Fase 1: Preparación de
+datos
+Migración de lógica de
+negocio a nuevos pipelines
+Ingenieros de Datos y
+Backend (CEL)
+Pair programming con la
+consultora
+Desarrollo de flujos ETL en
+Python usando Mage
+Consultora Líder en IA
++ Ingenieros de Datos
+(CEL)
+Validación cruzada
+conjunta
+Pruebas de integración de
+pipelines con fuentes internas
+Ingenieros de Datos y
+Backend (CEL)
+Consultora supervisa
+Documentación técnica de
+pipelines y estructura de datos
+Consultora Líder en IA Para transferencia futura
+Fase 2: Modelado IA Desarrollo e implementación
+del modelo LSTM
+Consultora Líder en IA Apoyo conceptual del
+líder hidrológico
+Selección y justificación de
+variables de entrada
+Consultora Líder en IA
++ Líder Técnico en
+Hidrología (CEL)
+Basado en contexto del
+Lempa
+Entrenamiento y validación
+cruzada del modelo
+Consultora Líder en IA Iteración con CEL
+Documentación del modelo y
+resultados de validación
+Consultora Líder en IA Base para publicaciones
+futuras
+Fase 3: Visualización y
+operación
+Implementación del dashboard
+web
+Consultora Líder en IA Entorno React + GIS,
+seguimiento remoto
+Generación de mapas
+estáticos y capas cartográficas
+Especialista SIG /
+Teledetección (CEL)
+Con scripts provistos por
+la consultora
+Validación funcional y
+operativa del sistema
+Hidrólogo Operativo
+(CEL)
+Usuario principal del
+sistema
+Ajuste final del sistema basado
+en retroalimentación
+Consultora Líder en IA
++ Equipo CEL
+Mejora continua antes de
+cierre técnico
+Matriz RACI de Roles y Responsabilidades
+Actividad /
+Entregable
+Consultora
+IA
+Líder Técnico
+en Hidrología
+(CEL)
+Administra
+dor de
+Sistemas /
+Ingeniero
+DevOps
+(CEL)
+Ingeniero
+s de
+Datos y
+Backend
+(CEL)
+Especialist
+a SIG /
+Teledetecci
+ón (CEL)
+Hidrólogo
+Operativo (CEL)
+Diseño
+arquitectura AI
+R / A C I C I I
+Implementación
+infraestructura
+(Fase 0)
+C I R / A I I I
+Configuración
+Mage + GitLab
+C / A I R I I I
+Desarrollo
+pipelines ETL
+R / C I I R / A I I
+Validación
+pipelines
+A / R C I R I I
+Diseño y
+entrenamiento IA
+R / A C / I I C I C
+Visualización
+(dashboard)
+R I I I C C
+Cartografía y
+mapas SIG
+C / A I I I R I
+Validación
+operacional
+C I I I I R / A
+Gestión y
+coordinación
+C R / A I I I I
+Leyenda:
+●
+R = Responsable de ejecutar la tarea
+●
+A = Aprobador final de la actividad
+●
+C = Consultado para contribuir técnicamente o validar
+●
+I = Informado del progreso y entregables clave
+Este esquema permite asegurar que todas las tareas estén claramente asignadas, las
+responsabilidades debidamente distribuidas y que la interacción entre consultora externa y
+equipo CEL esté coordinada para maximizar la eficiencia y sostenibilidad del proyecto.
+
+DE AHI DEJEMOS UN TAB/BLANK SLOT PARA UNA SECCION DE Infraestructura Local para el Silo de IA de CEL
+AQUI TIENE Q ESTAR EL DESGLOSE DE LA ARCHITECTURA FINAL
+BOM FINAL DE HW Y SW
+
+
+EN ESTA MISMA TAB “DE AHI OTRA TAB QUE DOCUMENTE LAS ESPECIFICIDADES DEL LEMPA:” NECESITO QUE TMB PONGAS ESTO: 
+
+Anexo Técnico: Dinámicas Hidrológicas y Gobernanza Trinacional en la
+Cuenca del Río Lempa - Implicaciones para Modelos de Pronóstico con IA
+1. Introducción
+El Río Lempa constituye el sistema hidrológico más relevante de El Salvador y uno de los más
+complejos de Centroamérica. Su cuenca transfronteriza abarca 18,246 km²
+, distribuidos entre
+Guatemala (12.6% o 2,295 km²), Honduras (31.2% o 5,696 km²) y El Salvador (56.2% o 10,255
+km²)11. Esta configuración geopolítica tiene implicaciones críticas para su gestión, ya que el
+
+49% del territorio salvadoreño está cubierto por esta cuenca, albergando aproximadamente al
+77.5% de su población, incluida la capital San Salvador11. La implementación de un sistema de
+pronóstico hidrológico basado en inteligencia artificial debe considerar esta complejidad
+trinacional para lograr resultados efectivos ante los desafíos actuales y futuros que enfrenta la
+región.
+2. Características Geográficas e Hidrológicas
+2.1 Origen y Trayecto
+El Río Lempa nace en la Sierra Madre de Guatemala a más de 2,800 metros sobre el nivel del
+mar, donde inicialmente se conoce como Río Olopa11. Fluye por aproximadamente 30.4 km en
+Guatemala antes de entrar en Honduras, donde recorre 31.4 km adicionales11. Al ingresar a El
+Salvador por Chalatenango, continúa su recorrido por 360 km hasta desembocar en el Océano
+Pacífico, completando un trayecto total de 422 km11. Su caudal promedio es de 362 m³/s,
+medido en el puente Cuscatlán11.
+2.2 Zonificación Hidrológica
+La cuenca presenta tres zonas hidrológicas distintivas, determinadas por su gradiente de
+elevación3:
+●
+Zona Alta (>1,500 m): Caracterizada por suelos volcánicos (andosoles) con alta
+capacidad de infiltración (80-120 mm/hr) pero rápida saturación y escorrentía durante
+eventos pluviales intensos3.
+●
+Zona Media (500-1,500 m): Funciona como área de transmisión hidrológica, donde la
+onda de crecida puede tardar hasta 7 días en desplazarse desde Guatemala hasta la
+frontera con El Salvador3.
+●
+Zona Baja (<500 m): Comprende las planicies costeras, particularmente el Bajo Lempa,
+con capacidad de retención de inundaciones de hasta 72 horas, actuando como
+amortiguador natural ante eventos extremos3.
+2.3 Puntos Críticos Hidrológicos
+La geografía del río presenta singularidades que afectan su comportamiento hidráulico. La
+Garganta de Cuscatlán, con solo 300 metros de ancho, constituye un estrechamiento crítico
+que convierte hasta el 90% de la energía cinética aguas arriba en flujo turbulento durante las
+crecidas máximas3. Este fenómeno amplifica la energía del río y aumenta su potencial
+destructivo durante eventos extremos.
+3. Riesgos e Impactos del Cambio Climático
+3.1 Proyecciones Hidrológicas
+Los modelos climáticos proyectan cambios significativos en el régimen hidrológico del Río Lempa para
+finales del siglo XXI131719:
+●
+Aumentos de temperatura de 1.9°C (escenario B1) a 3.4°C (escenario A2) para 2070-20991719.
+●
+Reducciones de precipitación del 5.0% (B1) al 10.4% (A2) para el mismo período1719.
+●
+Disminución de caudales afluentes a los embalses del 13% (B1) al 24% (A2)131719.
+3.2 Estacionalidad y Eventos Extremos
+Las mayores reducciones de caudal se proyectan durante junio a septiembre, coincidiendo con
+el inicio de la temporada lluviosa13. En julio, se anticipan disminuciones del 39% en el embalse
+Cerrón Grande y del 41% en el embalse 15 de Septiembre bajo el escenario A213. Esta
+estacionalidad tiene implicaciones directas para la generación hidroeléctrica y la gestión de
+crecidas.
+El evento de inundación de 2011 demostró las vulnerabilidades sistémicas cuando operadores
+de embalses liberaron aproximadamente 9,500 m³/s durante más de 12 horas, provocando el
+fallo de diques en la zona del Bajo Lempa1. Este caso evidenció la necesidad de mejorar los
+sistemas de pronóstico y gestión entre represas y comunidades aguas abajo.
+3.3 Dinámica de Sedimentos
+La cuenca presenta una alta carga de sedimentos de origen volcánico, estimada en 28 millones
+de toneladas anuales3. El embalse Cerrón Grande intercepta aproximadamente el 78% de esta
+carga de fondo3, lo que acelera su colmatación y reduce su vida útil operativa. Este fenómeno
+compromete tanto la capacidad de generación eléctrica como la función reguladora de
+crecidas del sistema.
+4. Gobernanza Trinacional
+4.1 Marco Institucional
+El Plan Trifinio, desarrollado como parte de los acuerdos de paz de Esquipulas de 1987,
+constituye la principal iniciativa de gobernanza transfronteriza para la gestión de la cuenca alta
+del Lempa15. Este plan representa una experiencia innovadora para Centroamérica,
+demostrando voluntad política para institucionalizar la cooperación mediante un Tratado
+Internacional15.
+4.2 Desafíos de Coordinación
+A pesar de avances significativos, el Plan Trifinio evidencia limitaciones propias de enfoques
+descendentes (top-down) no acompañados por estrategias diseñadas por actores locales15.
+Esta desconexión dificulta la implementación efectiva de políticas integradas de gestión de
+recursos hídricos compartidos.
+Persisten vacíos importantes en los protocolos operacionales transfronterizos, particularmente
+en la coordinación de liberaciones de agua durante eventos extremos y en el intercambio de
+datos hidrometeorológicos en tiempo real14. Este desfase entre decisiones aguas arriba y
+consecuencias aguas abajo representa un riesgo estructural para el sistema.
+4.3 Iniciativas en Curso
+Actualmente, el proyecto USAID Upper Lempa Watershed, implementado por Winrock
+International, trabaja con gobiernos, comunidades y grupos ambientales en la cuenca alta para
+mejorar su salud y resiliencia16. Este proyecto beneficia directamente a aproximadamente
+180,000 personas en los tres países e incorpora aspectos de gestión integral del recurso
+hídrico.
+5. Implicaciones para el Sistema de Pronóstico con IA
+5.1 Desafíos de Datos Transfronterizos
+La naturaleza trinacional de la cuenca presenta un reto fundamental para cualquier sistema de
+pronóstico: aproximadamente 65-70% del caudal del Lempa se origina fuera de las fronteras de
+El Salvador3. Esta realidad exige:
+●
+Estrategias para compensar la limitada disponibilidad de datos en tiempo real en zonas
+fuera de la jurisdicción de CEL.
+●
+Algoritmos que puedan operar eficazmente con fuentes de datos heterogéneas y de
+variable calidad.
+●
+Capacidad para integrar datos satelitales y de sensores remotos para complementar las
+redes de monitoreo tradicionales.
+5.2 Variabilidad Hidrológica Espacial
+La pronunciada zonificación hidrológica de la cuenca requiere que el sistema de IA reconozca y
+modele adecuadamente:
+●
+Las diferentes respuestas de escorrentía según el tipo de suelo y elevación.
+●
+Los tiempos de viaje de onda de crecida a través de las distintas zonas (hasta 7 días
+desde Guatemala hasta la frontera salvadoreña).
+●
+El efecto regulador natural de zonas como el Bajo Lempa con su capacidad de
+retención de 72 horas.
+5.3 Enfoque de Modelado Adaptativo
+Para abordar estos desafíos, el sistema de IA propuesto debe incorporar:
+●
+Modelos LSTM (Long Short-Term Memory) capaces de aprender patrones temporales
+complejos en los datos hidrológicos.
+●
+Enfoques de ensamble que combinen predicciones de múltiples modelos para mejorar
+la robustez.
+●
+Integración de productos de teledetección como CHIRPS, ERA5, y misiones satelitales
+para compensar la limitada cobertura de estaciones de medición en tierra.
+●
+Marcos probabilísticos que cuantifiquen y comuniquen la incertidumbre en los
+pronósticos, especialmente crítico en contextos transfronterizos.
+6. Conclusión
+La cuenca del Río Lempa presenta un escenario de alta complejidad donde convergen desafíos
+hidrológicos, ambientales e institucionales. Esta complejidad, sin embargo, también ofrece una
+oportunidad única para que CEL lidere la innovación regional en gestión hídrica inteligente.
+El sistema de pronóstico hidrológico con IA propuesto representa no solo una herramienta
+tecnológica de vanguardia, sino un activo estratégico con potencial para transformar la gestión
+de recursos hídricos en Centroamérica. Al abordar específicamente la naturaleza
+transfronteriza de la cuenca y los retos del cambio climático, este sistema puede convertirse en
+un modelo replicable para cuencas compartidas en toda la región.
+La posición única de CEL como administrador principal de la infraestructura hidroeléctrica del
+Río Lempa le confiere tanto la responsabilidad como la capacidad para implementar soluciones
+innovadoras que equilibren la generación energética con la seguridad hídrica y la protección de
+ecosistemas y comunidades vulnerables.
+
+
+Entre otras features:
+
+Un cal de los hitos de proyecto y reus segun calendarizadas en el tiempo bajo la misma logica de t0 (here let me know if u need help).
+
+Kanban para operatividad del proyecto
+
+Un outstanding decision board asignada a la persona correspondiente 
+
+Un file system donde podamos guardar docs relevantes al proyecto. Como un doc repo, single source of truth].

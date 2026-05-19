@@ -6,8 +6,11 @@ export default function Home() {
     <div className="min-h-[100dvh] flex flex-col bg-background">
       <header className="px-6 py-4 flex items-center justify-between border-b border-border/50 bg-background/80 backdrop-blur">
         <div className="flex items-center gap-3">
-          <img src={`${import.meta.env.BASE_URL.replace(/\/$/, "")}/logo.svg`} alt="CEL Logo" className="h-8 w-8" />
-          <span className="font-semibold text-foreground tracking-tight">Portal CEL — Piloto</span>
+          <img src={`${import.meta.env.BASE_URL.replace(/\/$/, "")}/cel-logo.svg`} alt="Comisión Ejecutiva Hidroeléctrica del Río Lempa" className="h-10 w-10" />
+          <div className="flex flex-col leading-tight">
+            <span className="font-semibold text-foreground tracking-tight text-sm">Portal CEL — Piloto</span>
+            <span className="text-[11px] text-muted-foreground hidden sm:inline-block">Comisión Ejecutiva Hidroeléctrica del Río Lempa</span>
+          </div>
         </div>
         <div className="flex items-center gap-3">
           <Link href="/sign-in" className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors px-3 py-2">

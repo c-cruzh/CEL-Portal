@@ -14,8 +14,11 @@ export default function PortalLayout({ children }: { children: ReactNode }) {
         <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
           <div className="flex items-center gap-6">
             <Link href="/portal/equipo" className="flex items-center gap-2 group">
-              <img src={`${basePath}/logo.svg`} alt="CEL Logo" className="h-7 w-7 transition-transform group-hover:scale-105" />
-              <span className="font-semibold text-foreground tracking-tight hidden sm:inline-block">Portal CEL — Piloto</span>
+              <img src={`${basePath}/cel-logo.svg`} alt="Comisión Ejecutiva Hidroeléctrica del Río Lempa" className="h-9 w-9 transition-transform group-hover:scale-105" />
+              <div className="hidden sm:flex flex-col leading-tight">
+                <span className="font-semibold text-foreground tracking-tight text-sm">Portal CEL — Piloto</span>
+                <span className="text-[10px] text-muted-foreground">Comisión Ejecutiva Hidroeléctrica del Río Lempa</span>
+              </div>
             </Link>
 
             <nav className="flex items-center space-x-1 ml-4 border-l border-border pl-6">

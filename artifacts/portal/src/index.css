@@ -89,34 +89,34 @@
   --popover-foreground: 222 47% 11%;
   --popover-border: 214 32% 91%;
 
-  --primary: 201 96% 32%;
+  --primary: 214 68% 15%;
   --primary-foreground: 210 40% 98%;
-  --secondary: 210 40% 96.1%;
-  --secondary-foreground: 222.2 47.4% 11.2%;
+  --secondary: 210 2% 92%;
+  --secondary-foreground: 214 68% 15%;
   --muted: 210 40% 96.1%;
-  --muted-foreground: 215.4 16.3% 46.9%;
-  --accent: 210 40% 96.1%;
-  --accent-foreground: 222.2 47.4% 11.2%;
+  --muted-foreground: 217 17% 35%;
+  --accent: 210 2% 92%;
+  --accent-foreground: 214 68% 15%;
   --destructive: 0 84.2% 60.2%;
   --destructive-foreground: 210 40% 98%;
-  
+
   --input: 214 32% 91%;
-  --ring: 201 96% 32%;
+  --ring: 214 68% 15%;
 
   --sidebar: 210 40% 98%;
-  --sidebar-foreground: 222 47% 11%;
+  --sidebar-foreground: 214 68% 15%;
   --sidebar-border: 214 32% 91%;
-  --sidebar-primary: 201 96% 32%;
+  --sidebar-primary: 214 68% 15%;
   --sidebar-primary-foreground: 210 40% 98%;
-  --sidebar-accent: 210 40% 96.1%;
-  --sidebar-accent-foreground: 222 47% 11%;
-  --sidebar-ring: 201 96% 32%;
+  --sidebar-accent: 210 2% 92%;
+  --sidebar-accent-foreground: 214 68% 15%;
+  --sidebar-ring: 214 68% 15%;
 
-  --chart-1: 199 89% 48%;
-  --chart-2: 175 84% 32%;
-  --chart-3: 215 50% 23%;
-  --chart-4: 280 65% 60%;
-  --chart-5: 340 75% 55%;
+  --chart-1: 214 68% 15%;
+  --chart-2: 217 17% 23%;
+  --chart-3: 199 89% 38%;
+  --chart-4: 175 60% 32%;
+  --chart-5: 35 80% 50%;
 
   --app-font-sans: 'Inter', system-ui, -apple-system, sans-serif;
   --app-font-serif: Georgia, serif;
