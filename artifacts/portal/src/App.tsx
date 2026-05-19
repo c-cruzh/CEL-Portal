@@ -1,5 +1,6 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ClerkProvider, SignIn, SignUp, Show, useClerk } from '@clerk/react';
+import { useGetMe, getGetMeQueryKey, ApiError } from "@workspace/api-client-react";
 import { publishableKeyFromHost } from '@clerk/react/internal';
 import { shadcn } from '@clerk/themes';
 import { Switch, Route, useLocation, Router as WouterRouter, Redirect } from 'wouter';
@@ -87,7 +88,8 @@ const clerkAppearance = {
 
 function SignInPage() {
   return (
-    <div className="flex min-h-[100dvh] items-center justify-center bg-background px-4">
+    <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-background px-4 py-8">
+      <DomainRejectionBanner />
       <SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} />
     </div>
   );
@@ -95,7 +97,8 @@ function SignInPage() {
 
 function SignUpPage() {
   return (
-    <div className="flex min-h-[100dvh] items-center justify-center bg-background px-4">
+    <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-background px-4 py-8">
+      <DomainRejectionBanner />
       <SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} />
     </div>
   );
@@ -123,11 +126,142 @@ function ClerkQueryClientCacheInvalidator() {
   return null;
 }
 
+const DOMAIN_REJECTION_STORAGE_KEY = "cel.portal.emailDomainRejection";
+
+function readDomainRejection(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.sessionStorage.getItem(DOMAIN_REJECTION_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function setDomainRejection(message: string | null): void {
+  if (typeof window === "undefined") return;
+  try {
+    if (message) {
+      window.sessionStorage.setItem(DOMAIN_REJECTION_STORAGE_KEY, message);
+    } else {
+      window.sessionStorage.removeItem(DOMAIN_REJECTION_STORAGE_KEY);
+    }
+  } catch {
+    // ignore
+  }
+}
+
+function useDomainRejectionMessage(): [string | null, () => void] {
+  const [message, setMessage] = useState<string | null>(() => readDomainRejection());
+
+  useEffect(() => {
+    const handler = () => setMessage(readDomainRejection());
+    window.addEventListener("cel:domain-rejection", handler);
+    return () => window.removeEventListener("cel:domain-rejection", handler);
+  }, []);
+
+  const clear = () => {
+    setDomainRejection(null);
+    setMessage(null);
+  };
+
+  return [message, clear];
+}
+
+function publishDomainRejection(message: string): void {
+  setDomainRejection(message);
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("cel:domain-rejection"));
+  }
+}
+
+function EmailDomainGuard({ children }: { children: ReactNode }) {
+  const { signOut } = useClerk();
+  const [, setLocation] = useLocation();
+  const queryClient = useQueryClient();
+
+  const { data, error, isLoading } = useGetMe({
+    query: {
+      queryKey: getGetMeQueryKey(),
+      retry: false,
+      staleTime: 30_000,
+    },
+  });
+
+  useEffect(() => {
+    if (!error || !(error instanceof ApiError)) return;
+    if (error.status !== 403) return;
+    const payload = error.data as { code?: string; error?: string } | null;
+    if (payload?.code !== "email_domain_not_allowed") return;
+
+    const message =
+      payload.error ??
+      "Tu correo no está autorizado para acceder al portal.";
+    publishDomainRejection(message);
+    queryClient.clear();
+    void signOut({ redirectUrl: `${basePath}/sign-in` }).then(() => {
+      setLocation("/sign-in");
+    });
+  }, [error, queryClient, setLocation, signOut]);
+
+  if (error && error instanceof ApiError && error.status === 403) {
+    return (
+      <div className="min-h-[100dvh] flex items-center justify-center bg-background px-4 text-center text-sm text-muted-foreground">
+        Cerrando sesión…
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-[100dvh] flex items-center justify-center bg-background px-4 text-center text-sm text-muted-foreground">
+        Cargando…
+      </div>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <div className="min-h-[100dvh] flex items-center justify-center bg-background px-4 text-center text-sm text-muted-foreground">
+        <div className="max-w-md space-y-2">
+          <p className="font-medium text-foreground">
+            No pudimos verificar tu acceso al portal.
+          </p>
+          <p>Por favor, vuelve a intentarlo en unos momentos.</p>
+        </div>
+      </div>
+    );
+  }
+
+  return <>{children}</>;
+}
+
+function DomainRejectionBanner() {
+  const [message, clear] = useDomainRejectionMessage();
+  if (!message) return null;
+  return (
+    <div className="mx-auto mb-4 w-full max-w-[440px] rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+      <div className="flex items-start justify-between gap-3">
+        <p className="leading-snug">{message}</p>
+        <button
+          type="button"
+          onClick={clear}
+          className="text-xs font-medium uppercase tracking-wide text-destructive/80 hover:text-destructive"
+          aria-label="Cerrar aviso"
+        >
+          ×
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function HomeRedirect() {
   return (
     <>
       <Show when="signed-in">
-        <Redirect to="/portal" />
+        <EmailDomainGuard>
+          <Redirect to="/portal" />
+        </EmailDomainGuard>
       </Show>
       <Show when="signed-out">
         <Home />
@@ -155,7 +289,9 @@ function PortalGuard() {
   return (
     <>
       <Show when="signed-in">
-        <PortalRoutes />
+        <EmailDomainGuard>
+          <PortalRoutes />
+        </EmailDomainGuard>
       </Show>
       <Show when="signed-out">
         <Redirect to="/" />

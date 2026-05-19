@@ -13,6 +13,33 @@ declare global {
   }
 }
 
+const DEFAULT_ALLOWED_DOMAINS = ["cel.gob.sv"];
+
+function getAllowedDomains(): string[] {
+  const raw = process.env.ALLOWED_EMAIL_DOMAINS;
+  if (!raw || raw.trim() === "") return DEFAULT_ALLOWED_DOMAINS;
+  if (raw.trim() === "*") return [];
+  return raw
+    .split(",")
+    .map((d) => d.trim().toLowerCase().replace(/^@/, ""))
+    .filter((d) => d.length > 0);
+}
+
+function isEmailAllowed(email: string, allowedDomains: string[]): boolean {
+  if (allowedDomains.length === 0) return true;
+  const domain = email.split("@")[1]?.toLowerCase();
+  if (!domain) return false;
+  return allowedDomains.includes(domain);
+}
+
+function domainRejectionMessage(allowedDomains: string[]): string {
+  if (allowedDomains.length === 0) {
+    return "El registro está restringido. Contacta al administrador.";
+  }
+  const list = allowedDomains.map((d) => `@${d}`).join(", ");
+  return `Solo se permiten cuentas con correo institucional (${list}). Solicita acceso al administrador del portal.`;
+}
+
 export async function requireAuth(
   req: Request,
   res: Response,
@@ -27,6 +54,8 @@ export async function requireAuth(
     res.status(401).json({ error: "Unauthorized" });
     return;
   }
+
+  const allowedDomains = getAllowedDomains();
 
   try {
     const [existing] = await db
@@ -50,6 +79,25 @@ export async function requireAuth(
         return;
       }
 
+      if (!isEmailAllowed(primaryEmail, allowedDomains)) {
+        // Remove the just-created Clerk user so no orphan account remains
+        // and so the visitor can try again with an allowed email.
+        try {
+          await clerkClient.users.deleteUser(clerkUserId);
+        } catch (deleteErr) {
+          req.log.warn(
+            { err: deleteErr, clerkUserId },
+            "Failed to delete Clerk user after domain rejection",
+          );
+        }
+        res.status(403).json({
+          error: domainRejectionMessage(allowedDomains),
+          code: "email_domain_not_allowed",
+          allowedDomains,
+        });
+        return;
+      }
+
       email = primaryEmail;
       displayName =
         [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ") ||
@@ -59,6 +107,14 @@ export async function requireAuth(
         .insert(usersTable)
         .values({ id: clerkUserId, email, displayName })
         .onConflictDoNothing();
+    } else if (email && !isEmailAllowed(email, allowedDomains)) {
+      // Domain allowlist tightened after this user was provisioned: deny access.
+      res.status(403).json({
+        error: domainRejectionMessage(allowedDomains),
+        code: "email_domain_not_allowed",
+        allowedDomains,
+      });
+      return;
     }
 
     req.userId = clerkUserId;
