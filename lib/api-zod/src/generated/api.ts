@@ -336,6 +336,8 @@ export const ListKanbanColumnsResponse = zod.array(ListKanbanColumnsResponseItem
  * @summary List all project milestones (read for all authenticated users)
  */
 
+export const listMilestonesResponseDateOverrideRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+
 
 
 export const ListMilestonesResponseItem = zod.object({
@@ -346,7 +348,11 @@ export const ListMilestonesResponseItem = zod.object({
   "weekOffset": zod.number().min(1),
   "phaseId": zod.string().nullish(),
   "ownersRoles": zod.array(zod.string()),
-  "source": zod.enum(['system', 'custom']),
+  "source": zod.enum(['system', 'manual', 'import']),
+  "dateOverride": zod.string().regex(listMilestonesResponseDateOverrideRegExp).nullish(),
+  "durationMinutes": zod.number().min(1).nullish(),
+  "location": zod.string().nullish(),
+  "notes": zod.string().nullish(),
   "createdBy": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
@@ -363,6 +369,13 @@ export const createMilestoneBodyDescriptionMax = 2000;
 
 export const createMilestoneBodyWeekOffsetMax = 60;
 
+export const createMilestoneBodyDateOverrideRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const createMilestoneBodyDurationMinutesMax = 1440;
+
+export const createMilestoneBodyLocationMax = 200;
+
+export const createMilestoneBodyNotesMax = 2000;
+
 
 
 export const CreateMilestoneBody = zod.object({
@@ -371,7 +384,90 @@ export const CreateMilestoneBody = zod.object({
   "kind": zod.enum(['phase_milestone', 'deliverable', 'weekly_session', 'presentation', 'workshop', 'decision']),
   "weekOffset": zod.number().min(1).max(createMilestoneBodyWeekOffsetMax),
   "phaseId": zod.string().nullish(),
-  "ownersRoles": zod.array(zod.string()).optional()
+  "ownersRoles": zod.array(zod.string()).optional(),
+  "dateOverride": zod.string().regex(createMilestoneBodyDateOverrideRegExp).nullish(),
+  "durationMinutes": zod.number().min(1).max(createMilestoneBodyDurationMinutesMax).nullish(),
+  "location": zod.string().max(createMilestoneBodyLocationMax).nullish(),
+  "notes": zod.string().max(createMilestoneBodyNotesMax).nullish()
+})
+
+
+/**
+ * @summary Regenerate the system-managed weekly sessions from T0 (PM only)
+ */
+export const RegenerateWeekliesResponse = zod.object({
+  "count": zod.number(),
+  "hasStartDate": zod.boolean()
+})
+
+
+/**
+ * @summary Import a batch of curated sessions (PM only). All-or-nothing.
+ */
+export const batchImportMilestonesBodySessionsItemTitleMax = 200;
+
+export const batchImportMilestonesBodySessionsItemWeekOffsetMax = 60;
+
+export const batchImportMilestonesBodySessionsItemDateOverrideRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const batchImportMilestonesBodySessionsItemDurationMinutesMax = 1440;
+
+export const batchImportMilestonesBodySessionsItemLocationMax = 200;
+
+export const batchImportMilestonesBodySessionsItemNotesMax = 2000;
+
+export const batchImportMilestonesBodySessionsItemDescriptionMax = 2000;
+
+export const batchImportMilestonesBodySessionsMax = 500;
+
+
+
+export const BatchImportMilestonesBody = zod.object({
+  "sessions": zod.array(zod.object({
+  "kind": zod.enum(['phase_milestone', 'deliverable', 'weekly_session', 'presentation', 'workshop', 'decision']),
+  "title": zod.string().min(1).max(batchImportMilestonesBodySessionsItemTitleMax),
+  "weekOffset": zod.number().min(1).max(batchImportMilestonesBodySessionsItemWeekOffsetMax).nullish(),
+  "dateOverride": zod.string().regex(batchImportMilestonesBodySessionsItemDateOverrideRegExp).nullish(),
+  "durationMinutes": zod.number().min(1).max(batchImportMilestonesBodySessionsItemDurationMinutesMax).nullish(),
+  "location": zod.string().max(batchImportMilestonesBodySessionsItemLocationMax).nullish(),
+  "notes": zod.string().max(batchImportMilestonesBodySessionsItemNotesMax).nullish(),
+  "phaseId": zod.string().nullish(),
+  "ownersRoles": zod.array(zod.string()).optional(),
+  "description": zod.string().max(batchImportMilestonesBodySessionsItemDescriptionMax).nullish()
+})).min(1).max(batchImportMilestonesBodySessionsMax)
+})
+
+
+
+export const batchImportMilestonesResponseMilestonesItemDateOverrideRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+
+
+
+export const BatchImportMilestonesResponse = zod.object({
+  "created": zod.number(),
+  "updated": zod.number(),
+  "rejected": zod.number(),
+  "errors": zod.array(zod.object({
+  "row": zod.number().min(1),
+  "field": zod.string().nullish(),
+  "message": zod.string()
+})),
+  "milestones": zod.array(zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "kind": zod.enum(['phase_milestone', 'deliverable', 'weekly_session', 'presentation', 'workshop', 'decision']),
+  "weekOffset": zod.number().min(1),
+  "phaseId": zod.string().nullish(),
+  "ownersRoles": zod.array(zod.string()),
+  "source": zod.enum(['system', 'manual', 'import']),
+  "dateOverride": zod.string().regex(batchImportMilestonesResponseMilestonesItemDateOverrideRegExp).nullish(),
+  "durationMinutes": zod.number().min(1).nullish(),
+  "location": zod.string().nullish(),
+  "notes": zod.string().nullish(),
+  "createdBy": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})).optional()
 })
 
 
@@ -475,6 +571,13 @@ export const updateMilestoneBodyDescriptionMax = 2000;
 
 export const updateMilestoneBodyWeekOffsetMax = 60;
 
+export const updateMilestoneBodyDateOverrideRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const updateMilestoneBodyDurationMinutesMax = 1440;
+
+export const updateMilestoneBodyLocationMax = 200;
+
+export const updateMilestoneBodyNotesMax = 2000;
+
 
 
 export const UpdateMilestoneBody = zod.object({
@@ -483,9 +586,15 @@ export const UpdateMilestoneBody = zod.object({
   "kind": zod.enum(['phase_milestone', 'deliverable', 'weekly_session', 'presentation', 'workshop', 'decision']),
   "weekOffset": zod.number().min(1).max(updateMilestoneBodyWeekOffsetMax),
   "phaseId": zod.string().nullish(),
-  "ownersRoles": zod.array(zod.string()).optional()
+  "ownersRoles": zod.array(zod.string()).optional(),
+  "dateOverride": zod.string().regex(updateMilestoneBodyDateOverrideRegExp).nullish(),
+  "durationMinutes": zod.number().min(1).max(updateMilestoneBodyDurationMinutesMax).nullish(),
+  "location": zod.string().max(updateMilestoneBodyLocationMax).nullish(),
+  "notes": zod.string().max(updateMilestoneBodyNotesMax).nullish()
 })
 
+
+export const updateMilestoneResponseDateOverrideRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
 
 
 
@@ -497,7 +606,11 @@ export const UpdateMilestoneResponse = zod.object({
   "weekOffset": zod.number().min(1),
   "phaseId": zod.string().nullish(),
   "ownersRoles": zod.array(zod.string()),
-  "source": zod.enum(['system', 'custom']),
+  "source": zod.enum(['system', 'manual', 'import']),
+  "dateOverride": zod.string().regex(updateMilestoneResponseDateOverrideRegExp).nullish(),
+  "durationMinutes": zod.number().min(1).nullish(),
+  "location": zod.string().nullish(),
+  "notes": zod.string().nullish(),
   "createdBy": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()

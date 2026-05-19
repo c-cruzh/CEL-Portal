@@ -22,6 +22,9 @@ import type {
 import type {
   AdminAuditLogEntry,
   AdminRole,
+  BatchImportMilestonesBodyTwo,
+  BatchImportMilestonesInput,
+  BatchImportMilestonesResult,
   CalendarFeedUrl,
   Cv,
   CvInput,
@@ -60,6 +63,7 @@ import type {
   NotificationRecipientInput,
   ProjectConfig,
   ProjectConfigUpdate,
+  RegenerateWeekliesResult,
   RoleDefinition,
   RoleUpdateInput,
   RolesInput,
@@ -1782,6 +1786,147 @@ export const useCreateMilestone = <TError = ErrorType<ErrorResponse>,
         TContext
       > => {
       return useMutation(getCreateMilestoneMutationOptions(options));
+    }
+
+export const getRegenerateWeekliesUrl = () => {
+
+
+
+
+  return `/api/admin/milestones/regenerate-weeklies`
+}
+
+/**
+ * @summary Regenerate the system-managed weekly sessions from T0 (PM only)
+ */
+export const regenerateWeeklies = async ( options?: RequestInit): Promise<RegenerateWeekliesResult> => {
+
+  return customFetch<RegenerateWeekliesResult>(getRegenerateWeekliesUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getRegenerateWeekliesMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof regenerateWeeklies>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof regenerateWeeklies>>, TError,void, TContext> => {
+
+const mutationKey = ['regenerateWeeklies'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof regenerateWeeklies>>, void> = () => {
+
+
+          return  regenerateWeeklies(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RegenerateWeekliesMutationResult = NonNullable<Awaited<ReturnType<typeof regenerateWeeklies>>>
+
+    export type RegenerateWeekliesMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Regenerate the system-managed weekly sessions from T0 (PM only)
+ */
+export const useRegenerateWeeklies = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof regenerateWeeklies>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof regenerateWeeklies>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getRegenerateWeekliesMutationOptions(options));
+    }
+
+export const getBatchImportMilestonesUrl = () => {
+
+
+
+
+  return `/api/admin/milestones/batch`
+}
+
+/**
+ * @summary Import a batch of curated sessions (PM only). All-or-nothing.
+ */
+export const batchImportMilestones = async (batchImportMilestonesBody: BatchImportMilestonesInput | BatchImportMilestonesBodyTwo, options?: RequestInit): Promise<BatchImportMilestonesResult> => {
+
+  return customFetch<BatchImportMilestonesResult>(getBatchImportMilestonesUrl(),
+  {
+    ...options,
+    method: 'POST'
+    ,
+    body: JSON.stringify(
+      batchImportMilestonesBody,)
+  }
+);}
+
+
+
+
+export const getBatchImportMilestonesMutationOptions = <TError = ErrorType<BatchImportMilestonesResult | ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof batchImportMilestones>>, TError,{data: BodyType<BatchImportMilestonesInput | BatchImportMilestonesBodyTwo>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof batchImportMilestones>>, TError,{data: BodyType<BatchImportMilestonesInput | BatchImportMilestonesBodyTwo>}, TContext> => {
+
+const mutationKey = ['batchImportMilestones'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof batchImportMilestones>>, {data: BodyType<BatchImportMilestonesInput | BatchImportMilestonesBodyTwo>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  batchImportMilestones(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BatchImportMilestonesMutationResult = NonNullable<Awaited<ReturnType<typeof batchImportMilestones>>>
+    export type BatchImportMilestonesMutationBody = BodyType<BatchImportMilestonesInput | BatchImportMilestonesBodyTwo>
+    export type BatchImportMilestonesMutationError = ErrorType<BatchImportMilestonesResult | ErrorResponse>
+
+    /**
+ * @summary Import a batch of curated sessions (PM only). All-or-nothing.
+ */
+export const useBatchImportMilestones = <TError = ErrorType<BatchImportMilestonesResult | ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof batchImportMilestones>>, TError,{data: BodyType<BatchImportMilestonesInput | BatchImportMilestonesBodyTwo>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof batchImportMilestones>>,
+        TError,
+        {data: BodyType<BatchImportMilestonesInput | BatchImportMilestonesBodyTwo>},
+        TContext
+      > => {
+      return useMutation(getBatchImportMilestonesMutationOptions(options));
     }
 
 export const getListKanbanCardsUrl = () => {

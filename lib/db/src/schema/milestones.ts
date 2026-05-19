@@ -10,8 +10,12 @@ export const milestonesTable = pgTable(
     weekOffset: integer("week_offset").notNull(),
     phaseId: text("phase_id"),
     ownersRoles: jsonb("owners_roles").$type<string[]>().notNull().default([]),
-    source: text("source").notNull().default("custom"),
+    source: text("source").notNull().default("manual"),
     seedKey: text("seed_key"),
+    dateOverride: text("date_override"),
+    durationMinutes: integer("duration_minutes"),
+    location: text("location"),
+    notes: text("notes"),
     createdBy: text("created_by"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()

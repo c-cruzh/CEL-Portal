@@ -13,7 +13,7 @@ import { requirePM } from "../middlewares/requirePM";
 
 const router: IRouter = Router();
 
-function serialize(row: typeof milestonesTable.$inferSelect) {
+export function serialize(row: typeof milestonesTable.$inferSelect) {
   return {
     id: row.id,
     title: row.title,
@@ -23,6 +23,10 @@ function serialize(row: typeof milestonesTable.$inferSelect) {
     phaseId: row.phaseId ?? null,
     ownersRoles: row.ownersRoles ?? [],
     source: row.source,
+    dateOverride: row.dateOverride ?? null,
+    durationMinutes: row.durationMinutes ?? null,
+    location: row.location ?? null,
+    notes: row.notes ?? null,
     createdBy: row.createdBy ?? null,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -57,7 +61,11 @@ router.post(
         weekOffset: data.weekOffset,
         phaseId: data.phaseId ?? null,
         ownersRoles: data.ownersRoles ?? [],
-        source: "custom",
+        dateOverride: data.dateOverride ?? null,
+        durationMinutes: data.durationMinutes ?? null,
+        location: data.location ?? null,
+        notes: data.notes ?? null,
+        source: "manual",
         createdBy: req.userEmail ?? req.userId ?? null,
       })
       .returning();
@@ -103,6 +111,10 @@ router.patch(
         weekOffset: data.weekOffset,
         phaseId: data.phaseId ?? null,
         ownersRoles: data.ownersRoles ?? [],
+        dateOverride: data.dateOverride ?? null,
+        durationMinutes: data.durationMinutes ?? null,
+        location: data.location ?? null,
+        notes: data.notes ?? null,
       })
       .where(eq(milestonesTable.id, id))
       .returning();

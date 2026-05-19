@@ -32,29 +32,47 @@ async function loadEvents(): Promise<{
     .where(eq(projectConfigTable.id, 1))
     .limit(1);
   const startDateStr = cfg?.startDate ?? null;
-  if (!startDateStr) {
-    return { events: [], hasStartDate: false };
-  }
   // Parse YYYY-MM-DD as UTC midnight to avoid TZ drift.
-  const [y, m, d] = startDateStr.split("-").map((n) => Number.parseInt(n, 10));
-  const start = new Date(Date.UTC(y, (m ?? 1) - 1, d ?? 1));
+  let start: Date | null = null;
+  if (startDateStr) {
+    const [y, m, d] = startDateStr.split("-").map((n) => Number.parseInt(n, 10));
+    start = new Date(Date.UTC(y, (m ?? 1) - 1, d ?? 1));
+  }
   const rows = await db
     .select()
     .from(milestonesTable)
     .orderBy(asc(milestonesTable.weekOffset), asc(milestonesTable.createdAt));
-  const events: IcsEvent[] = rows.map((row) => {
-    const date = new Date(start.getTime());
-    date.setUTCDate(date.getUTCDate() + (row.weekOffset - 1) * 7);
-    return {
+  const events: IcsEvent[] = [];
+  for (const row of rows) {
+    let date: Date | null = null;
+    if (row.dateOverride) {
+      const [oy, om, od] = row.dateOverride
+        .split("-")
+        .map((n) => Number.parseInt(n, 10));
+      date = new Date(Date.UTC(oy!, (om ?? 1) - 1, od ?? 1));
+    } else if (start) {
+      date = new Date(start.getTime());
+      date.setUTCDate(date.getUTCDate() + (row.weekOffset - 1) * 7);
+    } else {
+      // No T0 and no override: can't place this event on the calendar.
+      continue;
+    }
+    const descParts: string[] = [];
+    if (row.description) descParts.push(row.description);
+    if (row.notes) descParts.push(row.notes);
+    if (row.location) descParts.push(`Lugar: ${row.location}`);
+    if (row.durationMinutes)
+      descParts.push(`Duración estimada: ${row.durationMinutes} min`);
+    events.push({
       uid: `${row.id}@cel-portal-calendar`,
       title: row.title,
-      description: row.description,
+      description: descParts.length > 0 ? descParts.join("\n") : null,
       date,
       updatedAt: row.updatedAt ?? row.createdAt,
       category: KIND_LABELS[row.kind] ?? row.kind,
-    };
-  });
-  return { events, hasStartDate: true };
+    });
+  }
+  return { events, hasStartDate: start !== null };
 }
 
 function sendIcs(res: Response, body: string, filename: string): void {

@@ -39,6 +39,7 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
+import { BatchImportSessionsDialog } from "./BatchImportSessionsDialog";
 import {
   addDays,
   addMonths,
@@ -70,6 +71,11 @@ const KIND_META: Record<Kind, { label: string; color: string; dot: string }> = {
 const ALL_KINDS = Object.keys(KIND_META) as Kind[];
 
 function milestoneDate(m: Milestone, startDate: Date | null): Date | null {
+  // dateOverride (YYYY-MM-DD) always wins, even when T0 is not set.
+  if (m.dateOverride) {
+    const [y, mo, d] = m.dateOverride.split("-").map(Number);
+    if (y && mo && d) return new Date(y, mo - 1, d);
+  }
   if (!startDate) return null;
   // weekOffset = 1 means first week starting on T0
   return addDays(startDate, (m.weekOffset - 1) * 7);
@@ -93,6 +99,7 @@ export default function Calendario() {
   const startDate = config?.startDate ? parseISO(config.startDate) : null;
   const [activeKinds, setActiveKinds] = useState<Kind[]>(ALL_KINDS);
   const [editing, setEditing] = useState<Milestone | "new" | null>(null);
+  const [batchOpen, setBatchOpen] = useState(false);
 
   const toggleKind = (k: Kind) =>
     setActiveKinds((prev) => (prev.includes(k) ? prev.filter((x) => x !== k) : [...prev, k]));
@@ -123,9 +130,18 @@ export default function Calendario() {
         <div className="flex flex-wrap items-center gap-2">
           <ExportCalendarButtons />
           {isPM && (
-            <Button onClick={() => setEditing("new")} data-testid="button-new-milestone">
-              + Nuevo hito
-            </Button>
+            <>
+              <Button
+                variant="outline"
+                onClick={() => setBatchOpen(true)}
+                data-testid="button-batch-import"
+              >
+                Importar sesiones (admin)
+              </Button>
+              <Button onClick={() => setEditing("new")} data-testid="button-new-milestone">
+                + Nuevo hito
+              </Button>
+            </>
           )}
         </div>
       </div>
@@ -189,6 +205,13 @@ export default function Calendario() {
           />
         </TabsContent>
       </Tabs>
+
+      {isPM && (
+        <BatchImportSessionsDialog
+          open={batchOpen}
+          onClose={() => setBatchOpen(false)}
+        />
+      )}
 
       {editing && (
         <MilestoneDialog

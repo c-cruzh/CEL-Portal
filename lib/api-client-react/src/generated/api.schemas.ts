@@ -221,7 +221,8 @@ export type MilestoneSource = typeof MilestoneSource[keyof typeof MilestoneSourc
 
 export const MilestoneSource = {
   system: 'system',
-  custom: 'custom',
+  manual: 'manual',
+  import: 'import',
 } as const;
 
 export interface Milestone {
@@ -236,6 +237,20 @@ export interface Milestone {
   phaseId?: string | null;
   ownersRoles: string[];
   source: MilestoneSource;
+  /**
+     * @nullable
+     * @pattern ^\d{4}-\d{2}-\d{2}$
+     */
+  dateOverride?: string | null;
+  /**
+     * @minimum 1
+     * @nullable
+     */
+  durationMinutes?: number | null;
+  /** @nullable */
+  location?: string | null;
+  /** @nullable */
+  notes?: string | null;
   /** @nullable */
   createdBy?: string | null;
   createdAt: string;
@@ -292,6 +307,112 @@ export interface MilestoneInput {
   /** @nullable */
   phaseId?: string | null;
   ownersRoles?: string[];
+  /**
+     * @nullable
+     * @pattern ^\d{4}-\d{2}-\d{2}$
+     */
+  dateOverride?: string | null;
+  /**
+     * @minimum 1
+     * @maximum 1440
+     * @nullable
+     */
+  durationMinutes?: number | null;
+  /**
+     * @maxLength 200
+     * @nullable
+     */
+  location?: string | null;
+  /**
+     * @maxLength 2000
+     * @nullable
+     */
+  notes?: string | null;
+}
+
+export type BatchMilestoneSessionKind = typeof BatchMilestoneSessionKind[keyof typeof BatchMilestoneSessionKind];
+
+
+export const BatchMilestoneSessionKind = {
+  phase_milestone: 'phase_milestone',
+  deliverable: 'deliverable',
+  weekly_session: 'weekly_session',
+  presentation: 'presentation',
+  workshop: 'workshop',
+  decision: 'decision',
+} as const;
+
+export interface BatchMilestoneSession {
+  kind: BatchMilestoneSessionKind;
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  title: string;
+  /**
+     * @minimum 1
+     * @maximum 60
+     * @nullable
+     */
+  weekOffset?: number | null;
+  /**
+     * @nullable
+     * @pattern ^\d{4}-\d{2}-\d{2}$
+     */
+  dateOverride?: string | null;
+  /**
+     * @minimum 1
+     * @maximum 1440
+     * @nullable
+     */
+  durationMinutes?: number | null;
+  /**
+     * @maxLength 200
+     * @nullable
+     */
+  location?: string | null;
+  /**
+     * @maxLength 2000
+     * @nullable
+     */
+  notes?: string | null;
+  /** @nullable */
+  phaseId?: string | null;
+  ownersRoles?: string[];
+  /**
+     * @maxLength 2000
+     * @nullable
+     */
+  description?: string | null;
+}
+
+export interface BatchImportMilestonesInput {
+  /**
+     * @minItems 1
+     * @maxItems 500
+     */
+  sessions: BatchMilestoneSession[];
+}
+
+export interface BatchImportRowError {
+  /** @minimum 1 */
+  row: number;
+  /** @nullable */
+  field?: string | null;
+  message: string;
+}
+
+export interface BatchImportMilestonesResult {
+  created: number;
+  updated: number;
+  rejected: number;
+  errors: BatchImportRowError[];
+  milestones?: Milestone[];
+}
+
+export interface RegenerateWeekliesResult {
+  count: number;
+  hasStartDate: boolean;
 }
 
 export interface KanbanCardUpdate {
@@ -574,6 +695,11 @@ export interface UploadUrl {
   uploadURL: string;
   objectPath: string;
 }
+
+export type BatchImportMilestonesBodyTwo = {
+  /** CSV file with header row. Recognised columns: kind, title, description, weekOffset, dateOverride (YYYY-MM-DD), durationMinutes, location, notes, phaseId, ownersRoles (separated by `|` or `;`). */
+  file: Blob;
+};
 
 export type ListDocumentsParams = {
 folder?: string;

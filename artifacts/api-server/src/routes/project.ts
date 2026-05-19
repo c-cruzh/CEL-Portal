@@ -9,6 +9,7 @@ import {
 import { requireAuth } from "../middlewares/requireAuth";
 import { requirePM } from "../middlewares/requirePM";
 import { logAdminActionAsync } from "../lib/audit";
+import { ensureSystemWeeklies } from "../lib/weeklies";
 
 const router: IRouter = Router();
 
@@ -61,6 +62,17 @@ router.patch(
       })
       .where(eq(projectConfigTable.id, 1))
       .returning();
+    try {
+      await ensureSystemWeeklies(startDateStr);
+    } catch (err) {
+      req.log.error({ err }, "Failed to regenerate system weeklies after T0 change");
+      res.status(500).json({
+        error:
+          "T0 se guardó, pero no se pudieron regenerar las sesiones semanales. Reintenta o usa 'Regenerar semanales' desde el calendario.",
+        code: "weeklies_regen_failed",
+      });
+      return;
+    }
     logAdminActionAsync({
       actorId: req.userId ?? null,
       actorEmail: req.userEmail ?? null,

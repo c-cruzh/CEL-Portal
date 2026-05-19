@@ -20,6 +20,20 @@ export interface Milestone {
   phaseId?: string | null;
   ownersRoles: string[];
   source: MilestoneSource;
+  /**
+     * @nullable
+     * @pattern ^\d{4}-\d{2}-\d{2}$
+     */
+  dateOverride?: string | null;
+  /**
+     * @minimum 1
+     * @nullable
+     */
+  durationMinutes?: number | null;
+  /** @nullable */
+  location?: string | null;
+  /** @nullable */
+  notes?: string | null;
   /** @nullable */
   createdBy?: string | null;
   createdAt: Date;

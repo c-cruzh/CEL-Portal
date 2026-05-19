@@ -5,28 +5,21 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
-import type { MilestoneInputKind } from './milestoneInputKind';
+import type { BatchMilestoneSessionKind } from './batchMilestoneSessionKind';
 
-export interface MilestoneInput {
+export interface BatchMilestoneSession {
+  kind: BatchMilestoneSessionKind;
   /**
      * @minLength 1
      * @maxLength 200
      */
   title: string;
   /**
-     * @maxLength 2000
-     * @nullable
-     */
-  description?: string | null;
-  kind: MilestoneInputKind;
-  /**
      * @minimum 1
      * @maximum 60
+     * @nullable
      */
-  weekOffset: number;
-  /** @nullable */
-  phaseId?: string | null;
-  ownersRoles?: string[];
+  weekOffset?: number | null;
   /**
      * @nullable
      * @pattern ^\d{4}-\d{2}-\d{2}$
@@ -48,4 +41,12 @@ export interface MilestoneInput {
      * @nullable
      */
   notes?: string | null;
+  /** @nullable */
+  phaseId?: string | null;
+  ownersRoles?: string[];
+  /**
+     * @maxLength 2000
+     * @nullable
+     */
+  description?: string | null;
 }

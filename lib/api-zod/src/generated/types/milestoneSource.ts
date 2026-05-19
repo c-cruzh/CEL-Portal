@@ -11,5 +11,6 @@ export type MilestoneSource = typeof MilestoneSource[keyof typeof MilestoneSourc
 
 export const MilestoneSource = {
   system: 'system',
-  custom: 'custom',
+  manual: 'manual',
+  import: 'import',
 } as const;

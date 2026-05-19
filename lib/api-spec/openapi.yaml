@@ -429,6 +429,69 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /admin/milestones/regenerate-weeklies:
+    post:
+      operationId: regenerateWeeklies
+      tags: [admin, milestones]
+      summary: Regenerate the system-managed weekly sessions from T0 (PM only)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RegenerateWeekliesResult"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/milestones/batch:
+    post:
+      operationId: batchImportMilestones
+      tags: [admin, milestones]
+      summary: Import a batch of curated sessions (PM only). All-or-nothing.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BatchImportMilestonesInput"
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: >-
+                    CSV file with header row. Recognised columns: kind, title,
+                    description, weekOffset, dateOverride (YYYY-MM-DD),
+                    durationMinutes, location, notes, phaseId, ownersRoles
+                    (separated by `|` or `;`).
+      responses:
+        "200":
+          description: Imported
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchImportMilestonesResult"
+        "400":
+          description: Validation failed (no rows were inserted)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchImportMilestonesResult"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /kanban/cards:
     get:
       operationId: listKanbanCards
@@ -1486,7 +1549,17 @@ components:
             type: string
         source:
           type: string
-          enum: [system, custom]
+          enum: [system, manual, import]
+        dateOverride:
+          type: ["string", "null"]
+          pattern: '^\d{4}-\d{2}-\d{2}$'
+        durationMinutes:
+          type: ["integer", "null"]
+          minimum: 1
+        location:
+          type: ["string", "null"]
+        notes:
+          type: ["string", "null"]
         createdBy:
           type: ["string", "null"]
         createdAt:
@@ -1546,6 +1619,108 @@ components:
           type: array
           items:
             type: string
+        dateOverride:
+          type: ["string", "null"]
+          pattern: '^\d{4}-\d{2}-\d{2}$'
+        durationMinutes:
+          type: ["integer", "null"]
+          minimum: 1
+          maximum: 1440
+        location:
+          type: ["string", "null"]
+          maxLength: 200
+        notes:
+          type: ["string", "null"]
+          maxLength: 2000
+
+    BatchMilestoneSession:
+      type: object
+      required: [kind, title]
+      properties:
+        kind:
+          type: string
+          enum: [phase_milestone, deliverable, weekly_session, presentation, workshop, decision]
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        weekOffset:
+          type: ["integer", "null"]
+          minimum: 1
+          maximum: 60
+        dateOverride:
+          type: ["string", "null"]
+          pattern: '^\d{4}-\d{2}-\d{2}$'
+        durationMinutes:
+          type: ["integer", "null"]
+          minimum: 1
+          maximum: 1440
+        location:
+          type: ["string", "null"]
+          maxLength: 200
+        notes:
+          type: ["string", "null"]
+          maxLength: 2000
+        phaseId:
+          type: ["string", "null"]
+        ownersRoles:
+          type: array
+          items:
+            type: string
+        description:
+          type: ["string", "null"]
+          maxLength: 2000
+
+    BatchImportMilestonesInput:
+      type: object
+      required: [sessions]
+      properties:
+        sessions:
+          type: array
+          items:
+            $ref: "#/components/schemas/BatchMilestoneSession"
+          minItems: 1
+          maxItems: 500
+
+    BatchImportRowError:
+      type: object
+      required: [row, message]
+      properties:
+        row:
+          type: integer
+          minimum: 1
+        field:
+          type: ["string", "null"]
+        message:
+          type: string
+
+    BatchImportMilestonesResult:
+      type: object
+      required: [created, updated, rejected, errors]
+      properties:
+        created:
+          type: integer
+        updated:
+          type: integer
+        rejected:
+          type: integer
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/BatchImportRowError"
+        milestones:
+          type: array
+          items:
+            $ref: "#/components/schemas/Milestone"
+
+    RegenerateWeekliesResult:
+      type: object
+      required: [count, hasStartDate]
+      properties:
+        count:
+          type: integer
+        hasStartDate:
+          type: boolean
 
     KanbanCardUpdate:
       type: object

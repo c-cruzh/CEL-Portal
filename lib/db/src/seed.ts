@@ -111,18 +111,11 @@ function buildSeedMilestones(): SeedMilestone[] {
     });
   }
 
-  // 28 weekly sync sessions
-  for (let week = 1; week <= 28; week++) {
-    items.push({
-      seedKey: `weekly_${week}`,
-      title: `Sesión semanal de avance — Semana ${week}`,
-      description: "Sync semanal del equipo: avances, bloqueadores y próximos pasos.",
-      kind: "weekly_session",
-      weekOffset: week,
-      phaseId: null,
-      ownersRoles: ["pm_lead", "pm_cel"],
-    });
-  }
+  // NOTE: weekly_session rows are NOT seeded here. They are owned by the
+  // backend helper `ensureSystemWeeklies()`, which is invoked whenever T0
+  // changes (PATCH /project/config) and is exposed via
+  // POST /admin/milestones/regenerate-weeklies. While T0 is null, no weekly
+  // sessions exist in the database.
 
   // Capacitación durante Fase 4
   items.push({
@@ -143,11 +136,16 @@ async function seedMilestones(): Promise<number> {
   const validKeys = items.map((i) => i.seedKey);
 
   // Remove system milestones whose seed key is no longer in our generated set.
+  // We deliberately preserve `weekly_*` rows — those are owned by
+  // ensureSystemWeeklies() on the API side and must survive seed reruns.
   await db.execute(
-    sql`DELETE FROM milestones WHERE source = 'system' AND (seed_key IS NULL OR seed_key NOT IN (${sql.join(
-      validKeys.map((k) => sql`${k}`),
-      sql`, `,
-    )}))`,
+    sql`DELETE FROM milestones
+        WHERE source = 'system'
+          AND (seed_key IS NULL OR seed_key NOT IN (${sql.join(
+            validKeys.map((k) => sql`${k}`),
+            sql`, `,
+          )}))
+          AND (seed_key IS NULL OR seed_key NOT LIKE 'weekly_%')`,
   );
 
   for (const m of items) {
