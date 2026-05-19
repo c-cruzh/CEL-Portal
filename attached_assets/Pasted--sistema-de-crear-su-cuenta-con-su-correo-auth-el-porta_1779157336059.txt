@@ -1,0 +1,329 @@
+-sistema de crear su cuenta con su correo (auth). el portal solo tendran acceso la gente a la q se la pasare, pero no quiero crear usuarios yo. q sea self service y que se puedan autoasignar roles. tenemos q definir q roles puntuales, eso en funcion de dsp y verison renovada. deberia ser tmb un poco de build the team, una vez inside tiene q haber un tab de assigned talent, en el q los diferentes roles se self assign. deberian de poder attach su cv/background de responsabilidad/scope dentro de la institucion. 
+-necesito un tab del cronograma del proyecto de manera date agnostic t0 solo de las etapas, ill give u an example. quisiera el cronograma gantt feature tal cual en un tab. ese como high level asi como estaba en el ejemplo qw te dare, e idealmente hacer un drilldown. y eso de poderle poner fecha tal cual en el ejemplo q te dare. 
+-esto en algun lado at a high level (vale recalcar q todo lo del silo ai esta deprecated, bom de hw tmb): Metodología de Implementación
+0. Configuración de Infraestructura y Entorno
+●
+Comisionamiento de Hardware: Implementación y configuración de la arquitectura de 3
+nodos del silo de IA (ML/Compute, Data/ETL, Backup NAS).
+●
+Configuración de Red y Seguridad: Establecimiento de la red aislada y el acceso remoto
+seguro (VPN).
+●
+Instalación del Stack de Software: Despliegue de la plataforma de orquestación (Mage),
+bases de datos (PostgreSQL/PostGIS, MongoDB) y entornos de Python.
+1. Adquisición y Procesamiento de Datos
+●
+Integración Hidrológica: Ingesta automática de aforos de fuentes OSS; depuración y
+rellenado de lagunas históricas.
+●
+Canalización Meteorológica: Descarga ERA5, GPM y CHIRPS; cálculo de precipitación,
+temperatura y ET.
+●
+Procesamiento Geoespacial: Compilación de HydroATLAS, MDE (SRTM), cobertura de
+suelos; delimitación de cuenca y subcuencas.
+2. Desarrollo y Entrenamiento del Modelo
+●
+Framework: Implementación LSTM con NeuralHydrology en la GPU NVIDIA RTX 4090
+(24 GB VRAM) del nuevo silo de IA.
+●
+Optimización de Hiperparámetros: Búsqueda bayesiana sobre longitud de secuencia,
+unidades ocultas, tasa de aprendizaje.
+●
+Validación: Validación con origen rodante; comparación con modelos de persistencia y
+conceptuales.
+3. Integración Operativa
+●
+Canalización diaria automatizada de pronósticos.
+●
+Tableros y visualizaciones CEL.
+●
+Alertas SMS/correo para umbrales críticos.
+
+-next, es esto en una tab misma metodologia, lets bundle with that one in a single tab:
+
+Ruta de Implementación y Entregables
+Fase Duración
+(semanas)
+Tareas Clave Entregable Principal
+50. Configuración de
+infraestructura y entorno
+4 Comisionamiento de servidores,
+configuración de red, instalación de
+Mage y bases de datos.
+Entorno "AI Silo"
+completamente
+operacional.
+1. Adquisición y
+Pre‑procesamiento de Datos
+5 Fuentes, estandarización, control de
+calidad de datos
+hidrometeorológicos y geoespaciales
+Conjunto de datos
+listo para análisis
+2. Configuración y
+Entrenamiento del Modelo
+9 Configurar LSTM; ingeniería de
+características; entrenamiento,
+ajuste y validación
+Modelo validado de
+pronóstico hidrológico
+a 7 días
+3. Operacionalización y
+Automatización
+5 Construir canalizaciones en tiempo
+real; integración en BD; desarrollo del
+tablero web
+Sistema automatizado
+de pronóstico
+end‑to‑end
+4. Validación del Piloto y
+Transferencia de
+Conocimiento
+5 Pruebas fuera de muestra;
+documentación técnica; sesiones de
+formación para el equipo CEL
+Informe de validación
+piloto, POE y talleres
+internos
+Total Estimado 28 semanas Solución operativa de
+pronóstico de
+inundaciones basada
+en IA
+
+Esto tal cual esta at highlevel, y de ahi deberia haber un drill down en un ui friendly consumible:
+
+Fase 0: Configuración de infraestructura y entorno
+Esta fase inicial y fundamental establece la base tecnológica sobre la cual se construirá todo el
+proyecto. El éxito de las fases subsecuentes depende críticamente de un entorno de alto
+rendimiento, seguro y escalable, implementado desde el primer día. Esta etapa se enfoca en la
+creación de un "silo de IA" dedicado, asegurando que los recursos computacionales y de
+almacenamiento estén optimizados para las cargas de trabajo de machine learning y no
+compitan con otros sistemas de producción.
+El objetivo principal en esta fase es implementar, configurar y validar la infraestructura de
+hardware y el stack de software completos que servirán como cimiento para el sistema de
+pronóstico. El objetivo final es entregar un entorno llave en mano, listo para el desarrollo.
+Las actividades clave de esta fase incluyen:
+○
+Comisionamiento de Infraestructura Física: En colaboración con el equipo de TI
+de CEL, supervisar la adquisición, instalación física (racking) y conexión eléctrica
+y de red de los 3 nodos de servidores especificados (ML/Compute, Data/ETL,
+Backup NAS). Se validará que cada componente cumpla con las
+especificaciones técnicas requeridas.
+○
+Configuración de Red y Seguridad: Diseñar e implementar la arquitectura de
+red aislada para el "AI Silo"
+. Esto incluye la configuración de VLANs, firewalls y
+políticas de acceso para garantizar la seguridad del entorno. Se trabajará
+estrechamente con el equipo de seguridad de CEL para configurar y validar el
+canal de acceso remoto seguro (VPN), permitiendo la colaboración y el
+desarrollo desde Boston.
+○
+Instalación y Configuración del Stack de Software: Desplegar y configurar todo
+el software base. Esto abarca desde los sistemas operativos (Ubuntu Server LTS)
+hasta las bases de datos (PostgreSQL/PostGIS, MongoDB) y, crucialmente, la
+herramienta de orquestación de flujos de trabajo (Mage). Esta configuración
+incluye el establecimiento de las mejores prácticas para la gestión de
+dependencias y entornos virtuales de Python.
+○
+Validación y Pruebas de Esfuerzo (Benchmarking): Ejecutar una serie de
+pruebas para certificar la estabilidad y el rendimiento del entorno. Se realizarán
+benchmarks de la GPU, pruebas de velocidad de E/S en los discos NVMe y SSD,
+y pruebas de conectividad de red entre los nodos y con las fuentes de datos
+externas.
+Una vez concluida esta fase, el entregable principal sera un documento de "Certificación de
+Entorno Operacional" que detalle la configuración final de hardware y software, los resultados
+de las pruebas de rendimiento y la confirmación de un acceso remoto seguro y funcional. Este
+entregable marca la conclusión exitosa de la fase y el inicio formal del desarrollo del piloto de
+IA.
+Fase 1: Adquisición y Preprocesamiento de Datos
+Es crucial recalcar que, para esta prueba piloto de replicación de la metodología, nos adherimos
+estrictamente a los datos utilizados inicialmente. El enfoque principal de esta etapa es lograr
+una replicación que establezca un nuevo baseline. Posteriormente, se explorará la posibilidad
+de aumentar este baseline con datos locales de CEL y procesarlos para que se conformen a los
+requerimientos de la metodología, con el objetivo de mejorar la precisión.
+En este contexto, el rol crucial del equipo de CEL será interpretar esta nueva información de
+manera colaborativa, asegurando que los datos base para la replicación sean representativos de
+su ground-truth actual. Su participación activa en la evaluación y familiarización de los
+siguientes conjuntos de datos y procesos es fundamental:
+Integración Hidrológica: Se presentará y disponibilizará a los expertos en hidrología de
+CEL la información hidrológica que se descargará (ingesta automática de aforos,
+depuración y rellenado de lagunas históricas) para su evaluación y familiarización con el
+fin de replicar el proceso.
+●
+Canalización Meteorológica: La información resultante de la descarga de datos ERA5,
+GPM y CHIRPS para el cálculo preciso de precipitación, temperatura y
+evapotranspiración (ET) se presentará y disponibilizará al equipo de CEL para su
+familiarización con el objetivo de replicar la metodología.
+●
+Procesamiento Geoespacial: El equipo de CEL designará expertos en el área para la
+evaluación de los Modelos Digitales de Elevación (MDE) que se utilizarán (como SRTM)
+y en la ejecución de las compilaciones de información de HydroATLAS y datos de
+cobertura de suelos para la delimitación precisa de cuencas y subcuencas, con la meta
+de replicar el flujo de trabajo.
+En esta fase inicial, el objetivo primordial es la replicación fiel de la metodología con los datos
+base. La interpretación colaborativa de CEL asegurará que este punto de partida refleje su
+conocimiento actual, sentando las bases para futuras optimizaciones.
+Fase 2: Configuración y Entrenamiento del Modelo
+Durante esta fase, la valiosa perspectiva del equipo de CEL será fundamental para asegurar la
+calidad y relevancia del modelo de pronóstico LSTM. Su participación se centrará
+principalmente en lo siguiente:
+●
+Validación de Patrones y Detección de Sesgos: Su conocimiento profundo del
+comportamiento histórico del sistema hidrológico permitirá evaluar la validez de los
+patrones que el modelo aprenda de los datos, así como identificar posibles sesgos o
+inconsistencias que puedan surgir durante el entrenamiento.
+●
+Colaboración en el Ajuste de Hiperparámetros: Su feedback será esencial para guiar el
+ajuste de los hiperparámetros del modelo. Al comprender las dinámicas del sistema,
+podrán ofrecer información valiosa para optimizar el rendimiento del modelo y su
+capacidad para generar pronósticos precisos en diversas situaciones.
+●
+Evaluación de la Capacidad de Pronóstico a 7 Días: Su análisis de la capacidad del
+modelo entrenado para generar pronósticos precisos a 7 días será crucial. Su
+experiencia permitirá validar la coherencia y la confiabilidad de las predicciones,
+asegurando que se alineen con el comportamiento esperado del sistema hidrológico.
+En resumen, en esta etapa, requeriremos principalmente que el equipo de CEL aporte su
+experiencia sustancial para validar los patrones aprendidos por el modelo, colaborar en el ajuste
+de sus parámetros y evaluar críticamente su capacidad de pronóstico a corto plazo. Esto
+asegurará que el modelo final sea robusto, preciso y confiable para sus necesidades operativas.
+Fase 3: Operacionalización y Automatización
+En esta etapa, nos enfocaremos en construir las canalizaciones en tiempo real necesarias para
+la operación continua del modelo y desarrollar una web app intuitiva y adaptada a las
+necesidades de CEL. Los componentes core de esta web app incluirán un panel de resumen de
+pronósticos clave, un mapa interactivo con gráficos de pronósticos temporales, así como filtros
+y toggles para interactuar con los diversos elementos de la interfaz.
+Para asegurar que la web app sea lo más útil posible, requerimos la colaboración activa y la
+experiencia del equipo de CEL en los siguientes aspectos de alto nivel:
+●
+Identificación de Puntos de Interés: Señalar las estaciones de aforo, áreas geográficas
+o umbrales críticos para su toma de decisiones.
+●
+Especificación de la Presentación de la Información: Indicar cómo prefieren visualizar
+los datos del pronóstico (gráficos, tablas, indicadores), qué métricas son prioritarias y la
+representación deseada para alertas y umbrales.
+●
+Diseño de la Interfaz de Usuario: Compartir sus preferencias sobre la disposición
+general de la interfaz, la navegación y la usabilidad para asegurar que sea intuitiva y
+eficiente.
+●
+Requerimientos de Interacción: Describir las funcionalidades interactivas que
+necesitarían, como opciones de visualización, filtrado, selección de períodos de tiempo
+o exportación de datos.
+●
+Validación de la Información: Participar en la revisión de la web app para asegurar que
+la información mostrada sea clara, precisa y coherente con su conocimiento del sistema
+hidrológico.
+La experiencia de CEL sobre sus necesidades operativas será fundamental para guiar el diseño
+y la funcionalidad de la web app, asegurando que la herramienta final sea valiosa y se integre de
+manera efectiva en sus flujos de trabajo. Además de la colaboración en el diseño de la interfaz
+de la web app, requeriremos la asignación de personal y la disponibilidad de recursos de
+infraestructura por parte de CEL para asegurar el despliegue y funcionamiento del sistema
+automatiza
+Fase 4: Validación del Piloto y Transferencia de Conocimiento
+Esta fase se centrará en la rigurosa validación del sistema de pronóstico piloto y en la
+transferencia efectiva del conocimiento necesario para que el equipo de CEL pueda operar y
+mantener la solución a largo plazo.
+Las actividades principales en esta etapa incluirán:
+●
+Pruebas Fuera de Muestra: Realizaremos pruebas exhaustivas del modelo y la web app
+utilizando datos que no se utilizaron durante el entrenamiento ni la validación inicial.
+Esto permitirá evaluar la capacidad real del sistema para generalizar y generar
+pronósticos precisos en escenarios no vistos previamente. Analizaremos métricas clave
+9de rendimiento y compararemos los pronósticos del modelo con datos observados para
+cuantificar su precisión y confiabilidad.
+●
+Documentación Detallada: Se elaborará una documentación completa y clara de todo
+el proceso, desde la ingesta y procesamiento de datos hasta la arquitectura del modelo,
+la implementación de la API y el funcionamiento de la web app. Esta documentación
+incluirá:
+○
+Un Informe Piloto que resuma los objetivos, la metodología, los resultados de la
+validación y las lecciones aprendidas durante todo el proyecto piloto.
+○
+Un Procedimiento Operacional Estándar (POE) detallado que describa paso a
+paso cómo operar el sistema de pronóstico, incluyendo la ejecución del modelo
+(si aplica), la gestión de la web app y la interpretación de los pronósticos.
+○
+Documentación técnica de la API, la estructura de la base de datos y cualquier
+otro componente técnico relevante para el mantenimiento y la posible
+expansión del sistema.
+●
+Capacitación del Equipo de CEL: Se llevarán a cabo sesiones de formación
+personalizadas para el equipo de CEL. Estas sesiones cubrirán:
+○
+La comprensión general del modelo de pronóstico y sus limitaciones.
+○
+El uso detallado de la web app, incluyendo la navegación, la visualización de los
+pronósticos, la interpretación de las alertas y el uso de las funcionalidades
+interactivas.
+○
+Los procedimientos básicos para la operación y el monitoreo del sistema,
+siguiendo el POE.
+○
+Una introducción a la documentación técnica para aquellos miembros del equipo
+que puedan estar involucrados en el mantenimiento futuro.
+●
+Sesiones de Retroalimentación: Fomentaremos sesiones interactivas con el equipo de
+CEL para recopilar su retroalimentación sobre la usabilidad de la web app, la claridad de
+la información proporcionada y su confianza en los pronósticos generados. Esta
+retroalimentación será invaluable para identificar áreas de mejora y asegurar la adopción
+exitosa de la solución.
+El objetivo principal de esta fase es doble: primero, validar rigurosamente el sistema piloto para
+asegurar su precisión y confiabilidad en un contexto operativo real; y segundo, empoderar al
+equipo de CEL a través de la documentación y la capacitación para que puedan utilizar,
+mantener y potencialmente expandir la solución de pronóstico de manera autónoma en el
+futuro. Para llevar a cabo con éxito la Fase 4, requerimos la participación activa y la
+disponibilidad del equipo de CEL en los siguientes aspectos:
+Disponibilidad para las Pruebas Fuera de Muestra: Necesitaremos su colaboración para
+identificar y proporcionar acceso a conjuntos de datos históricos relevantes que no se hayan
+utilizado previamente en el desarrollo y la validación del modelo. Su conocimiento de eventos
+pasados significativos (inundaciones, sequías, etc.) será crucial para seleccionar escenarios de
+prueba representativos. Además, requerimos su tiempo para revisar y validar los resultados de
+los pronósticos generados durante estas pruebas, comparándolos con sus registros y
+experiencia.
+●
+Dedicación al Proceso de Documentación: Si bien se elaborará la documentación, se
+requiere su tiempo para revisar el Procedimiento Operacional Estándar (POE) y el
+Informe Piloto. Su retroalimentación asegurará que la documentación sea clara, precisa
+y refleje fielmente sus procesos operativos y su comprensión del sistema.
+●
+Participación Activa en las Sesiones de Capacitación: Será fundamental que los
+miembros clave del equipo de CEL asistan y participen activamente en las sesiones de
+formación. Su compromiso y preguntas durante estas sesiones asegurarán una
+comprensión profunda del sistema, la web app y los procedimientos operativos.
+●
+Disponibilidad para las Sesiones de Retroalimentación: Requeriremos su tiempo y
+disposición para participar en las sesiones de retroalimentación. Sus comentarios
+honestos y constructivos sobre la usabilidad de la web app, la claridad de la información
+y su confianza en los pronósticos serán esenciales para identificar áreas de mejora y
+asegurar la adopción exitosa de la solución a largo plazo.
+●
+Identificación de Personal para el Mantenimiento Futuro: Si bien la capacitación será
+general, agradeceríamos que CEL identifique a los miembros de su equipo que podrían
+estar más involucrados en el mantenimiento técnico futuro del sistema. Esto nos
+permitirá adaptar ligeramente la capacitación y la documentación técnica para
+satisfacer sus necesidades específicas.
+En resumen, la colaboración activa, el tiempo dedicado y la retroalimentación honesta del
+equipo de CEL serán cruciales en esta fase para validar la efectividad del sistema y asegurar
+una transferencia de conocimiento exitosa que les permita operar y mantener la solución de
+pronóstico de manera autónoma.
+Seguimiento y Comunicación del Proyecto
+Para garantizar una comunicación fluida y mantener a todos los interesados informados sobre
+el progreso del proyecto, se implementará el siguiente esquema de seguimiento:
+Presentación de Avances por Fase: Al finalizar cada una de las fases del proyecto, se llevará a
+cabo una sesión de presentación integral dirigida a todos los stakeholders pertinentes a esa
+etapa. En estas sesiones, se ofrecerá un resumen detallado de los avances logrados, los
+entregables completados y una visión completa de lo desarrollado hasta ese punto.
+Sesiones de Avances Semanales (Core Team): De manera semanal, se realizará una sesión de
+sincronización con el equipo central del proyecto. Estas reuniones tendrán como objetivo
+revisar el progreso, discutir desafíos, coordinar tareas y asegurar que todos los miembros del
+equipo estén alineados y al tanto de las últimas novedades.
+Interacciones Específicas por Etapa: Adicionalmente a las sesiones de sincronización
+semanales, se llevarán a cabo las interacciones y colaboraciones específicas detalladas en la
+11descripción de cada fase, involucrando a los miembros del equipo de CEL y otros stakeholders
+relevantes según las necesidades de cada etapa particular.
+Este enfoque de comunicación estructurado asegurará que todos los stakeholders estén
+continuamente informados sobre el desarrollo del proyecto, facilitando la colaboración efectiva
+y la toma de decisiones oportunas en cada etapa.
+
+Empecemos por aqui, help me structure my ask, plan and the execute this first portion.
