@@ -14,6 +14,8 @@ export * from './healthStatus';
 export * from './member';
 export * from './memberMe';
 export * from './notificationPrefsInput';
+export * from './notificationRecipient';
+export * from './notificationRecipientInput';
 export * from './projectConfig';
 export * from './projectConfigUpdate';
 export * from './roleCoverage';

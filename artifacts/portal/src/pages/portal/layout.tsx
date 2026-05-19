@@ -1,11 +1,16 @@
 import { ReactNode } from "react";
 import { Link, useRoute } from "wouter";
 import { useClerk, useUser } from "@clerk/react";
+import { useGetMe } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
+
+const PM_ROLE_IDS = ["pm_lead", "pm_cel"];
 
 export default function PortalLayout({ children }: { children: ReactNode }) {
   const { signOut } = useClerk();
   const { user } = useUser();
+  const { data: me } = useGetMe();
+  const isPM = me?.roles?.some((r) => PM_ROLE_IDS.includes(r)) ?? false;
   const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
 
   return (
@@ -26,6 +31,7 @@ export default function PortalLayout({ children }: { children: ReactNode }) {
               <NavItem href="/portal/cronograma" label="Cronograma" />
               <NavItem href="/portal/metodologia" label="Metodología" />
               <NavItem href="/portal/desarrollo-tecnico" label="Desarrollo Técnico" />
+              {isPM && <NavItem href="/portal/configuracion" label="Configuración" />}
             </nav>
           </div>
 

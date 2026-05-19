@@ -113,6 +113,21 @@ router.put("/me/roles", requireAuth, async (req, res): Promise<void> => {
     .from(userRolesTable)
     .where(eq(userRolesTable.userId, req.userId!));
   const previousRoles = previousRows.map((r) => r.roleId).sort();
+
+  const PRIVILEGED_ROLES = new Set(["pm_lead", "pm_cel"]);
+  const previousSet = new Set(previousRoles);
+  const illegallyAdded = desired.filter(
+    (r) => PRIVILEGED_ROLES.has(r) && !previousSet.has(r),
+  );
+  if (illegallyAdded.length > 0) {
+    res.status(403).json({
+      error:
+        "Los roles de PM no se pueden auto-asignar. Pide a un PM actual que te los otorgue.",
+      code: "privileged_role_self_assignment",
+      roles: illegallyAdded,
+    });
+    return;
+  }
   const newRoles = [...desired].sort();
   const changed =
     previousRoles.length !== newRoles.length ||

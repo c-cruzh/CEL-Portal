@@ -20,6 +20,8 @@ tags:
     description: Project configuration (T0, etc.)
   - name: storage
     description: Object storage (presigned uploads, downloads)
+  - name: admin
+    description: PM-only administrative configuration
 paths:
   /healthz:
     get:
@@ -241,6 +243,65 @@ paths:
               schema:
                 $ref: "#/components/schemas/ProjectConfig"
 
+  /admin/notification-recipients:
+    get:
+      operationId: listNotificationRecipients
+      tags: [admin]
+      summary: List fixed notification recipients (PM only)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NotificationRecipient"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      operationId: addNotificationRecipient
+      tags: [admin]
+      summary: Add a fixed notification recipient (PM only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NotificationRecipientInput"
+      responses:
+        "200":
+          description: Already existed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationRecipient"
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NotificationRecipient"
+
+  /admin/notification-recipients/{email}:
+    delete:
+      operationId: deleteNotificationRecipient
+      tags: [admin]
+      summary: Remove a fixed notification recipient (PM only)
+      parameters:
+        - name: email
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No content
+
   /storage/uploads/request-url:
     post:
       operationId: requestUploadUrl
@@ -445,6 +506,27 @@ components:
         startDate:
           type: ["string", "null"]
           format: date
+
+    NotificationRecipient:
+      type: object
+      required: [email, createdAt]
+      properties:
+        email:
+          type: string
+        addedBy:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+
+    NotificationRecipientInput:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 3
 
     UploadRequest:
       type: object

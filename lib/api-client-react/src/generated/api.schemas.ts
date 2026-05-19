@@ -101,6 +101,18 @@ export interface ProjectConfigUpdate {
   startDate?: string | null;
 }
 
+export interface NotificationRecipient {
+  email: string;
+  /** @nullable */
+  addedBy?: string | null;
+  createdAt: string;
+}
+
+export interface NotificationRecipientInput {
+  /** @minLength 3 */
+  email: string;
+}
+
 export interface UploadRequest {
   name: string;
   size: number;

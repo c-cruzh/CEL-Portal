@@ -219,6 +219,43 @@ export const UpdateProjectConfigResponse = zod.object({
 
 
 /**
+ * @summary List fixed notification recipients (PM only)
+ */
+export const ListNotificationRecipientsResponseItem = zod.object({
+  "email": zod.string(),
+  "addedBy": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+})
+export const ListNotificationRecipientsResponse = zod.array(ListNotificationRecipientsResponseItem)
+
+
+/**
+ * @summary Add a fixed notification recipient (PM only)
+ */
+export const addNotificationRecipientBodyEmailMin = 3;
+
+
+
+export const AddNotificationRecipientBody = zod.object({
+  "email": zod.string().email().min(addNotificationRecipientBodyEmailMin)
+})
+
+export const AddNotificationRecipientResponse = zod.object({
+  "email": zod.string(),
+  "addedBy": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Remove a fixed notification recipient (PM only)
+ */
+export const DeleteNotificationRecipientParams = zod.object({
+  "email": zod.coerce.string()
+})
+
+
+/**
  * @summary Request a presigned URL to upload a file to object storage
  */
 export const RequestUploadUrlBody = zod.object({

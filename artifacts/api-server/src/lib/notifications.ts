@@ -1,5 +1,5 @@
 import { ne } from "drizzle-orm";
-import { db, usersTable } from "@workspace/db";
+import { db, usersTable, notificationRecipientsTable } from "@workspace/db";
 import { logger } from "./logger";
 
 type NotificationEvent =
@@ -66,6 +66,20 @@ async function resolveRecipients(actorId: string): Promise<string[]> {
 
   for (const addr of parseStaticRecipients()) {
     set.add(addr.toLowerCase());
+  }
+
+  try {
+    const fixed = await db
+      .select({ email: notificationRecipientsTable.email })
+      .from(notificationRecipientsTable);
+    for (const r of fixed) {
+      if (r.email) set.add(r.email.toLowerCase());
+    }
+  } catch (err) {
+    logger.warn(
+      { err },
+      "Failed to load fixed notification recipients from database",
+    );
   }
 
   try {
