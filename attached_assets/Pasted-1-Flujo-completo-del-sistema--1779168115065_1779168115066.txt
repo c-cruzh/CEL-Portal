@@ -1,0 +1,28 @@
+1. Flujo completo del sistema................................................................................................ 14
+2. Datos de entrada del sistema............................................................................................ 16
+3. Preprocesamiento y canalizaciones ETL: Orquestación de Datos y Pipelines con Python
+(Mage)................................................................................................................................... 18
+4. Arquitectura y entrenamiento de los modelos de predicción............................................. 20
+4.1 Modelo LSTM para predicción de caudales...............................................................21
+4.2 Modelo de inundación (extensión de la anegación)...................................................22
+5. Validación cruzada, métricas de evaluación y pruebas fuera de muestra.........................24
+6. Infraestructura técnica y uso de recursos (GPU, entorno web y servicios externos)........ 27
+Arquitectura de Hardware Recomendada............................................................27
+Dimensionamiento de Cómputo y Almacenamiento............................................ 28
+Entorno de desarrollo y lenguajes........................................................................28
+Bases de datos y almacenamiento...................................................................... 29
+Integración con servicios externos.......................................................................29
+7. Automatización y operación diaria del sistema......................................................30
+Programación de Ejecuciones............................................................................. 30
+Flujo Diario de Ingesta y Pronóstico.................................................................... 30
+Monitoreo y Gestión de Errores........................................................................... 31
+Operación Continua y Ajustes..............................................................................31
+8. Visualización de resultados y sistema de alerta.................................................... 32
+Dashboard Web Interactivo (Node/React)........................................................... 32
+Distribución de Alertas (Email/SMS)....................................................................32
+Integración y Adopción del Sistema.....................................................................33
+9. Consideraciones operativas específicas del Río Lempa................................................... 34
+10. Recursos humanos y perfiles técnicos necesarios.............................................. 36
+Detalle de Tareas y Matriz de Roles (RACI).......................................................................... 38
+Tabla de tareas por fase del proyecto..............................................................................38
+Matriz RACI de Roles y Responsabilidades.................................................................... 39
