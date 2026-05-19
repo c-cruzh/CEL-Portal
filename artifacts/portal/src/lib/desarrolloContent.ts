@@ -18,6 +18,48 @@ export const DEV_SECTIONS: DevSection[] = [
   { id: "anexo-lempa", label: "Anexo: Río Lempa", shortLabel: "Anexo Lempa" },
 ];
 
+export const FLUJO_DIAGRAM = `flowchart TD
+  subgraph FUENTES["Fuentes de Datos"]
+    direction LR
+    MET["Datos Meteorológicos<br/>(ECMWF, GPM)"]
+    HID["Datos Hidrológicos<br/>(Aforos CEL, GRDC)"]
+    GEO["Datos Geoespaciales<br/>(DEM, Sentinel-1)"]
+  end
+
+  subgraph SILO["AI Silo On-Premise (Nuevo)"]
+    direction TB
+    ORQ{"Orquestador de Flujos<br/>(Python / Mage)"}
+    DBH["DB Histórica y Geoespacial<br/>(PostgreSQL/PostGIS)"]
+    DBO["DB Operacional<br/>(MongoDB)"]
+    LSTM["Modelo LSTM de Caudal<br/>(Entrenamiento/Inferencia<br/>en GPU)"]
+    INUND["Modelo de Inundación"]
+    DASH["Dashboard & Alertas<br/>(Node.js/React)"]
+  end
+
+  MET --> ORQ
+  HID --> ORQ
+  GEO --> ORQ
+
+  ORQ -->|"Procesa y Carga"| DBH
+  ORQ -->|"Procesa y Carga"| DBO
+  ORQ -->|"Dispara<br/>Entrenamiento/Inferencia"| LSTM
+
+  DBH -->|"Alimenta"| LSTM
+  DBO -->|"Alimenta"| LSTM
+
+  LSTM -->|"Pronóstico de Caudal"| INUND
+  INUND -->|"Mapa de Inundación"| DASH
+  DBO -->|"Datos en tiempo real"| DASH
+
+  classDef source fill:#ecebff,stroke:#9b83ff,stroke-width:1px,color:#333;
+  classDef process fill:#ecebff,stroke:#9b83ff,stroke-width:1px,color:#333;
+  class MET,HID,GEO source;
+  class ORQ,DBH,DBO,LSTM,INUND,DASH process;
+
+  style FUENTES fill:#ffffdf,stroke:#c9c96b,stroke-width:1px
+  style SILO fill:#ffffdf,stroke:#c9c96b,stroke-width:1px
+`;
+
 export const FLUJO_INTRO =
   "El sistema de pronóstico hidrológico basado en IA seguirá un flujo de procesamiento de extremo a extremo, desde la recopilación de datos hasta la generación de alertas tempranas de inundación. Se compone de cuatro subsistemas principales —inspirados en Google Flood Hub (Nevo et al., 2022)— integrados en la plataforma de CEL, precedidos por una Fase 0 de habilitación de infraestructura.";
 

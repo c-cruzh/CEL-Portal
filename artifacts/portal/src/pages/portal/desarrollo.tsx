@@ -19,7 +19,9 @@ import {
   Shield,
   Search as SearchIcon,
 } from "lucide-react";
+import { Mermaid } from "@/components/Mermaid";
 import {
+  FLUJO_DIAGRAM,
   FLUJO_INTRO,
   FLUJO_STAGES,
   FLUJO_OUTRO,
@@ -72,7 +74,7 @@ interface ChapterDef {
 }
 
 const CHAPTERS: ChapterDef[] = [
-  { id: "flujo", num: "1", shortLabel: "Flujo del sistema", title: "Flujo completo del sistema", Icon: Activity, Component: FlujoSection, toc: [{ id: "flujo-etapas", label: "Etapas del pipeline" }, { id: "flujo-sintesis", label: "Síntesis" }] },
+  { id: "flujo", num: "1", shortLabel: "Flujo del sistema", title: "Flujo completo del sistema", Icon: Activity, Component: FlujoSection, toc: [{ id: "flujo-diagrama", label: "Diagrama del sistema" }, { id: "flujo-etapas", label: "Etapas del pipeline" }, { id: "flujo-sintesis", label: "Síntesis" }] },
   { id: "datos", num: "2", shortLabel: "Datos de entrada", title: "Datos de entrada del sistema", Icon: Database, Component: DatosSection, toc: [{ id: "datos-meteo", label: "Meteorológicos" }, { id: "datos-hidro", label: "Hidrológicos" }, { id: "datos-geo", label: "Geoespaciales" }, { id: "datos-cuenca", label: "Características de la cuenca" }] },
   { id: "etl", num: "3", shortLabel: "ETL con Mage", title: "Pipelines ETL con Mage", Icon: Settings, Component: EtlSection, toc: [{ id: "etl-extraccion", label: "Extracción" }, { id: "etl-transformacion", label: "Transformación" }, { id: "etl-carga", label: "Carga" }, { id: "etl-qa", label: "QA / QC" }] },
   { id: "modelos", num: "4", shortLabel: "Modelos de predicción", title: "Modelos de predicción", Icon: Layers, Component: ModelosSection, toc: [{ id: "modelos-lstm", label: "Modelo LSTM" }, { id: "modelos-inundacion", label: "Modelo de inundación" }] },
@@ -360,6 +362,12 @@ function FlujoSection() {
   return (
     <section>
       <SectionHeader intro={FLUJO_INTRO} />
+      <div id="flujo-diagrama" className="scroll-mt-24 mb-6">
+        <Mermaid
+          chart={FLUJO_DIAGRAM}
+          caption="Flujo propuesto del sistema desde la adquisición de datos hasta la emisión de alertas."
+        />
+      </div>
       <div id="flujo-etapas" className="space-y-4 scroll-mt-24">
         {FLUJO_STAGES.map((s) => (
           <Card key={s.id} className="border-border">
