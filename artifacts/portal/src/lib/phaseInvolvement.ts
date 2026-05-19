@@ -327,16 +327,16 @@ export const PHASE_INVOLVEMENT: PhaseInvolvement[] = [
                   "Definición de umbrales por sitio y envío automático de notificaciones a las listas de destinatarios pertinentes.",
                 responsible: ["fullstack_dev", "infra_devops"],
                 consulted: ["pm_cel", "hydrology_lead_cel"],
-                needsHumanReview: true,
+                informed: ["pm_lead", "stakeholder_cel"],
               },
               {
                 id: "f3-a4",
                 name: "Integración con sistemas y APIs de CEL",
                 description:
-                  "Conexión segura a las bases productivas (solo lectura) y exposición de endpoints en intranet.",
+                  "Conexión segura a las bases productivas (solo lectura) y exposición de endpoints en intranet, coordinada con la Unidad de Informática de CEL (Jefatura, Redes, DevOps).",
                 responsible: ["fullstack_dev", "infra_devops"],
-                consulted: ["pm_cel"],
-                needsHumanReview: true,
+                consulted: ["pm_cel", "geospatial_expert_cel"],
+                informed: ["pm_lead", "stakeholder_cel"],
               },
             ],
           },
@@ -406,25 +406,45 @@ export const PHASE_INVOLVEMENT: PhaseInvolvement[] = [
   },
   {
     phaseId: "CONT",
-    needsHumanReview: true,
     stages: [
       {
-        id: "cont-buffer",
-        name: "Contingencia",
+        id: "cont-plan",
+        name: "Contingencia (mini-plan)",
         description:
-          "Buffer explícito para absorber retrasos, retrabajos o validaciones adicionales sin extender el piloto.",
+          "Buffer explícito para absorber retrasos, retrabajos o validaciones adicionales sin extender el piloto, con tres líneas de acción acordadas entre C2 Labs y CEL.",
         deliverables: [
           {
             id: "cont-d1",
-            name: "Plan de uso de contingencia",
+            name: "Bitácora de uso de contingencia",
             description:
-              "Documento corto que registra cómo se aplicó el buffer (refuerzo de documentación, retrabajos, etc.).",
+              "Registro corto y trazable de cómo se aplicó el buffer (re-planificación, retrabajos técnicos, validaciones adicionales) firmado por ambos PMs.",
             activities: [
               {
                 id: "cont-a1",
-                name: "Reasignación de tareas según riesgos materializados",
+                name: "Re-planificación semanal según riesgos materializados",
+                description:
+                  "Revisión conjunta de los riesgos que se materializaron en la semana, re-priorización del backlog y comunicación del nuevo plan al equipo y a la dirección de CEL.",
                 responsible: ["pm_lead", "pm_cel"],
-                needsHumanReview: true,
+                consulted: ["hydrology_lead_cel"],
+                informed: ["stakeholder_cel"],
+              },
+              {
+                id: "cont-a2",
+                name: "Retrabajos técnicos puntuales (datos / modelo / pipeline)",
+                description:
+                  "Corrección de hallazgos específicos surgidos en QA u operación supervisada: ajustes de pipeline ETL, reentrenamiento parcial del modelo o parches en el portal.",
+                responsible: ["data_engineer", "ml_engineer", "fullstack_dev"],
+                consulted: ["qa_validation", "hydrology_lead_cel"],
+                informed: ["pm_lead", "pm_cel"],
+              },
+              {
+                id: "cont-a3",
+                name: "Validación adicional con CEL ante hallazgos OOS",
+                description:
+                  "Sesiones extra de validación con el equipo de hidrología de CEL si las pruebas fuera de muestra revelan desviaciones que requieran segunda opinión o ajuste de criterios.",
+                responsible: ["qa_validation", "hydrology_lead_cel"],
+                consulted: ["ml_engineer"],
+                informed: ["pm_lead", "pm_cel", "stakeholder_cel"],
               },
             ],
           },
