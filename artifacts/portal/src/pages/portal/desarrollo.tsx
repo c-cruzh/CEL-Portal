@@ -1,11 +1,12 @@
 import { useMemo, useState } from "react";
+import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Activity,
+  AlertCircle,
   AlignLeft,
-  Box,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -25,17 +26,27 @@ import {
   FLUJO_INTRO,
   FLUJO_STAGES,
   FLUJO_OUTRO,
+  FLUJO_CROSS_LINKS,
   DATOS_INTRO,
   DATOS_CATEGORIES,
+  DATA_REGISTRY,
+  type DataRegistryStatus,
   ETL_INTRO,
-  ETL_STAGES,
+  ETL_DIAGRAM,
+  ETL_STAGES_ORDERED,
   MODEL_LSTM,
   MODEL_FLOOD,
   VALIDATION_ROLLING,
   VALIDATION_METRICS,
   VALIDATION_GOALS,
+  OPEN_DECISIONS,
+  OPEN_DECISIONS_INTRO,
+  type OpenDecisionStatus,
+  DECISIONES_CONFIRMADAS_INTRO,
   DECISIONES_TECNICAS,
   OPERACION_DIARIA,
+  CEL_DAILY_RESPONSIBILITIES,
+  CEL_DAILY_RESPONSIBILITIES_INTRO,
   RACI_INTRO,
   FTE_BREAKDOWN,
   TEAM_PROFILES,
@@ -47,15 +58,12 @@ import {
   RACI_TASKS,
   RACI_LEGEND,
   INFRA_INTRO,
+  INFRA_BOM_DISCLAIMER,
   INFRA_ARCHITECTURE,
   INFRA_HARDWARE,
   INFRA_SOFTWARE,
   INFRA_COMMISSIONING,
   INFRA_BACKUP_POLICIES,
-  INFRA_TECNICA_INTRO,
-  INFRA_TECNICA_BLOCKS,
-  INFRA_TECNICA_SEGURIDAD,
-  EXTERNAL_SERVICES,
   LEMPA,
   type InfraStatus,
 } from "@/lib/desarrolloContent";
@@ -69,7 +77,6 @@ type ChapterId =
   | "decisiones"
   | "operacion"
   | "visualizacion"
-  | "infra-tecnica"
   | "raci"
   | "infraestructura"
   | "anexo-lempa";
@@ -86,23 +93,22 @@ interface ChapterDef {
 
 const CHAPTERS: ChapterDef[] = [
   { id: "flujo", num: "1", shortLabel: "Flujo del sistema", title: "Flujo completo del sistema", Icon: Activity, Component: FlujoSection, toc: [{ id: "flujo-diagrama", label: "Diagrama del sistema" }, { id: "flujo-etapas", label: "Etapas del pipeline" }, { id: "flujo-sintesis", label: "Síntesis" }] },
-  { id: "datos", num: "2", shortLabel: "Datos de entrada", title: "Datos de entrada del sistema", Icon: Database, Component: DatosSection, toc: [{ id: "datos-meteo", label: "Meteorológicos" }, { id: "datos-hidro", label: "Hidrológicos" }, { id: "datos-geo", label: "Geoespaciales" }, { id: "datos-cuenca", label: "Características de la cuenca" }] },
-  { id: "etl", num: "3", shortLabel: "ETL con Mage", title: "Pipelines ETL con Mage", Icon: Settings, Component: EtlSection, toc: [{ id: "etl-extraccion", label: "Extracción" }, { id: "etl-transformacion", label: "Transformación" }, { id: "etl-carga", label: "Carga" }, { id: "etl-qa", label: "QA / QC" }] },
+  { id: "datos", num: "2", shortLabel: "Datos de entrada", title: "Datos de entrada del sistema", Icon: Database, Component: DatosSection, toc: [{ id: "datos-categorias", label: "Categorías" }, { id: "datos-registry", label: "Registro de fuentes" }] },
+  { id: "etl", num: "3", shortLabel: "ETL con Mage", title: "Pipelines ETL con Mage", Icon: Settings, Component: EtlSection, toc: [{ id: "etl-diagrama", label: "Diagrama" }, { id: "etl-stage-1", label: "1. Extracción" }, { id: "etl-stage-2", label: "2. Staging" }, { id: "etl-stage-3", label: "3. Transformación" }, { id: "etl-stage-4", label: "4. Carga" }, { id: "etl-stage-5", label: "5. Orquestación" }] },
   { id: "modelos", num: "4", shortLabel: "Modelos de predicción", title: "Modelos de predicción", Icon: Layers, Component: ModelosSection, toc: [{ id: "modelos-lstm", label: "Modelo LSTM" }, { id: "modelos-inundacion", label: "Modelo de inundación" }] },
   { id: "validacion", num: "5", shortLabel: "Validación y métricas", title: "Validación y métricas", Icon: Shield, Component: ValidacionSection, toc: [{ id: "validacion-rolling", label: "Origen rodante" }, { id: "validacion-metricas", label: "Métricas" }, { id: "validacion-goals", label: "Criterios de éxito" }] },
-  { id: "decisiones", num: "6", shortLabel: "Decisiones técnicas", title: "Decisiones técnicas", Icon: FileText, Component: DecisionesSection, toc: [] },
-  { id: "operacion", num: "7", shortLabel: "Operación diaria", title: "Operación diaria", Icon: Play, Component: OperacionSection, toc: [{ id: "operacion-scheduling", label: "Programación" }, { id: "operacion-flujo", label: "Flujo diario" }, { id: "operacion-monitoreo", label: "Monitoreo y errores" }] },
-  { id: "visualizacion", num: "8", shortLabel: "Visualización y alertas", title: "Visualización y alertas", Icon: Activity, Component: VisualizacionSection, toc: [{ id: "visualizacion-features", label: "Funcionalidades" }, { id: "visualizacion-alertas", label: "Sistema de alertas" }] },
-  { id: "infra-tecnica", num: "9", shortLabel: "Infraestructura técnica y servicios externos", title: "Infraestructura técnica, recursos GPU y servicios externos", Icon: Server, Component: InfraTecnicaSection, toc: [{ id: "infra-tec-entorno", label: "Entorno y stack" }, { id: "infra-tec-servicios", label: "Servicios externos" }, { id: "infra-tec-seguridad", label: "Seguridad y disponibilidad" }] },
-  { id: "anexo-lempa", num: "10", shortLabel: "Cuenca del Lempa", title: "Anexo — Cuenca del Río Lempa", Icon: MapIcon, Component: LempaSection, toc: [] },
-  { id: "raci", num: "11", shortLabel: "Equipo y Roles (RACI)", title: "Equipo, FTE y matriz RACI", Icon: AlignLeft, Component: RaciSection, toc: [{ id: "raci-fte", label: "Estructura operativa y FTE" }, { id: "raci-perfiles", label: "Perfiles del equipo" }, { id: "raci-comite", label: "Comité de Informática" }, { id: "raci-tareas", label: "Tareas por fase" }, { id: "raci-matriz", label: "Matriz RACI" }] },
-  { id: "infraestructura", num: "12", shortLabel: "Silo de IA y BOM", title: "Silo de IA — Infraestructura local y BOM", Icon: Server, Component: InfraSection, toc: [{ id: "infra-arquitectura", label: "Arquitectura" }, { id: "infra-hardware", label: "BOM hardware" }, { id: "infra-software", label: "BOM software" }, { id: "infra-comisionamiento", label: "Comisionamiento" }, { id: "infra-respaldo", label: "Respaldo y seguridad" }] },
+  { id: "decisiones", num: "6", shortLabel: "Decisiones abiertas y dependencias CEL", title: "Decisiones abiertas y dependencias con CEL", Icon: FileText, Component: DecisionesSection, toc: [{ id: "decisiones-abiertas", label: "Decisiones abiertas" }, { id: "decisiones-confirmadas", label: "Decisiones confirmadas" }] },
+  { id: "operacion", num: "7", shortLabel: "Operación diaria", title: "Operación diaria", Icon: Play, Component: OperacionSection, toc: [{ id: "operacion-scheduling", label: "Programación" }, { id: "operacion-flujo", label: "Flujo diario" }, { id: "operacion-monitoreo", label: "Monitoreo y errores" }, { id: "operacion-cel", label: "Responsabilidades CEL" }] },
+  { id: "visualizacion", num: "8", shortLabel: "Visualización y alertas", title: "Visualización y alertas", Icon: Activity, Component: VisualizacionSection, toc: [{ id: "visualizacion-features", label: "Funcionalidades" }, { id: "visualizacion-alertas", label: "Sistema de alertas" }, { id: "visualizacion-integracion", label: "Integración con el portal" }, { id: "visualizacion-capacitacion", label: "Capacitación y ejercicios" }] },
+  { id: "infraestructura", num: "9", shortLabel: "BOM final aprobado por CEL", title: "BOM final aprobado por CEL — Silo de IA", Icon: Server, Component: InfraSection, toc: [{ id: "infra-disclaimer", label: "Estado del BOM" }, { id: "infra-arquitectura", label: "Arquitectura" }, { id: "infra-hardware", label: "Hardware" }, { id: "infra-software", label: "Software" }, { id: "infra-comisionamiento", label: "Comisionamiento" }, { id: "infra-respaldo", label: "Respaldo y seguridad" }] },
+  { id: "anexo-lempa", num: "10", shortLabel: "Anexo Lempa", title: "Anexo — Dinámicas hidrológicas y gobernanza trinacional del Lempa", Icon: MapIcon, Component: LempaSection, toc: [{ id: "lempa-geo", label: "Características geográficas" }, { id: "lempa-climate", label: "Cambio climático" }, { id: "lempa-governance", label: "Gobernanza trinacional" }, { id: "lempa-implications", label: "Implicaciones para la IA" }] },
+  { id: "raci", num: "11", shortLabel: "Equipo y RACI", title: "Equipo, FTE y matriz RACI", Icon: AlignLeft, Component: RaciSection, toc: [{ id: "raci-estructura", label: "Cómo está organizado el capítulo" }, { id: "raci-fte", label: "A.1 Estructura operativa y FTE" }, { id: "raci-comite", label: "A.2 Comité de Informática (CEL)" }, { id: "raci-perfiles", label: "A.3 Perfiles del equipo" }, { id: "raci-matriz", label: "B.1 Matriz RACI consolidada" }, { id: "raci-tareas", label: "B.2 Detalle de tareas por fase" }] },
 ];
 
 const ANEXO_GROUPS: { id: string; title: string; chapters: ChapterId[] }[] = [
   {
-    id: "decisiones-tecnicas",
-    title: "Decisiones Técnicas",
+    id: "tecnico",
+    title: "Capítulos técnicos (1-9)",
     chapters: [
       "flujo",
       "datos",
@@ -112,33 +118,27 @@ const ANEXO_GROUPS: { id: string; title: string; chapters: ChapterId[] }[] = [
       "decisiones",
       "operacion",
       "visualizacion",
-      "infra-tecnica",
+      "infraestructura",
     ],
   },
   {
     id: "lempa",
-    title: "Especificidades del Lempa (Anexo E)",
+    title: "Anexo Lempa",
     chapters: ["anexo-lempa"],
   },
   {
     id: "equipo-roles",
-    title: "Equipo y Roles (RACI)",
+    title: "Equipo y RACI",
     chapters: ["raci"],
-  },
-  {
-    id: "silo-ia",
-    title: "Silo de IA y BOM",
-    chapters: ["infraestructura"],
   },
 ];
 
 export default function Desarrollo() {
   const [activeId, setActiveId] = useState<ChapterId>("flujo");
   const [expanded, setExpanded] = useState<Record<string, boolean>>({
-    "decisiones-tecnicas": true,
+    "tecnico": true,
     "lempa": false,
     "equipo-roles": false,
-    "silo-ia": false,
   });
   const [query, setQuery] = useState("");
 
@@ -381,19 +381,29 @@ function FlujoSection() {
           caption="Flujo propuesto del sistema desde la adquisición de datos hasta la emisión de alertas."
         />
       </div>
-      <div id="flujo-etapas" className="space-y-4 scroll-mt-24">
+      <div id="flujo-etapas" className="space-y-3 scroll-mt-24">
+        <p className="text-xs text-muted-foreground leading-relaxed mb-2">
+          Resumen de las etapas. El detalle de cada subsistema vive en su capítulo dedicado
+          (enlace al final de cada etapa) — esta vista no repite ese contenido.
+        </p>
         {FLUJO_STAGES.map((s) => (
           <Card key={s.id} className="border-border">
-            <CardHeader className="pb-3">
-              <div className="flex items-center gap-3">
+            <CardHeader className="pb-2">
+              <div className="flex items-center gap-3 flex-wrap">
                 <span className="text-xs font-semibold uppercase tracking-wider px-2 py-1 rounded bg-primary/10 text-primary">
                   {s.tag}
                 </span>
-                <CardTitle className="text-lg">{s.title}</CardTitle>
+                <CardTitle className="text-base">{s.title}</CardTitle>
               </div>
             </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground leading-relaxed">{s.body}</p>
+            <CardContent className="space-y-2">
+              <p className="text-sm text-muted-foreground leading-relaxed">{s.summary}</p>
+              {s.detailChapter && (
+                <p className="text-xs">
+                  <span className="text-muted-foreground">Detalle en </span>
+                  <span className="text-primary font-medium">{s.detailChapter.label}</span>
+                </p>
+              )}
             </CardContent>
           </Card>
         ))}
@@ -403,7 +413,45 @@ function FlujoSection() {
           <p className="text-sm text-foreground leading-relaxed">{FLUJO_OUTRO}</p>
         </CardContent>
       </Card>
+      <div className="mt-6">
+        <h3 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+          Ver también en otros tabs del portal
+        </h3>
+        <div className="grid gap-3 md:grid-cols-3">
+          {FLUJO_CROSS_LINKS.map((l) => (
+            <Link key={l.href} href={l.href}>
+              <a className="block rounded-md border border-border hover:border-primary hover:bg-primary/5 p-3 transition-colors">
+                <div className="text-sm font-semibold text-foreground flex items-center gap-1">
+                  {l.label}
+                  <ChevronRight className="w-3.5 h-3.5 text-primary" />
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed mt-1">{l.description}</p>
+              </a>
+            </Link>
+          ))}
+        </div>
+      </div>
     </section>
+  );
+}
+
+const DATA_REGISTRY_STATUS_STYLE: Record<DataRegistryStatus, string> = {
+  "confirmado": "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-900 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800",
+  "por-confirmar": "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700",
+  "por-validar-kevin": "bg-amber-100 dark:bg-amber-900/30 text-amber-900 dark:text-amber-200 border border-amber-200 dark:border-amber-800",
+};
+
+const DATA_REGISTRY_STATUS_LABEL: Record<DataRegistryStatus, string> = {
+  "confirmado": "Confirmado",
+  "por-confirmar": "Por confirmar con CEL",
+  "por-validar-kevin": "Por validar (Kevin)",
+};
+
+function DataStatusBadge({ status }: { status: DataRegistryStatus }) {
+  return (
+    <span className={`inline-flex items-center text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded ${DATA_REGISTRY_STATUS_STYLE[status]}`}>
+      {DATA_REGISTRY_STATUS_LABEL[status]}
+    </span>
   );
 }
 
@@ -411,9 +459,9 @@ function DatosSection() {
   return (
     <section>
       <SectionHeader intro={DATOS_INTRO} />
-      <div className="grid gap-4 md:grid-cols-2">
+      <div id="datos-categorias" className="grid gap-4 md:grid-cols-2 scroll-mt-24">
         {DATOS_CATEGORIES.map((c) => (
-          <Card key={c.id} id={`datos-${c.id}`} className="border-border h-full scroll-mt-24">
+          <Card key={c.id} className="border-border h-full">
             <CardHeader className="pb-3">
               <CardTitle className="text-base">{c.title}</CardTitle>
             </CardHeader>
@@ -433,6 +481,53 @@ function DatosSection() {
           </Card>
         ))}
       </div>
+
+      <div id="datos-registry" className="mt-10 scroll-mt-24">
+        <h3 className="text-lg font-semibold text-foreground mb-2">Registro de fuentes de datos</h3>
+        <p className="text-sm text-muted-foreground leading-relaxed mb-4">
+          Catálogo consolidado de las fuentes que alimentan el sistema, con tipo de acceso, frecuencia,
+          cobertura espacial, dueño/propietario y estado. Las fuentes marcadas como
+          <span className="font-medium"> “Por validar (Kevin)”</span> requieren confirmación del Líder
+          Hidrología/PM antes del cierre del piloto.
+        </p>
+        <Card className="border-border overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/40 text-muted-foreground">
+                <tr>
+                  <th className="text-left font-medium px-3 py-2 whitespace-nowrap">ID</th>
+                  <th className="text-left font-medium px-3 py-2">Categoría</th>
+                  <th className="text-left font-medium px-3 py-2">Fuente</th>
+                  <th className="text-left font-medium px-3 py-2">Formato</th>
+                  <th className="text-left font-medium px-3 py-2">Proveedor</th>
+                  <th className="text-left font-medium px-3 py-2">Frecuencia</th>
+                  <th className="text-left font-medium px-3 py-2">Tamaño aprox.</th>
+                  <th className="text-left font-medium px-3 py-2">Dueño</th>
+                  <th className="text-left font-medium px-3 py-2">Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {DATA_REGISTRY.map((d) => (
+                  <tr key={d.id} className="border-t border-border align-top">
+                    <td className="px-3 py-2 font-mono text-xs text-muted-foreground whitespace-nowrap">{d.id}</td>
+                    <td className="px-3 py-2 text-muted-foreground whitespace-nowrap">{d.category}</td>
+                    <td className="px-3 py-2">
+                      <div className="font-medium text-foreground">{d.name}</div>
+                      {d.note && <div className="text-xs text-muted-foreground mt-0.5">{d.note}</div>}
+                    </td>
+                    <td className="px-3 py-2 text-muted-foreground">{d.format}</td>
+                    <td className="px-3 py-2 text-muted-foreground">{d.provider}</td>
+                    <td className="px-3 py-2 text-muted-foreground">{d.frequency}</td>
+                    <td className="px-3 py-2 text-muted-foreground">{d.approxSize}</td>
+                    <td className="px-3 py-2 text-muted-foreground">{d.owner}</td>
+                    <td className="px-3 py-2"><DataStatusBadge status={d.status} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      </div>
     </section>
   );
 }
@@ -441,20 +536,32 @@ function EtlSection() {
   return (
     <section>
       <SectionHeader intro={ETL_INTRO} />
-      <div className="grid gap-4 md:grid-cols-2">
-        {ETL_STAGES.map((s, idx) => (
+      <div id="etl-diagrama" className="scroll-mt-24 mb-8">
+        <Mermaid
+          chart={ETL_DIAGRAM}
+          caption="Pipeline ETL en cinco pasos ordenados: Extracción → Staging → Transformación → Carga, coordinados por Mage."
+        />
+      </div>
+      <div className="space-y-5">
+        {ETL_STAGES_ORDERED.map((s) => (
           <Card
-            key={s.title}
-            id={["etl-extraccion", "etl-transformacion", "etl-carga", "etl-qa"][idx]}
+            key={s.num}
+            id={`etl-stage-${s.num}`}
             className="border-border scroll-mt-24"
           >
             <CardHeader className="pb-3">
-              <CardTitle className="text-base">{s.title}</CardTitle>
+              <div className="flex items-center gap-3">
+                <span className="shrink-0 h-8 w-8 rounded-full bg-primary text-primary-foreground text-sm font-semibold flex items-center justify-center">
+                  {s.num}
+                </span>
+                <CardTitle className="text-lg">{s.title}</CardTitle>
+              </div>
             </CardHeader>
-            <CardContent>
-              <ul className="space-y-1.5">
+            <CardContent className="space-y-3">
+              <p className="text-sm text-muted-foreground leading-relaxed">{s.body}</p>
+              <ul className="space-y-1.5 pt-1">
                 {s.items.map((it, i) => (
-                  <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
+                  <li key={i} className="flex items-start gap-2 text-sm text-foreground">
                     <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary/70 shrink-0" />
                     <span className="leading-relaxed">{it}</span>
                   </li>
@@ -571,20 +678,146 @@ function ValidacionSection() {
   );
 }
 
-function DecisionesSection() {
+const OPEN_DECISION_STATUS_STYLE: Record<OpenDecisionStatus, string> = {
+  "abierta": "bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700",
+  "en-discusion": "bg-sky-100 dark:bg-sky-900/30 text-sky-900 dark:text-sky-200 border border-sky-200 dark:border-sky-800",
+  "bloqueada-cel": "bg-rose-100 dark:bg-rose-900/30 text-rose-900 dark:text-rose-200 border border-rose-200 dark:border-rose-800",
+  "cerrada": "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-900 dark:text-emerald-200 border border-emerald-200 dark:border-emerald-800",
+  "por-validar-kevin": "bg-amber-100 dark:bg-amber-900/30 text-amber-900 dark:text-amber-200 border border-amber-200 dark:border-amber-800",
+};
+
+const OPEN_DECISION_STATUS_LABEL: Record<OpenDecisionStatus, string> = {
+  "abierta": "Abierta",
+  "en-discusion": "En discusión",
+  "bloqueada-cel": "Bloqueada (CEL)",
+  "cerrada": "Cerrada",
+  "por-validar-kevin": "Por validar (Kevin)",
+};
+
+function OpenDecisionStatusBadge({ status }: { status: OpenDecisionStatus }) {
   return (
-    <section>
-      <div className="grid gap-4 md:grid-cols-2">
-        {DECISIONES_TECNICAS.map((d) => (
-          <Card key={d.title} className="border-border">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-base">{d.title}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground leading-relaxed">{d.body}</p>
-            </CardContent>
-          </Card>
-        ))}
+    <span className={`inline-flex items-center text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded whitespace-nowrap ${OPEN_DECISION_STATUS_STYLE[status]}`}>
+      {OPEN_DECISION_STATUS_LABEL[status]}
+    </span>
+  );
+}
+
+function DecisionesSection() {
+  const areas = useMemo(() => Array.from(new Set(OPEN_DECISIONS.map((d) => d.area))), []);
+  const [areaFilter, setAreaFilter] = useState<string>("Todas");
+  const [statusFilter, setStatusFilter] = useState<string>("Todas");
+  const filtered = useMemo(
+    () =>
+      OPEN_DECISIONS.filter(
+        (d) =>
+          (areaFilter === "Todas" || d.area === areaFilter) &&
+          (statusFilter === "Todas" || d.status === statusFilter),
+      ),
+    [areaFilter, statusFilter],
+  );
+
+  return (
+    <section className="space-y-10">
+      <SectionHeader intro={OPEN_DECISIONS_INTRO} />
+
+      <div id="decisiones-abiertas" className="scroll-mt-24">
+        <div className="flex flex-wrap items-end gap-3 mb-4">
+          <div>
+            <label className="block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+              Área
+            </label>
+            <select
+              value={areaFilter}
+              onChange={(e) => setAreaFilter(e.target.value)}
+              className="border border-border rounded-md px-2 py-1.5 text-sm bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+            >
+              <option value="Todas">Todas</option>
+              {areas.map((a) => (
+                <option key={a} value={a}>{a}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+              Estado
+            </label>
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="border border-border rounded-md px-2 py-1.5 text-sm bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+            >
+              <option value="Todas">Todos</option>
+              {Object.entries(OPEN_DECISION_STATUS_LABEL).map(([k, v]) => (
+                <option key={k} value={k}>{v}</option>
+              ))}
+            </select>
+          </div>
+          <p className="text-xs text-muted-foreground ml-auto">
+            {filtered.length} de {OPEN_DECISIONS.length} decisiones
+          </p>
+        </div>
+        <Card className="border-border overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/40 text-muted-foreground">
+                <tr>
+                  <th className="text-left font-medium px-3 py-2 whitespace-nowrap">ID</th>
+                  <th className="text-left font-medium px-3 py-2">Área</th>
+                  <th className="text-left font-medium px-3 py-2">Decisión</th>
+                  <th className="text-left font-medium px-3 py-2">Responsable</th>
+                  <th className="text-left font-medium px-3 py-2">Contraparte CEL</th>
+                  <th className="text-left font-medium px-3 py-2 whitespace-nowrap">Fecha objetivo</th>
+                  <th className="text-left font-medium px-3 py-2">Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((d) => (
+                  <tr key={d.id} className="border-t border-border align-top">
+                    <td className="px-3 py-2.5 font-mono text-xs text-muted-foreground whitespace-nowrap">{d.id}</td>
+                    <td className="px-3 py-2.5 text-muted-foreground whitespace-nowrap">{d.area}</td>
+                    <td className="px-3 py-2.5">
+                      <div className="font-medium text-foreground">{d.decision}</div>
+                      <div className="text-xs text-muted-foreground leading-relaxed mt-1">{d.detail}</div>
+                      {d.decisionLink && (
+                        <Link href="/portal/decisiones">
+                          <a
+                            className="text-[11px] text-primary hover:text-primary/80 hover:underline mt-1.5 inline-flex items-center gap-1"
+                            title="Abrir en el módulo de Decisiones"
+                          >
+                            <FileText className="w-3 h-3" />
+                            Decisión formal: {d.decisionLink}
+                            <ChevronRight className="w-3 h-3" />
+                          </a>
+                        </Link>
+                      )}
+                    </td>
+                    <td className="px-3 py-2.5 text-muted-foreground">{d.responsable}</td>
+                    <td className="px-3 py-2.5 text-muted-foreground">{d.contraparteCel}</td>
+                    <td className="px-3 py-2.5 text-muted-foreground whitespace-nowrap">{d.fechaObjetivo}</td>
+                    <td className="px-3 py-2.5"><OpenDecisionStatusBadge status={d.status} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </Card>
+      </div>
+
+      <div id="decisiones-confirmadas" className="scroll-mt-24">
+        <h3 className="text-lg font-semibold text-foreground mb-2">Decisiones técnicas confirmadas</h3>
+        <p className="text-sm text-muted-foreground leading-relaxed mb-4">{DECISIONES_CONFIRMADAS_INTRO}</p>
+        <div className="grid gap-4 md:grid-cols-2">
+          {DECISIONES_TECNICAS.map((d) => (
+            <Card key={d.title} className="border-border">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">{d.title}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm text-muted-foreground leading-relaxed">{d.body}</p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
       </div>
     </section>
   );
@@ -639,6 +872,57 @@ function OperacionSection() {
             </CardContent>
           </Card>
         </div>
+
+        <div id="operacion-cel" className="scroll-mt-24 pt-4">
+          <h3 className="text-lg font-semibold text-foreground mb-2">Responsabilidades diarias de CEL</h3>
+          <p className="text-sm text-muted-foreground leading-relaxed mb-4">{CEL_DAILY_RESPONSIBILITIES_INTRO}</p>
+          <div className="space-y-4">
+            {CEL_DAILY_RESPONSIBILITIES.map((r) => (
+              <Card key={r.area} className="border-border border-l-4 border-l-primary">
+                <CardHeader className="pb-3">
+                  <div className="flex items-baseline justify-between gap-3 flex-wrap">
+                    <CardTitle className="text-base">{r.area}</CardTitle>
+                    <span className="text-xs text-muted-foreground">{r.role}</span>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <h4 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">Responsabilidades</h4>
+                    <ul className="space-y-1.5">
+                      {r.responsibilities.map((it, i) => (
+                        <li key={i} className="flex items-start gap-2 text-sm text-foreground">
+                          <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+                          <span className="leading-relaxed">{it}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div>
+                      <h4 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">Accesos</h4>
+                      <ul className="space-y-1 text-sm text-muted-foreground">
+                        {r.accesos.map((a, i) => (
+                          <li key={i} className="leading-relaxed">• {a}</li>
+                        ))}
+                      </ul>
+                    </div>
+                    <div>
+                      <h4 className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground mb-2">Inputs al sistema</h4>
+                      <ul className="space-y-1 text-sm text-muted-foreground">
+                        {r.inputs.map((a, i) => (
+                          <li key={i} className="leading-relaxed">• {a}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                  <div className="rounded-md bg-muted/50 border border-border p-3">
+                    <p className="text-xs text-muted-foreground"><span className="font-semibold text-foreground">SLA: </span>{r.sla}</p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
       </div>
     </section>
   );
@@ -670,6 +954,40 @@ function VisualizacionSection() {
             {VISUALIZACION.alerts.samples.map((s, i) => (
               <li key={i} className="text-sm text-foreground leading-relaxed font-mono bg-muted/50 border border-border rounded p-3">
                 {s}
+              </li>
+            ))}
+          </ul>
+        </CardContent>
+      </Card>
+
+      <Card id="visualizacion-integracion" className="border-border scroll-mt-24 mt-6">
+        <CardHeader>
+          <CardTitle className="text-base">{VISUALIZACION.integration.title}</CardTitle>
+          <CardDescription className="pt-2 leading-relaxed">{VISUALIZACION.integration.body}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ul className="space-y-1.5">
+            {VISUALIZACION.integration.bullets.map((b, i) => (
+              <li key={i} className="flex items-start gap-2 text-sm text-foreground">
+                <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+                <span className="leading-relaxed">{b}</span>
+              </li>
+            ))}
+          </ul>
+        </CardContent>
+      </Card>
+
+      <Card id="visualizacion-capacitacion" className="border-border scroll-mt-24 mt-6">
+        <CardHeader>
+          <CardTitle className="text-base">{VISUALIZACION.training.title}</CardTitle>
+          <CardDescription className="pt-2 leading-relaxed">{VISUALIZACION.training.body}</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <ul className="space-y-1.5">
+            {VISUALIZACION.training.bullets.map((b, i) => (
+              <li key={i} className="flex items-start gap-2 text-sm text-foreground">
+                <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+                <span className="leading-relaxed">{b}</span>
               </li>
             ))}
           </ul>
@@ -810,24 +1128,82 @@ function RaciSection() {
     <section className="space-y-10">
       <SectionHeader intro={RACI_INTRO} />
 
-      {/* Estructura operativa y FTE */}
-      <div id="raci-fte" className="space-y-4 scroll-mt-24">
-        <h3 className="text-lg font-semibold text-foreground">Estructura operativa y asignación de esfuerzo (FTE)</h3>
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          Distribución de tiempos y roles acordada para la ejecución del piloto. Centraliza la
-          operación diaria en un único Ingeniero DevOps de enlace, mientras la Unidad de
-          Informática actúa como Comité Consultivo de gobernanza.
-        </p>
-        <div className="grid gap-4 md:grid-cols-3">
-          {FTE_BREAKDOWN.map((item) => (
-            <FteCard key={item.label} item={item} />
-          ))}
-        </div>
+      {/* Estructura del capítulo */}
+      <div id="raci-estructura" className="scroll-mt-24">
+        <Card className="border-primary/30 bg-primary/5">
+          <CardContent className="p-5 space-y-3">
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-primary">
+              Cómo está organizado este capítulo
+            </h3>
+            <p className="text-sm text-foreground leading-relaxed">
+              El capítulo se reorganizó en dos bloques. El bloque <b>A — Quién lleva el piloto</b>
+              presenta el "cast" del proyecto (esfuerzo, gobernanza CEL y perfiles). El bloque
+              <b> B — Cómo se asignan las responsabilidades</b> aterriza ese cast en la matriz
+              RACI consolidada y luego en el detalle de tareas por fase.
+            </p>
+            <div className="grid gap-3 md:grid-cols-2 text-xs">
+              <div className="rounded border border-primary/20 bg-card p-3">
+                <div className="font-semibold text-primary">A. Quién lleva el piloto</div>
+                <ul className="mt-1.5 space-y-0.5 text-muted-foreground list-disc pl-4">
+                  <li>A.1 Estructura operativa y FTE</li>
+                  <li>A.2 Comité de Informática (CEL)</li>
+                  <li>A.3 Perfiles del equipo</li>
+                </ul>
+              </div>
+              <div className="rounded border border-primary/20 bg-card p-3">
+                <div className="font-semibold text-primary">B. Cómo se asignan las responsabilidades</div>
+                <ul className="mt-1.5 space-y-0.5 text-muted-foreground list-disc pl-4">
+                  <li>B.1 Matriz RACI consolidada (vista única)</li>
+                  <li>B.2 Detalle de tareas por fase (drill-down)</li>
+                </ul>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       </div>
 
-      {/* Perfiles del equipo */}
+      <div className="space-y-8">
+        <h3 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary border-b border-primary/20 pb-2">
+          Bloque A — Quién lleva el piloto
+        </h3>
+
+        {/* A.1 Estructura operativa y FTE */}
+        <div id="raci-fte" className="space-y-4 scroll-mt-24">
+          <h3 className="text-lg font-semibold text-foreground">A.1 Estructura operativa y asignación de esfuerzo (FTE)</h3>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            Distribución de tiempos y roles acordada para la ejecución del piloto. Centraliza la
+            operación diaria en un único Ingeniero DevOps de enlace, mientras la Unidad de
+            Informática actúa como Comité Consultivo de gobernanza.
+          </p>
+          <div className="grid gap-4 md:grid-cols-3">
+            {FTE_BREAKDOWN.map((item) => (
+              <FteCard key={item.label} item={item} />
+            ))}
+          </div>
+        </div>
+
+        {/* A.2 Comité de Informática */}
+        <div id="raci-comite" className="space-y-4 scroll-mt-24">
+          <h3 className="text-lg font-semibold text-foreground">
+            A.2 Comité de Informática, Gobernanza y Seguridad (CEL)
+          </h3>
+          <p className="text-sm text-muted-foreground leading-relaxed">{COMMITTEE_INTRO}</p>
+          <Card className="border-border">
+            <CardContent className="p-0 divide-y divide-border">
+              {COMMITTEE_MEMBERS.map((m) => (
+                <div key={m.name} className="p-4 grid grid-cols-1 md:grid-cols-[180px_220px_1fr] gap-3 items-baseline">
+                  <div className="font-semibold text-foreground">{m.name}</div>
+                  <div className="text-sm text-primary">{m.area}</div>
+                  <div className="text-sm text-muted-foreground leading-relaxed">{m.responsibility}</div>
+                </div>
+              ))}
+            </CardContent>
+          </Card>
+        </div>
+
+      {/* A.3 Perfiles del equipo */}
       <div id="raci-perfiles" className="space-y-4 scroll-mt-24">
-        <h3 className="text-lg font-semibold text-foreground">Perfiles del equipo</h3>
+        <h3 className="text-lg font-semibold text-foreground">A.3 Perfiles del equipo</h3>
         <p className="text-sm text-muted-foreground leading-relaxed">
           Perfiles clave del piloto, organizados según su rol estratégico y operativo. Combina el
           liderazgo de la consultora externa con el talento técnico, el conocimiento local y la
@@ -867,77 +1243,19 @@ function RaciSection() {
           ))}
         </div>
       </div>
+      </div>{/* /Bloque A */}
 
-      {/* Comité de Informática */}
-      <div id="raci-comite" className="space-y-4 scroll-mt-24">
-        <h3 className="text-lg font-semibold text-foreground">
-          Comité de Informática, Gobernanza y Seguridad (CEL)
+      <div className="space-y-8">
+        <h3 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary border-b border-primary/20 pb-2">
+          Bloque B — Cómo se asignan las responsabilidades
         </h3>
-        <p className="text-sm text-muted-foreground leading-relaxed">{COMMITTEE_INTRO}</p>
-        <Card className="border-border">
-          <CardContent className="p-0 divide-y divide-border">
-            {COMMITTEE_MEMBERS.map((m) => (
-              <div key={m.name} className="p-4 grid grid-cols-1 md:grid-cols-[180px_220px_1fr] gap-3 items-baseline">
-                <div className="font-semibold text-foreground">{m.name}</div>
-                <div className="text-sm text-primary">{m.area}</div>
-                <div className="text-sm text-muted-foreground leading-relaxed">{m.responsibility}</div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-      </div>
 
-      {/* Tareas por fase */}
-      <div id="raci-tareas" className="space-y-4 scroll-mt-24">
-        <h3 className="text-lg font-semibold text-foreground">Detalle de tareas por fase</h3>
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          Desglose detallado de tareas por fase del proyecto, con responsable principal y
-          observaciones sobre apoyos requeridos.
-        </p>
-        <div className="space-y-4">
-          {PHASE_TASKS.map((phase) => (
-            <Card key={phase.phaseId} className="border-border">
-              <CardHeader className="pb-2">
-                <div className="flex items-center gap-3">
-                  <span className="text-xs font-semibold uppercase tracking-wider px-2 py-1 rounded bg-primary/10 text-primary">
-                    {phase.phaseId}
-                  </span>
-                  <CardTitle className="text-base">{phase.title}</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent className="p-0">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead className="bg-muted/40 text-muted-foreground text-xs uppercase tracking-wider">
-                      <tr>
-                        <th className="text-left font-medium px-4 py-2">Tarea principal</th>
-                        <th className="text-left font-medium px-4 py-2 whitespace-nowrap">Responsable</th>
-                        <th className="text-left font-medium px-4 py-2">Apoyo / Observaciones</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {phase.tasks.map((t, i) => (
-                        <tr key={i} className="border-t border-border align-top">
-                          <td className="px-4 py-3 font-medium text-foreground">{t.task}</td>
-                          <td className="px-4 py-3 text-foreground whitespace-nowrap">{t.responsible}</td>
-                          <td className="px-4 py-3 text-muted-foreground">{t.notes}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </div>
-
-      {/* Matriz RACI */}
+      {/* B.1 Matriz RACI consolidada */}
       <div id="raci-matriz" className="space-y-4 scroll-mt-24">
-        <h3 className="text-lg font-semibold text-foreground">Matriz RACI de roles y responsabilidades</h3>
+        <h3 className="text-lg font-semibold text-foreground">B.1 Matriz RACI consolidada</h3>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          Resumen consolidado de responsabilidades por actividad. R/A en color primario indica
-          ejecución y aprobación combinadas; R marca al responsable directo; A al aprobador final.
+          Vista única de responsabilidades por actividad. R/A en color primario indica ejecución y
+          aprobación combinadas; R marca al responsable directo; A al aprobador final.
         </p>
         <div className="flex flex-wrap gap-4 mb-2">
           {RACI_LEGEND.map((l) => (
@@ -1010,6 +1328,53 @@ function RaciSection() {
           (OS/Apps), Carlos Sánchez (DBA), Adrián (Redes/Infra), Miladis (Ciberseguridad).
         </p>
       </div>
+
+      {/* B.2 Detalle de tareas por fase */}
+      <div id="raci-tareas" className="space-y-4 scroll-mt-24">
+        <h3 className="text-lg font-semibold text-foreground">B.2 Detalle de tareas por fase</h3>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          Desglose detallado de tareas por fase del proyecto, con responsable principal y
+          observaciones sobre apoyos requeridos. Esta sección es el <i>drill-down</i> de la matriz
+          B.1: cada fila de la matriz se descompone aquí por fase y entregable.
+        </p>
+        <div className="space-y-4">
+          {PHASE_TASKS.map((phase) => (
+            <Card key={phase.phaseId} className="border-border">
+              <CardHeader className="pb-2">
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-semibold uppercase tracking-wider px-2 py-1 rounded bg-primary/10 text-primary">
+                    {phase.phaseId}
+                  </span>
+                  <CardTitle className="text-base">{phase.title}</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted/40 text-muted-foreground text-xs uppercase tracking-wider">
+                      <tr>
+                        <th className="text-left font-medium px-4 py-2">Tarea principal</th>
+                        <th className="text-left font-medium px-4 py-2 whitespace-nowrap">Responsable</th>
+                        <th className="text-left font-medium px-4 py-2">Apoyo / Observaciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {phase.tasks.map((t, i) => (
+                        <tr key={i} className="border-t border-border align-top">
+                          <td className="px-4 py-3 font-medium text-foreground">{t.task}</td>
+                          <td className="px-4 py-3 text-foreground whitespace-nowrap">{t.responsible}</td>
+                          <td className="px-4 py-3 text-muted-foreground">{t.notes}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+      </div>{/* /Bloque B */}
     </section>
   );
 }
@@ -1029,91 +1394,6 @@ function StatusBadge({ status }: { status: InfraStatus }) {
   );
 }
 
-function InfraTecnicaSection() {
-  const costTone: Record<string, string> = {
-    Gratuito: "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-200",
-    "Costo marginal": "bg-amber-100 dark:bg-amber-900/30 text-amber-800 dark:text-amber-200",
-    Opcional: "bg-slate-100 dark:bg-slate-800/40 text-slate-700 dark:text-slate-200",
-  };
-  return (
-    <div className="space-y-8">
-      <p className="text-base text-muted-foreground leading-relaxed">{INFRA_TECNICA_INTRO}</p>
-
-      <section id="infra-tec-entorno" className="space-y-4 scroll-mt-24">
-        <h2 className="text-xl font-semibold text-foreground">Entorno y stack</h2>
-        <div className="grid gap-4 md:grid-cols-3">
-          {INFRA_TECNICA_BLOCKS.map((b) => (
-            <Card key={b.id} className="border-border">
-              <CardHeader>
-                <CardTitle className="text-base text-foreground">{b.title}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground leading-relaxed">{b.body}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      <section id="infra-tec-servicios" className="space-y-4 scroll-mt-24">
-        <h2 className="text-xl font-semibold text-foreground">Integración con servicios externos</h2>
-        <p className="text-sm text-muted-foreground leading-relaxed">
-          Aunque la infraestructura principal es interna, el sistema seguirá dependiendo de
-          servicios externos para tareas específicas, con costos marginales o nulos.
-        </p>
-        <Card className="border-border overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/40 text-muted-foreground">
-                <tr>
-                  <th className="text-left font-medium px-4 py-3">Servicio</th>
-                  <th className="text-left font-medium px-4 py-3">Categoría</th>
-                  <th className="text-left font-medium px-4 py-3">Uso</th>
-                  <th className="text-left font-medium px-4 py-3">Costo</th>
-                </tr>
-              </thead>
-              <tbody>
-                {EXTERNAL_SERVICES.map((s) => (
-                  <tr key={s.id} className="border-t border-border align-top">
-                    <td className="px-4 py-3">
-                      <div className="font-medium text-foreground">{s.name}</div>
-                      <div className="text-xs text-muted-foreground mt-1">{s.scope}</div>
-                    </td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground whitespace-nowrap">
-                      {s.category}
-                    </td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground leading-relaxed max-w-md">
-                      {s.detail}
-                    </td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`text-xs font-medium px-2 py-1 rounded ${costTone[s.cost]}`}
-                      >
-                        {s.cost}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </Card>
-      </section>
-
-      <section id="infra-tec-seguridad" className="space-y-3 scroll-mt-24">
-        <h2 className="text-xl font-semibold text-foreground">Seguridad y disponibilidad</h2>
-        <Card className="border-border">
-          <CardContent className="pt-6">
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              {INFRA_TECNICA_SEGURIDAD}
-            </p>
-          </CardContent>
-        </Card>
-      </section>
-    </div>
-  );
-}
-
 function InfraSection() {
   const layerStyles: Record<string, string> = {
     Compute: "border-primary/40 bg-primary/5",
@@ -1126,6 +1406,22 @@ function InfraSection() {
   return (
     <section>
       <SectionHeader intro={INFRA_INTRO} />
+
+      <div id="infra-disclaimer" className="scroll-mt-24 mb-8">
+        <Card className="border-amber-300 dark:border-amber-700 bg-amber-50/70 dark:bg-amber-900/15">
+          <CardContent className="p-5 flex gap-3">
+            <AlertCircle className="w-5 h-5 text-amber-700 dark:text-amber-300 shrink-0 mt-0.5" />
+            <div>
+              <h4 className="text-sm font-semibold text-amber-900 dark:text-amber-100 mb-1">
+                Estado del BOM
+              </h4>
+              <p className="text-sm text-amber-900/90 dark:text-amber-100/90 leading-relaxed">
+                {INFRA_BOM_DISCLAIMER}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
 
       <div className="space-y-8">
         <div id="infra-arquitectura" className="scroll-mt-24">
@@ -1289,16 +1585,36 @@ function InfraSection() {
 }
 
 function LempaSection() {
+  const groups: { id: string; eyebrow: string; data: { title: string; items: { h: string; b: string }[] } }[] = [
+    { id: "lempa-geo", eyebrow: "Anexo E · 1", data: LEMPA.geo },
+    { id: "lempa-climate", eyebrow: "Anexo E · 2", data: LEMPA.climate },
+    { id: "lempa-governance", eyebrow: "Anexo E · 3", data: LEMPA.governance },
+    { id: "lempa-implications", eyebrow: "Anexo E · 4", data: LEMPA.implications },
+  ];
   return (
     <section>
-      <SectionHeader intro={LEMPA.intro} />
-      <div className="space-y-6">
-        <LempaGroup title={LEMPA.geo.title} items={LEMPA.geo.items} />
-        <LempaGroup title={LEMPA.climate.title} items={LEMPA.climate.items} />
-        <LempaGroup title={LEMPA.governance.title} items={LEMPA.governance.items} />
-        <LempaGroup title={LEMPA.implications.title} items={LEMPA.implications.items} />
-        <Card className="bg-primary/5 border-primary/20">
-          <CardContent className="p-5">
+      <div className="mb-8 rounded-lg border border-primary/30 bg-primary/5 p-6">
+        <div className="flex items-start gap-3">
+          <MapIcon className="w-6 h-6 text-primary shrink-0 mt-0.5" />
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-primary mb-1">
+              Anexo Técnico E — Cuenca del Río Lempa
+            </p>
+            <p className="text-sm text-foreground leading-relaxed">{LEMPA.intro}</p>
+          </div>
+        </div>
+      </div>
+
+      <div className="space-y-10">
+        {groups.map((g) => (
+          <LempaGroup key={g.id} id={g.id} eyebrow={g.eyebrow} title={g.data.title} items={g.data.items} />
+        ))}
+
+        <Card className="bg-primary/10 border-primary/30">
+          <CardContent className="p-6">
+            <p className="text-[11px] font-semibold uppercase tracking-wider text-primary mb-2">
+              Conclusión del Anexo E
+            </p>
             <p className="text-sm text-foreground leading-relaxed">{LEMPA.conclusion}</p>
           </CardContent>
         </Card>
@@ -1307,13 +1623,16 @@ function LempaSection() {
   );
 }
 
-function LempaGroup({ title, items }: { title: string; items: { h: string; b: string }[] }) {
+function LempaGroup({ id, eyebrow, title, items }: { id: string; eyebrow: string; title: string; items: { h: string; b: string }[] }) {
   return (
-    <div>
-      <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">{title}</h3>
+    <div id={id} className="scroll-mt-24">
+      <div className="mb-4 pb-2 border-b border-border">
+        <p className="text-[11px] font-semibold uppercase tracking-wider text-primary">{eyebrow}</p>
+        <h3 className="text-lg font-semibold text-foreground mt-0.5">{title}</h3>
+      </div>
       <div className="grid gap-3 md:grid-cols-2">
         {items.map((it) => (
-          <Card key={it.h} className="border-border">
+          <Card key={it.h} className="border-border border-l-2 border-l-primary/60">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm">{it.h}</CardTitle>
             </CardHeader>

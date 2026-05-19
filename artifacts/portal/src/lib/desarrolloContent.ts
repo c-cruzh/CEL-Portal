@@ -10,12 +10,12 @@ export const DEV_SECTIONS: DevSection[] = [
   { id: "etl", label: "3. Pipelines ETL (Mage)", shortLabel: "ETL" },
   { id: "modelos", label: "4. Modelos de predicción", shortLabel: "Modelos" },
   { id: "validacion", label: "5. Validación y métricas", shortLabel: "Validación" },
-  { id: "decisiones", label: "6. Decisiones técnicas", shortLabel: "Decisiones" },
+  { id: "decisiones", label: "6. Decisiones abiertas y dependencias CEL", shortLabel: "Decisiones abiertas" },
   { id: "operacion", label: "7. Operación diaria", shortLabel: "Operación" },
   { id: "visualizacion", label: "8. Visualización y alertas", shortLabel: "Visualización" },
-  { id: "raci", label: "9. Matriz RACI", shortLabel: "RACI" },
-  { id: "infraestructura", label: "10. Infraestructura local (BOM)", shortLabel: "Infraestructura" },
-  { id: "anexo-lempa", label: "Anexo: Río Lempa", shortLabel: "Anexo Lempa" },
+  { id: "infraestructura", label: "9. BOM final aprobado por CEL", shortLabel: "BOM final" },
+  { id: "anexo-lempa", label: "10. Anexo Lempa", shortLabel: "Anexo Lempa" },
+  { id: "raci", label: "11. Equipo y RACI", shortLabel: "Equipo y RACI" },
 ];
 
 export const FLUJO_DIAGRAM = `flowchart TD
@@ -63,49 +63,251 @@ export const FLUJO_DIAGRAM = `flowchart TD
 export const FLUJO_INTRO =
   "El sistema de pronóstico hidrológico basado en IA seguirá un flujo de procesamiento de extremo a extremo, desde la recopilación de datos hasta la generación de alertas tempranas de inundación. Se compone de cuatro subsistemas principales —inspirados en Google Flood Hub (Nevo et al., 2022)— integrados en la plataforma de CEL, precedidos por una Fase 0 de habilitación de infraestructura.";
 
-export const FLUJO_STAGES = [
+export interface FlujoStage {
+  id: string;
+  tag: string;
+  title: string;
+  summary: string;
+  detailChapter?: { id: string; label: string };
+}
+
+export const FLUJO_STAGES: FlujoStage[] = [
   {
     id: "fase0",
     tag: "Fase 0",
-    title: "Configuración de infraestructura y entorno",
-    body:
-      "Etapa inicial dedicada a la construcción y comisionamiento de la infraestructura de servidores on-premise dedicada, garantizando un entorno de alto rendimiento, seguro y escalable. Incluye la instalación de hardware y la configuración del stack de software, y es requisito indispensable para iniciar la ingesta de datos.",
+    title: "Habilitación del silo de IA",
+    summary:
+      "Construcción y comisionamiento del entorno on-premise dedicado dentro del data center de CEL. Requisito previo para cualquier ingesta o entrenamiento.",
+    detailChapter: { id: "infraestructura", label: "Cap. 9 — BOM final aprobado por CEL" },
   },
   {
     id: "etapa1",
     tag: "Etapa 1",
-    title: "Adquisición y validación de datos (Data Ingestion)",
-    body:
-      "Recopilación automática de datos meteorológicos, hidrológicos y geoespaciales de múltiples fuentes, con controles de calidad y transformaciones. Los datos crudos son ingeridos mediante procesos ETL orquestados con Mage (pipelines en Python), reemplazando a Pentaho PDI para mejorar fiabilidad, versionamiento y mantenibilidad, y asegurando estandarización temporal y espacial antes del almacenamiento.",
+    title: "Adquisición y validación de datos",
+    summary:
+      "Ingesta automática de fuentes meteorológicas, hidrológicas y geoespaciales con QA/QC, normalización temporal/espacial y carga al silo.",
+    detailChapter: { id: "etl", label: "Cap. 3 — Pipelines ETL con Mage" },
   },
   {
     id: "etapa2",
     tag: "Etapa 2",
-    title: "Pronóstico de caudales (modelo LSTM)",
-    body:
-      "Redes neuronales recurrentes LSTM entrenadas con datos históricos pronostican caudales/niveles futuros en puntos clave del río (estaciones de aforo o gauges virtuales). Procesa series de precipitaciones pronosticadas y observadas, caudales recientes y otros atributos, con un horizonte de hasta 7 días. Este enfoque supera a los modelos lineales tradicionales en la predicción de crecientes repentinas.",
+    title: "Pronóstico de caudales (LSTM)",
+    summary:
+      "Modelo LSTM regional que proyecta caudales/niveles a 7 días en puntos clave del río.",
+    detailChapter: { id: "modelos", label: "Cap. 4 — Modelos de predicción" },
   },
   {
     id: "etapa3",
     tag: "Etapa 3",
     title: "Modelado de inundación",
-    body:
-      "Traduce las predicciones de caudal en áreas inundadas mediante dos enfoques complementarios: (a) modelo de umbral, que asocia un caudal proyectado con la extensión esperada usando mapas predefinidos y elevaciones críticas; y (b) modelo de inundación por manifold (ML avanzado) que estima extensión y profundidad directamente desde las predicciones hidrológicas.",
+    summary:
+      "Conversión del caudal pronosticado en extensión inundada (umbral + manifold).",
+    detailChapter: { id: "modelos", label: "Cap. 4 — Modelos de predicción" },
   },
   {
     id: "etapa4",
     tag: "Etapa 4",
     title: "Alertas y visualización",
-    body:
-      "Los resultados se integran en un tablero web interactivo (Node.js/React) que muestra mapas de inundación previstos sobre una interfaz geográfica y curvas de caudal vs umbrales en puntos de control. Si un pronóstico excede niveles críticos, el sistema activa alertas automáticas —correo, SMS u otros canales— dirigidas a los responsables y comunidades pertinentes.",
+    summary:
+      "Dashboard web integrado al portal CEL y alertas automáticas por umbrales a destinatarios definidos.",
+    detailChapter: { id: "visualizacion", label: "Cap. 8 — Visualización y alertas" },
   },
 ];
 
 export const FLUJO_OUTRO =
-  "El flujo integral va “de datos a decisión”: captura datos brutos multisectoriales, los convierte mediante IA en pronósticos de caudal confiables, traduce esos pronósticos en zonas de inundación probables y comunica oportunamente las alertas a quienes las necesitan.";
+  "El flujo va “de datos a decisión”. Esta vista panorámica intencionalmente no repite el detalle de cada etapa: cada subsistema se desarrolla a profundidad en su capítulo dedicado (referencias arriba), y la planificación temporal y la metodología de ejecución se gestionan en sus tabs propios del portal.";
+
+export interface FlujoCrossLink {
+  label: string;
+  description: string;
+  href: string;
+}
+
+export const FLUJO_CROSS_LINKS: FlujoCrossLink[] = [
+  {
+    label: "Cronograma del proyecto",
+    description: "Planificación de fases, hitos y fechas objetivo de cada etapa del flujo.",
+    href: "/portal/cronograma",
+  },
+  {
+    label: "Metodología de ejecución",
+    description: "Marco metodológico, ceremonias y mecánica de avance del piloto.",
+    href: "/portal/metodologia",
+  },
+  {
+    label: "Módulo de Decisiones",
+    description: "Decisiones formales que afectan transversalmente al flujo (ver también Cap. 6).",
+    href: "/portal/decisiones",
+  },
+];
 
 export const DATOS_INTRO =
-  "El sistema aprovechará fuentes heterogéneas —meteorológicas, hidrológicas, geoespaciales y de características de cuenca— para alimentar los modelos de pronóstico. Todas las fuentes son abiertas o de acceso público.";
+  "El sistema aprovechará fuentes heterogéneas —meteorológicas, hidrológicas, geoespaciales y de características de cuenca— para alimentar los modelos de pronóstico. Todas las fuentes son abiertas o de acceso público. Más abajo, el registro de fuentes (data registry) consolida cada insumo con su formato, proveedor, frecuencia, tamaño aproximado, propietario y estado de confirmación con CEL.";
+
+export type DataRegistryStatus = "confirmado" | "por-confirmar" | "por-validar-kevin";
+
+export interface DataRegistryEntry {
+  id: string;
+  category: "Meteorología" | "Hidrología" | "Geoespacial" | "Atributos de cuenca";
+  name: string;
+  format: string;
+  provider: string;
+  frequency: string;
+  approxSize: string;
+  owner: string;
+  status: DataRegistryStatus;
+  note?: string;
+}
+
+export const DATA_REGISTRY: DataRegistryEntry[] = [
+  {
+    id: "ecmwf",
+    category: "Meteorología",
+    name: "ECMWF — Pronóstico numérico global",
+    format: "GRIB / NetCDF",
+    provider: "ECMWF (Copernicus)",
+    frequency: "2 ciclos/día (00 y 12 UTC), horizonte 7 días",
+    approxSize: "~1-2 GB/día tras recorte a la cuenca",
+    owner: "Consultora (ingesta) → CEL (almacenamiento)",
+    status: "confirmado",
+  },
+  {
+    id: "era5",
+    category: "Meteorología",
+    name: "ERA5 / ERA5-Land — Reanálisis histórico",
+    format: "NetCDF",
+    provider: "Copernicus Climate Data Store",
+    frequency: "Histórico 1980-presente, descarga única + actualizaciones",
+    approxSize: "~50-100 GB para la cuenca Lempa, horizonte 40+ años",
+    owner: "Consultora (descarga) → PostgreSQL/NAS CEL",
+    status: "confirmado",
+  },
+  {
+    id: "gpm",
+    category: "Meteorología",
+    name: "NASA GPM / IMERG — Precipitación satelital",
+    format: "HDF5 / NetCDF",
+    provider: "NASA GES DISC",
+    frequency: "Cada 30 min, latencia ~4 h",
+    approxSize: "~200-400 MB/día",
+    owner: "Consultora (ingesta automática)",
+    status: "confirmado",
+  },
+  {
+    id: "chirps",
+    category: "Meteorología",
+    name: "CHIRPS — Precipitación interpolada Mesoamérica",
+    format: "GeoTIFF",
+    provider: "UCSB Climate Hazards Group",
+    frequency: "Diario",
+    approxSize: "~10-20 MB/día tras recorte",
+    owner: "Consultora",
+    status: "confirmado",
+  },
+  {
+    id: "cel-hidro",
+    category: "Hidrología",
+    name: "Caudales y niveles — Estaciones hidrométricas CEL",
+    format: "PostgreSQL (BD productiva CEL)",
+    provider: "CEL — Unidad de Hidrología",
+    frequency: "Sub-horaria a diaria según estación",
+    approxSize: "Series multi-anuales; volumen TBD",
+    owner: "Carlos Sánchez (DBA, CEL) — acceso solo-lectura desde silo",
+    status: "por-confirmar",
+    note: "Por confirmar con CEL: alcance temporal de las series, calendario de acceso y mecanismo de replicación/lectura.",
+  },
+  {
+    id: "marn",
+    category: "Hidrología",
+    name: "Datos hidro-meteorológicos institucionales (SV)",
+    format: "Por confirmar (CSV / API)",
+    provider: "MARN El Salvador",
+    frequency: "Diario u horario, según convenio",
+    approxSize: "TBD",
+    owner: "Coordinación interinstitucional CEL",
+    status: "por-validar-kevin",
+    note: "Por validar (Kevin): ¿el piloto utilizará datos del MARN? ¿existe convenio activo o se gestiona uno nuevo?",
+  },
+  {
+    id: "trinacional",
+    category: "Hidrología",
+    name: "Caudales transfronterizos (Guatemala / Honduras)",
+    format: "TBD",
+    provider: "INSIVUMEH (GT) / SERNA (HN) — vía Plan Trifinio",
+    frequency: "TBD",
+    approxSize: "Disponibilidad limitada (~65-70% del caudal Lempa nace fuera de SV)",
+    owner: "TBD — gestión interinstitucional",
+    status: "por-validar-kevin",
+    note: "Por validar (Kevin): el doc menciona vacíos en intercambio de datos transfronterizos en tiempo real. ¿Hay canal formal o se trabaja con teledetección satelital como compensación?",
+  },
+  {
+    id: "grdc",
+    category: "Hidrología",
+    name: "GRDC — Global Runoff Data Centre",
+    format: "CSV",
+    provider: "GRDC (Alemania)",
+    frequency: "Histórico, actualización periódica",
+    approxSize: "Series por estación, MB-escala",
+    owner: "Consultora",
+    status: "confirmado",
+  },
+  {
+    id: "mde",
+    category: "Geoespacial",
+    name: "Modelo Digital de Elevaciones (MDE)",
+    format: "GeoTIFF",
+    provider: "SRTM ~30 m (base) / LiDAR local CEL si disponible",
+    frequency: "Estático",
+    approxSize: "~1-5 GB para la cuenca",
+    owner: "Fernando Garay (SIG, CEL)",
+    status: "por-confirmar",
+    note: "Por confirmar con CEL: disponibilidad y resolución del LiDAR local frente al SRTM público.",
+  },
+  {
+    id: "sentinel1",
+    category: "Geoespacial",
+    name: "Sentinel-1 SAR — Mapas históricos de inundación",
+    format: "SAFE / GeoTIFF procesado",
+    provider: "ESA Copernicus",
+    frequency: "Revisita ~6-12 días",
+    approxSize: "Eventos seleccionados (~5-20 GB total)",
+    owner: "Fernando Garay (SIG, CEL) + Consultora",
+    status: "confirmado",
+  },
+  {
+    id: "landcover",
+    category: "Geoespacial",
+    name: "Uso del suelo y cobertura terrestre",
+    format: "Vector / ráster",
+    provider: "CORINE Land Cover / cartografía nacional",
+    frequency: "Estático, actualización plurianual",
+    approxSize: "<1 GB",
+    owner: "Fernando Garay (SIG, CEL)",
+    status: "por-confirmar",
+  },
+  {
+    id: "hydroatlas",
+    category: "Atributos de cuenca",
+    name: "HydroATLAS / HydroSheds — Atributos fisiográficos",
+    format: "Vector + atributos tabulares",
+    provider: "WWF / McGill",
+    frequency: "Estático",
+    approxSize: "<1 GB para la cuenca",
+    owner: "Consultora",
+    status: "confirmado",
+  },
+  {
+    id: "subcuencas",
+    category: "Atributos de cuenca",
+    name: "Delimitación sub-cuencas Lempa (alta GT, media, baja SV)",
+    format: "Shapefile / GeoJSON",
+    provider: "Derivado del MDE por SIG CEL",
+    frequency: "Estático",
+    approxSize: "MB-escala",
+    owner: "Fernando Garay (SIG, CEL)",
+    status: "por-confirmar",
+  },
+];
 
 export const DATOS_CATEGORIES = [
   {
@@ -139,41 +341,96 @@ export const DATOS_CATEGORIES = [
 ];
 
 export const ETL_INTRO =
-  "Para convertir los datos brutos en insumos listos para modelar, se implementará una canalización moderna basada en Python orquestada por Mage. Esta decisión reemplaza Pentaho PDI para mejorar fiabilidad, observabilidad y versionamiento del código. El nuevo Nodo de Datos & ETL actúa como cliente dentro de la red CEL, consultando en solo-lectura PostgreSQL y MongoDB existentes; todo el procesamiento se ejecuta en el hardware dedicado del silo de IA.";
+  "Para convertir los datos brutos en insumos listos para modelar, se implementará una canalización moderna basada en Python orquestada por Mage. Esta decisión reemplaza Pentaho PDI para mejorar fiabilidad, observabilidad y versionamiento del código (pipelines como código en Git). El nuevo Nodo de Datos & ETL actúa como cliente dentro de la red CEL, consultando en solo-lectura PostgreSQL y MongoDB existentes; todo el procesamiento se ejecuta en el hardware dedicado del silo de IA, sin sobrecargar los sistemas productivos y manteniendo la soberanía de los datos.";
 
-export const ETL_STAGES = [
+export const ETL_DIAGRAM = `flowchart LR
+  subgraph EXT["1. Extracción"]
+    A1[ECMWF / ERA5 / GPM / CHIRPS]
+    A2[Sentinel-1 SAR]
+    A3[PostgreSQL CEL solo-lectura]
+    A4[MongoDB CEL solo-lectura]
+  end
+  STG[(2. Staging<br/>silo de IA)]
+  subgraph TRF["3. Transformación"]
+    T1[Homogeneización unidades / TZ]
+    T2[Gap-filling y re-muestreo]
+    T3[Geoespacial: media areal / SAR]
+    T4[Ingeniería de features]
+  end
+  subgraph LOAD["4. Carga"]
+    L1[(PostgreSQL + PostGIS<br/>históricos y geometrías)]
+    L2[(MongoDB<br/>operativo tiempo real)]
+  end
+  ORC{{5. Orquestación Mage<br/>Python + Git + QA/QC}}
+  EXT --> STG --> TRF --> LOAD
+  ORC -.coordina.-> EXT
+  ORC -.coordina.-> TRF
+  ORC -.coordina.-> LOAD`;
+
+export interface EtlStage {
+  num: string;
+  title: string;
+  body: string;
+  items: string[];
+}
+
+export const ETL_STAGES_ORDERED: EtlStage[] = [
   {
+    num: "1",
     title: "Extracción automática",
+    body:
+      "Scripts Python dentro de Mage se conectan de forma programada a las fuentes externas e internas. Externas: APIs meteorológicas (ECMWF, ERA5, GPM, CHIRPS) e imágenes Sentinel-1. Internas: bases productivas de CEL mediante conectores específicos (psycopg2 para PostgreSQL, pymongo para MongoDB) en modo solo-lectura, sin impacto sobre los sistemas operativos.",
     items: [
-      "Conexión programada a APIs meteorológicas (GRIB/NetCDF de ECMWF)",
-      "Descarga de imágenes satelitales (GPM, Sentinel-1) con requests",
-      "Conectores psycopg2 (PostgreSQL CEL) y pymongo (MongoDB CEL)",
-      "Carga inicial en área de staging dentro del silo de IA",
+      "APIs meteorológicas (GRIB / NetCDF / HDF5)",
+      "Descarga de productos satelitales (GPM, Sentinel-1) con requests",
+      "Conectores psycopg2 / pymongo a las DBs productivas de CEL (solo-lectura)",
+      "Política de reintentos, timeouts y manejo de fallos parcial",
     ],
   },
   {
+    num: "2",
+    title: "Staging en el silo de IA",
+    body:
+      "Los datos crudos aterrizan en un área de staging dentro de las nuevas bases de datos del silo, separada de las tablas analíticas y operativas. El staging conserva el dato tal cual fue ingerido y permite reprocesar transformaciones sin volver a tocar las fuentes originales.",
+    items: [
+      "Esquema staging dedicado en PostgreSQL del silo",
+      "Almacenamiento crudo de archivos brutos en disco/NAS para trazabilidad",
+      "Metadatos de origen: timestamp de ingesta, fuente, versión del script",
+    ],
+  },
+  {
+    num: "3",
     title: "Transformación y limpieza",
+    body:
+      "Una vez en staging, se aplican transformaciones con el ecosistema Python (Pandas, GeoPandas, NumPy, rasterio). Cubre homogeneización temporal y espacial, limpieza de series, procesamiento geoespacial e ingeniería de variables para alimentar al LSTM.",
     items: [
-      "Conversión de unidades, zonas horarias y re-muestreo temporal (Pandas)",
-      "Gap-filling: interpolación lineal, media estacional",
-      "Geoespacial: precipitación media areal por subcuenca (rasterio, geopandas)",
-      "Clasificación de agua en Sentinel-1 (umbral de backscatter) → polígonos vectoriales",
-      "Ingeniería de features: día del año, evapotranspiración potencial",
+      "Conversión de unidades, estandarización de zonas horarias y re-muestreo a paso común (diario)",
+      "Gap-filling en series históricas: interpolación lineal, media estacional",
+      "Precipitación media areal por subcuenca superponiendo máscaras del MDE sobre ERA5/GPM",
+      "Sentinel-1: clasificación de agua (umbral de backscatter) → polígonos vectoriales históricos",
+      "Ingeniería de features: día del año, evapotranspiración potencial (fórmulas empíricas)",
     ],
   },
   {
-    title: "Carga en bases de datos",
+    num: "4",
+    title: "Carga en bases de datos del silo",
+    body:
+      "Los datos transformados se persisten en dos repositorios del silo según su naturaleza, alineados con los consumidores aguas abajo (modelos y dashboard).",
     items: [
-      "MongoDB: datos operativos en tiempo real (lluvia reciente, caudales, predicciones diarias)",
-      "PostgreSQL + PostGIS: históricos depurados, geometrías de cuenca, mapas de inundación",
+      "MongoDB del silo — datos operativos en tiempo real: lluvia reciente, caudales recientes, predicciones diarias (JSON flexible para el frontend)",
+      "PostgreSQL + PostGIS del silo — históricos depurados, geometrías de cuenca, mapas de inundación (tipos espaciales)",
     ],
   },
   {
-    title: "QA / QC continuo",
+    num: "5",
+    title: "Orquestación y QA/QC con Mage",
+    body:
+      "Mage coordina todos los pipelines como código Python versionado en GitLab. Cada paso integra aserciones automáticas y la interfaz de Mage permite monitorear ejecuciones, reintentos y notificar fallas. Resultado: un lago de datos unificado, reproducible y observable, listo para alimentar los modelos y la visualización.",
     items: [
-      "Aserciones por script: caudal no negativo, lluvia dentro de rango",
-      "Logs y notificaciones de error en la interfaz de Mage",
-      "Solo datos confiables alimentan los modelos",
+      "Definición de pipelines como código (Python + Git/GitLab)",
+      "Aserciones por script: caudal no negativo, lluvia dentro de rango esperado, esquemas válidos",
+      "Logs estructurados, reintentos y notificaciones de error",
+      "Solo datos que pasan QA/QC alimentan los modelos LSTM y de inundación",
     ],
   },
 ];
@@ -236,6 +493,257 @@ export const VALIDATION_GOALS = [
   "Validación indirecta cruzada con Sentinel-1 GMM (Google method)",
 ];
 
+export type OpenDecisionStatus = "abierta" | "en-discusion" | "bloqueada-cel" | "cerrada" | "por-validar-kevin";
+
+export interface OpenDecision {
+  id: string;
+  area:
+    | "Infraestructura"
+    | "Redes y ciberseguridad"
+    | "Datos y accesos"
+    | "Stack / Software"
+    | "Operación"
+    | "Gobernanza"
+    | "Recursos humanos";
+  decision: string;
+  detail: string;
+  responsable: string;
+  contraparteCel: string;
+  fechaObjetivo: string;
+  status: OpenDecisionStatus;
+  decisionLink?: string;
+}
+
+export const OPEN_DECISIONS_INTRO =
+  "Este capítulo consolida todas las decisiones abiertas y dependencias críticas con CEL identificadas a lo largo del documento técnico. Cada fila explicita la decisión a tomar, quién la propone, qué contraparte de CEL debe validarla o aprobarla, la fecha objetivo y el estado. Las decisiones de mayor impacto se enlazan al módulo Decisiones del portal para seguimiento formal.";
+
+export const OPEN_DECISIONS: OpenDecision[] = [
+  {
+    id: "OD-01",
+    area: "Infraestructura",
+    decision: "Aprobación del BOM final de hardware del silo de IA",
+    detail:
+      "Aprobar configuración exacta de cómputo ML (CPU, RAM, NVMe), nodo Datos & ETL, NAS, switch, UPS y rack. El BOM propuesto por la consultora es scaffold; el BOM final aprobado por CEL es la base para compras.",
+    responsable: "Consultora IA (propuesta) + DevOps CEL",
+    contraparteCel: "Comité TI (Nelson, José Manuel, Adrián) + Lorena (autorización)",
+    fechaObjetivo: "Fase 0 — antes de OC al proveedor",
+    status: "bloqueada-cel",
+    decisionLink: "BOM final aprobado por CEL",
+  },
+  {
+    id: "OD-02",
+    area: "Infraestructura",
+    decision: "Ubicación física exacta del silo dentro del data center CEL",
+    detail:
+      "Rack disponible, espacio en U, alimentación eléctrica redundante y refrigeración suficiente para el nodo ML con GPU.",
+    responsable: "DevOps CEL",
+    contraparteCel: "Adrián (Redes/Infra) + José Manuel (Sistemas)",
+    fechaObjetivo: "Fase 0",
+    status: "abierta",
+  },
+  {
+    id: "OD-03",
+    area: "Redes y ciberseguridad",
+    decision: "Diseño de VLAN dedicada y ACLs del silo",
+    detail:
+      "Segmentación del silo en VLAN propia, reglas de ACL hacia PostgreSQL/MongoDB productivos en solo-lectura, lista blanca de IPs salientes para APIs externas (ECMWF, NASA, Sentinel).",
+    responsable: "DevOps CEL (ejecuta)",
+    contraparteCel: "Adrián (lineamientos) + Miladis (seguridad)",
+    fechaObjetivo: "Fase 0",
+    status: "abierta",
+  },
+  {
+    id: "OD-04",
+    area: "Redes y ciberseguridad",
+    decision: "Solución de VPN site-to-site / acceso remoto del consultor",
+    detail:
+      "Tipo de appliance, política MFA, perfiles de acceso del equipo C2Labs (qué nodos del silo y qué horarios). Soporte de Tech Circle vía la misma VPN.",
+    responsable: "DevOps CEL",
+    contraparteCel: "Adrián + Miladis",
+    fechaObjetivo: "Fase 0",
+    status: "abierta",
+  },
+  {
+    id: "OD-05",
+    area: "Redes y ciberseguridad",
+    decision: "Política de gestión de identidades y secretos",
+    detail:
+      "Usuarios nominales con MFA donde el stack lo soporte, gestor de secretos (Vault / KeePass / nativo CEL), llaves SSH gestionadas. Política de rotación.",
+    responsable: "DevOps CEL",
+    contraparteCel: "Miladis (ciberseguridad)",
+    fechaObjetivo: "Fase 0 — antes de pase a producción",
+    status: "abierta",
+  },
+  {
+    id: "OD-06",
+    area: "Redes y ciberseguridad",
+    decision: "Pre-auditoría de ciberseguridad y redes previa a producción",
+    detail:
+      "Alcance de la pre-auditoría, criterios de aceptación y proceso de remediación de hallazgos.",
+    responsable: "Comité TI CEL",
+    contraparteCel: "Miladis + Adrián",
+    fechaObjetivo: "Fase 3 — antes del go-live",
+    status: "abierta",
+  },
+  {
+    id: "OD-07",
+    area: "Datos y accesos",
+    decision: "Mecanismo y calendario de acceso solo-lectura a las DBs productivas",
+    detail:
+      "Modelo de replicación o lectura directa, usuario de servicio dedicado, alcance temporal de las series históricas que se podrán consultar y SLA del DBA para resolución de incidentes de acceso.",
+    responsable: "Ingenieros de Datos (William / J. M. Herrera)",
+    contraparteCel: "Carlos Sánchez (DBA) + Nelson (jefatura)",
+    fechaObjetivo: "Fase 1 — antes del primer pipeline",
+    status: "bloqueada-cel",
+  },
+  {
+    id: "OD-08",
+    area: "Datos y accesos",
+    decision: "Disponibilidad y resolución del LiDAR local frente al SRTM público",
+    detail:
+      "¿CEL dispone de un MDE LiDAR de la cuenca baja que mejore al SRTM ~30 m? De confirmarse, define la calidad del modelo de inundación por umbral.",
+    responsable: "Fernando Garay (SIG)",
+    contraparteCel: "Unidad de Hidrología CEL",
+    fechaObjetivo: "Fase 1",
+    status: "abierta",
+  },
+  {
+    id: "OD-09",
+    area: "Datos y accesos",
+    decision: "Integración de datos hidro-meteorológicos transfronterizos (GT/HN)",
+    detail:
+      "65-70% del caudal del Lempa nace fuera de El Salvador. El doc original señala vacíos en intercambio de datos en tiempo real. Definir si el piloto opera solo con teledetección (CHIRPS/GPM/Sentinel) o si se gestiona convenio con INSIVUMEH/SERNA vía Plan Trifinio.",
+    responsable: "Líder Hidrología/PM CEL",
+    contraparteCel: "Lorena (gobernanza interinstitucional)",
+    fechaObjetivo: "Fase 1-2",
+    status: "por-validar-kevin",
+  },
+  {
+    id: "OD-10",
+    area: "Datos y accesos",
+    decision: "Convenio o canal con MARN para datos hidro-meteorológicos nacionales",
+    detail:
+      "¿El piloto utiliza datos del MARN? ¿Hay convenio activo o se gestiona uno nuevo?",
+    responsable: "Líder Hidrología/PM CEL",
+    contraparteCel: "Lorena (gobernanza)",
+    fechaObjetivo: "Fase 1",
+    status: "por-validar-kevin",
+  },
+  {
+    id: "OD-11",
+    area: "Stack / Software",
+    decision: "Versión y modalidad de instalación de Mage",
+    detail:
+      "Versión exacta LTS, modo single-node vs cluster, gestión de actualizaciones, política de imágenes/contenedores.",
+    responsable: "Consultora IA + DevOps CEL",
+    contraparteCel: "José Manuel (Sistemas)",
+    fechaObjetivo: "Fase 0",
+    status: "abierta",
+  },
+  {
+    id: "OD-12",
+    area: "Stack / Software",
+    decision: "GitLab — instancia self-hosted en el silo vs instancia corporativa CEL",
+    detail:
+      "Define dónde vive el repo de pipelines, código del modelo y configuración como código; impacta CI/CD y permisos.",
+    responsable: "DevOps CEL",
+    contraparteCel: "José Manuel (Sistemas)",
+    fechaObjetivo: "Fase 0",
+    status: "abierta",
+  },
+  {
+    id: "OD-13",
+    area: "Stack / Software",
+    decision: "Mapas base: Mapbox vs OpenStreetMap (open source)",
+    detail:
+      "Mapbox tiene costo recurrente y mejor UX cartográfica; OSM es gratuito y soberano. Decisión basada en políticas TI y presupuesto operativo.",
+    responsable: "Consultora IA",
+    contraparteCel: "Comité TI + Hidrólogo Operativo",
+    fechaObjetivo: "Fase 3",
+    status: "abierta",
+  },
+  {
+    id: "OD-14",
+    area: "Stack / Software",
+    decision: "Stack de monitoreo y backup (Prometheus/Grafana, restic/Borg)",
+    detail:
+      "Versiones, hospedaje (en el silo o en infraestructura corporativa), integración con el SOC de CEL si aplica.",
+    responsable: "DevOps CEL",
+    contraparteCel: "José Manuel + Miladis",
+    fechaObjetivo: "Fase 0",
+    status: "abierta",
+  },
+  {
+    id: "OD-15",
+    area: "Operación",
+    decision: "Umbrales cuantitativos de alerta (verde / amarilla / roja) por sitio",
+    detail:
+      "Definir, en m³/s o cm, los umbrales por punto de control (p. ej. periodo de retorno 2, 5, 10 años). Insumo crítico del módulo de alertas.",
+    responsable: "Hidrólogo Operativo (Víctor Alabi)",
+    contraparteCel: "Líder Hidrología/PM",
+    fechaObjetivo: "Fase 2-3",
+    status: "abierta",
+  },
+  {
+    id: "OD-16",
+    area: "Operación",
+    decision: "Listas de destinatarios y canales por nivel de alerta",
+    detail:
+      "Quién recibe email, quién recibe SMS, escalamiento entre niveles, frecuencia mínima entre alertas para evitar fatiga.",
+    responsable: "Hidrólogo Operativo + Líder Hidrología/PM",
+    contraparteCel: "Lorena (gobernanza institucional)",
+    fechaObjetivo: "Fase 3",
+    status: "abierta",
+  },
+  {
+    id: "OD-17",
+    area: "Operación",
+    decision: "RTO/RPO objetivo y plan de DR del silo",
+    detail:
+      "Tiempo objetivo de recuperación y punto de recuperación tras un desastre. Define el dimensionamiento del NAS, la frecuencia de snapshots y la documentación de re-instalación.",
+    responsable: "DevOps CEL",
+    contraparteCel: "Miladis + José Manuel",
+    fechaObjetivo: "Fase 3",
+    status: "abierta",
+  },
+  {
+    id: "OD-18",
+    area: "Recursos humanos",
+    decision: "Asignación nominal del Ingeniero DevOps / Enlace operativo (FTE 1.0)",
+    detail:
+      "Identificar al recurso interno 100% dedicado durante la fase de ejecución. Refresh abril 2026: pendiente confirmación de staffing.",
+    responsable: "Comité TI CEL",
+    contraparteCel: "Lorena (autoriza) + Nelson",
+    fechaObjetivo: "Fase 0",
+    status: "bloqueada-cel",
+  },
+  {
+    id: "OD-19",
+    area: "Gobernanza",
+    decision: "SLAs entre el Comité Consultivo y la operación del piloto",
+    detail:
+      "Tiempos de respuesta del Comité para aprobaciones (accesos, cambios de red, despliegues). Cadencia de revisiones y formato de actas. Refresh abril 2026: pendiente afinar antes de oficializar.",
+    responsable: "Lorena + Líder Hidrología/PM",
+    contraparteCel: "Comité TI (todos)",
+    fechaObjetivo: "Fase 0",
+    status: "en-discusion",
+  },
+  {
+    id: "OD-20",
+    area: "Gobernanza",
+    decision: "Esquema de aprobación de cambios en producción",
+    detail:
+      "Workflow para cambios de código del modelo, pipelines ETL, umbrales de alerta y configuración de infraestructura una vez en producción.",
+    responsable: "DevOps CEL + Consultora IA",
+    contraparteCel: "Comité TI",
+    fechaObjetivo: "Fase 3",
+    status: "abierta",
+  },
+];
+
+export const DECISIONES_CONFIRMADAS_INTRO =
+  "Decisiones técnicas ya cerradas o adoptadas en el diseño base. Se incluyen como referencia; los puntos abiertos se gestionan en la tabla superior.";
+
 export const DECISIONES_TECNICAS = [
   {
     title: "Lenguajes y entorno",
@@ -284,6 +792,82 @@ export const OPERACION_DIARIA = {
     "Operación semi-supervisada los primeros meses. Re-entrenamiento trimestral o semestral del LSTM con datos recientes, versionado en Git y validado contra la versión previa antes de pasar a producción.",
 };
 
+export interface CelResponsibility {
+  area: "Informática (Comité)" | "Hidrología" | "Operativo";
+  role: string;
+  responsibilities: string[];
+  accesos: string[];
+  sla: string;
+  inputs: string[];
+}
+
+export const CEL_DAILY_RESPONSIBILITIES_INTRO =
+  "La operación diaria del piloto descansa en una colaboración explícita entre el equipo del piloto y CEL. Esta sección detalla, para cada área de CEL, qué hace en el día a día, qué accesos requiere, el SLA esperado del Comité y los inputs que debe proveer al sistema.";
+
+export const CEL_DAILY_RESPONSIBILITIES: CelResponsibility[] = [
+  {
+    area: "Informática (Comité)",
+    role: "Comité Consultivo de TI + Ingeniero DevOps de enlace",
+    responsibilities: [
+      "Garantizar la disponibilidad del silo (cómputo, red, energía) dentro del data center CEL.",
+      "Aprobar y aplicar cambios de configuración en red, accesos y stack del silo.",
+      "Custodiar las credenciales y secretos; rotar accesos del consultor según política.",
+      "Mantener el monitoreo de hardware, GPU y servicios base (Prometheus/Grafana).",
+      "Ejecutar respaldos al NAS y verificar restauraciones periódicas.",
+    ],
+    accesos: [
+      "Acceso root al silo (DevOps) bajo control del Comité.",
+      "Acceso al panel de monitoreo y al gestor de secretos.",
+      "Acceso solo-lectura a las DBs productivas (usuario de servicio para los pipelines).",
+    ],
+    sla: "Respuesta del Comité a solicitudes operativas críticas: por definir formalmente (target propuesto: 4 horas hábiles para incidentes; 2 días hábiles para cambios planificados).",
+    inputs: [
+      "Estado de salud del silo (uptime, alertas de hardware/red).",
+      "Confirmación de que los respaldos diarios completaron correctamente.",
+      "Notificación temprana de mantenimientos planificados en la red CEL.",
+    ],
+  },
+  {
+    area: "Hidrología",
+    role: "Líder Hidrología/PM + Ingenieros de Datos",
+    responsibilities: [
+      "Validar diariamente la coherencia hidrológica de los pronósticos vs observado.",
+      "Gestionar la calidad de las series hidrométricas y reportar estaciones con problemas.",
+      "Mantener el catálogo de puntos de control y umbrales con el equipo operativo.",
+      "Coordinar el re-entrenamiento periódico del modelo con datos frescos.",
+    ],
+    accesos: [
+      "Dashboard del piloto con vista experta (hidrogramas, métricas, residuales).",
+      "PostgreSQL del silo en lectura para análisis ad-hoc.",
+    ],
+    sla: "Revisión técnica del pronóstico diario en ventana matinal post-corrida 00 UTC.",
+    inputs: [
+      "Eventos hidrológicos relevantes (mantenimientos de embalse, fallos de estación).",
+      "Cambios en la red de estaciones o en la operación de presas.",
+      "Validación final de los re-entrenamientos del LSTM antes de pasar a producción.",
+    ],
+  },
+  {
+    area: "Operativo",
+    role: "Hidrólogo Operativo (Víctor Alabi)",
+    responsibilities: [
+      "Usuario principal del sistema: monitoreo diario del desempeño e interpretación de alertas.",
+      "Activación de protocolos de aviso ante alertas amarilla/roja según procedimientos CEL.",
+      "Retroalimentación continua sobre falsos positivos/negativos y mejoras de UX.",
+      "Validador final de coherencia y utilidad operativa de los resultados del modelo.",
+    ],
+    accesos: [
+      "Dashboard operativo (mapa, hidrogramas, alertas, histórico).",
+      "Canales de notificación (email, SMS) y lista de destinatarios.",
+    ],
+    sla: "Revisión operativa al menos dos veces al día tras las corridas (00 UTC y 12 UTC). En eventos críticos: monitoreo continuo.",
+    inputs: [
+      "Observaciones de campo y reportes de afectación.",
+      "Ajustes finos a umbrales de alerta según experiencia operativa.",
+    ],
+  },
+];
+
 export const VISUALIZACION = {
   intro:
     "Dashboard web integrado al portal interno de CEL como única fuente de verdad. Audiencia mixta técnica-operativa, enfoque en claridad y síntesis.",
@@ -312,6 +896,28 @@ export const VISUALIZACION = {
     samples: [
       'Email — "Alerta Roja de Inundación – Bajo Lempa. Se anticipa caudal ~3000 m³/s el miércoles 03:00, superando el umbral rojo. Revise el dashboard para análisis detallado."',
       'SMS — "ALERTA ROJA: Pronóstico de caudal >3000 m³/s en Bajo Lempa en 3 días. Revise el dashboard. Info: [enlace]"',
+    ],
+  },
+  integration: {
+    title: "Integración con el portal CEL",
+    body:
+      "El dashboard se aloja en el Nodo de Aplicación del silo y se expone únicamente en la intranet de CEL, tras los firewalls corporativos. Consume MongoDB para el estado operativo en vivo y PostgreSQL/PostGIS para históricos y capas geoespaciales. La autenticación se integra con el directorio interno de CEL bajo los lineamientos del Comité de TI; los permisos se segmentan por perfil (operativo, hidrología técnica, administrador).",
+    bullets: [
+      "Frontend React + Vite empaquetado y servido desde el silo.",
+      "API Node.js que media entre el frontend y las DBs del silo.",
+      "SSO / autenticación corporativa — modalidad por confirmar con CEL.",
+      "Perfiles diferenciados: vista operativa simplificada vs vista experta con métricas y residuales.",
+    ],
+  },
+  training: {
+    title: "Capacitación, ejercicios y adopción",
+    body:
+      "El éxito del piloto depende de que CEL adopte y opere el sistema con confianza. La consultora entrega capacitación estructurada al equipo operativo y técnico, y se realizan ejercicios de mesa (tabletop) y simulacros con eventos históricos para calibrar protocolos.",
+    bullets: [
+      "Manual operativo y sesiones de onboarding al Hidrólogo Operativo y a Hidrología técnica.",
+      "Capacitación al DevOps de enlace sobre el stack (Mage, GitLab, Prometheus/Grafana).",
+      "Ejercicios con eventos históricos (p. ej. Stan, evento 2011) para validar respuesta del sistema y de los protocolos.",
+      "Retroalimentación estructurada del usuario operativo durante los primeros meses (operación semi-supervisada).",
     ],
   },
 };
@@ -764,7 +1370,10 @@ export interface BackupPolicy {
 }
 
 export const INFRA_INTRO =
-  "El silo de IA es un entorno on-premise dedicado, instalado dentro del data center de CEL, que aloja el pipeline completo de pronóstico hidrológico (ingesta, ETL, entrenamiento y servicio del modelo, base histórica y dashboard). Opera como cliente en solo-lectura sobre las bases productivas de CEL (PostgreSQL y MongoDB) y mantiene aislado todo el cómputo intensivo, evitando impacto en los sistemas operativos del negocio. Los ítems pendientes de cierre con el equipo de CEL se identifican explícitamente como “Por confirmar con CEL”.";
+  "El silo de IA es un entorno on-premise dedicado, instalado dentro del data center de CEL, que aloja el pipeline completo de pronóstico hidrológico (ingesta, ETL, entrenamiento y servicio del modelo, base histórica y dashboard). Opera como cliente en solo-lectura sobre las bases productivas de CEL (PostgreSQL y MongoDB) y mantiene aislado todo el cómputo intensivo, evitando impacto en los sistemas operativos del negocio.";
+
+export const INFRA_BOM_DISCLAIMER =
+  "Importante — Este capítulo es el scaffold del BOM final aprobado por CEL. El BOM definitivo (modelos, fabricantes, cantidades, costos y cronograma de compra) se cerrará en sesión conjunta con el Comité de TI antes de la orden de compra. Hasta entonces, cada ítem está marcado como “Por confirmar con CEL — BOM final”. La consultora aporta especificaciones técnicas mínimas; CEL aprueba los modelos y proveedores según sus políticas internas (decisión OD-01 en el capítulo de Decisiones abiertas).";
 
 export const INFRA_ARCHITECTURE: InfraArchNode[] = [
   {
