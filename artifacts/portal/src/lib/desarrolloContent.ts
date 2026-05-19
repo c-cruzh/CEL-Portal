@@ -444,7 +444,7 @@ export const TEAM_PROFILES: TeamProfile[] = [
   {
     id: "consultora",
     role: "Consultora Líder en IA e Ingeniería de Datos",
-    person: "Equipo C2Labs (externo)",
+    person: "Equipo C2Labs",
     scope: "Externo",
     responsibilities: [
       "Diseño, desarrollo e implementación del modelo basado en redes neuronales LSTM.",

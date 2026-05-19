@@ -84,55 +84,53 @@ export default function Equipo() {
         <div className="space-y-4">
           <h2 className="text-xl font-semibold tracking-tight">Roles del proyecto</h2>
           <p className="text-xs text-muted-foreground -mt-2">
-            Un mismo rol puede ser asumido por más de una persona. Los roles con co‑liderazgo se resaltan.
+            Vista inversa del directorio: cada rol con las personas que lo asumen. Un mismo rol puede ser compartido por más de una persona. Los roles con co‑liderazgo se resaltan.
           </p>
           <Card>
             <CardContent className="p-0 divide-y divide-border">
               {ROLES.map(role => {
                 const coverage = summary?.coverage?.find(c => c.roleId === role.id);
-                const count = coverage?.count || 0;
-                const holders = (coverage?.assignees ?? []).map((name) => {
+                const assignees = coverage?.assignees ?? [];
+                const count = assignees.length;
+                const shared = count > 1;
+                const holders = assignees.map((name) => {
                   const m = members?.find((mm) => mm.displayName === name);
                   return { name, email: m?.email };
                 });
-                const isCoLed = count > 1;
                 return (
                   <div
                     key={role.id}
-                    className={`p-4 flex flex-col gap-2 ${isCoLed ? "bg-primary/5" : ""}`}
+                    className={`p-4 flex flex-col gap-2 ${shared ? "bg-primary/5" : ""}`}
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="font-medium text-sm leading-tight">{role.label}</p>
-                        {isCoLed && (
-                          <p className="text-[10px] text-primary font-medium mt-0.5">
-                            Co‑liderazgo · {count} personas
-                          </p>
-                        )}
-                      </div>
-                      <Badge variant={count > 0 ? "default" : "secondary"} className="shrink-0">
-                        {count > 0 ? `${count}` : "Sin asignar"}
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="font-medium text-sm">{role.label}</span>
+                      <Badge variant={count > 0 ? (shared ? "default" : "secondary") : "outline"}>
+                        {count === 0
+                          ? "Sin asignar"
+                          : shared
+                            ? `Compartido · ${count}`
+                            : "1 persona"}
                       </Badge>
                     </div>
-                    {count > 0 && (
-                      <div className="flex flex-wrap gap-1.5 pt-1">
-                        {holders.map((h, i) => (
+                    {count > 0 ? (
+                      <div className="flex flex-wrap items-center gap-2 pt-1">
+                        {holders.map((h, idx) => (
                           <div
-                            key={`${role.id}-${i}`}
-                            className="flex items-center gap-1.5 bg-muted/50 rounded-full pl-1 pr-2 py-0.5"
+                            key={`${role.id}-${idx}-${h.name}`}
+                            className="flex items-center gap-1.5 bg-background border border-border rounded-full pl-1 pr-2.5 py-0.5"
                             title={h.email}
                           >
-                            <Avatar className="h-5 w-5 border border-border">
-                              <AvatarFallback className="bg-primary/10 text-primary text-[9px]">
+                            <Avatar className="h-5 w-5">
+                              <AvatarFallback className="bg-primary/15 text-primary text-[9px] font-medium">
                                 {h.name ? h.name.substring(0, 2).toUpperCase() : "?"}
                               </AvatarFallback>
                             </Avatar>
-                            <span className="text-[11px] text-foreground/80 leading-none">
-                              {h.name}
-                            </span>
+                            <span className="text-xs">{h.name}</span>
                           </div>
                         ))}
                       </div>
+                    ) : (
+                      <p className="text-xs text-muted-foreground italic">Sin asignar</p>
                     )}
                   </div>
                 );
