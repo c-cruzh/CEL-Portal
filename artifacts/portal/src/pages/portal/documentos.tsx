@@ -92,9 +92,8 @@ export default function Documentos() {
             informes, datasheets, actas y presentaciones.
           </p>
         </div>
-        {folders && folders.length > 0 && (
-          <UploadDialog folders={folders} />
-        )}
+        <UploadDialog folders={folders ?? []} />
+
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6">
