@@ -709,7 +709,7 @@ function NewFolderDialog() {
         <DialogHeader>
           <DialogTitle>Crear nueva carpeta</DialogTitle>
           <DialogDescription>
-            Agrega una nueva carpeta al repositorio de documentos del piloto.
+            Crea una carpeta nueva para organizar documentos del repositorio compartido.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-2">
@@ -869,7 +869,7 @@ function UploadDialog({ folders }: { folders: DocumentFolder[] }) {
         <DialogHeader>
           <DialogTitle>Subir documento al repositorio</DialogTitle>
           <DialogDescription>
-            Selecciona el archivo, la carpeta y los metadatos para compartirlo con el equipo.
+            Selecciona un archivo (máx 50 MB) y asígnale carpeta y fase opcional antes de subirlo.
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-2">

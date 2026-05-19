@@ -598,7 +598,7 @@ paths:
     get:
       operationId: exportCalendarIcs
       tags: [milestones]
-      summary: Download the project calendar as a one-shot .ics file
+      summary: Download an iCalendar (.ics) file with all project milestones (one-shot, authenticated)
       responses:
         "200":
           description: iCalendar file
@@ -606,6 +606,12 @@ paths:
             text/calendar:
               schema:
                 type: string
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
 
   /calendar/feed-url:
     get:

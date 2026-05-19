@@ -16,7 +16,7 @@ declare global {
 
 const DEFAULT_ALLOWED_DOMAINS = ["cel.gob.sv", "c2labs.ai"];
 
-const AUTO_PM_EMAILS = new Set([
+const AUTO_PM_EMAILS = new Set<string>([
   "camila@c2labs.ai",
   "kevin@c2labs.ai",
 ]);
