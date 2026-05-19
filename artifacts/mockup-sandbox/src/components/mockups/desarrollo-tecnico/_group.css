@@ -1,0 +1,40 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap");
+
+:root {
+  --background: 210 40% 98%;
+  --foreground: 222 47% 11%;
+  --border: 214 32% 91%;
+  --card: 0 0% 100%;
+  --card-foreground: 222 47% 11%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222 47% 11%;
+
+  --primary: 214 68% 15%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 210 2% 92%;
+  --secondary-foreground: 214 68% 15%;
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 217 17% 35%;
+  --accent: 210 2% 92%;
+  --accent-foreground: 214 68% 15%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+
+  --input: 214 32% 91%;
+  --ring: 214 68% 15%;
+
+  --chart-1: 214 68% 15%;
+  --chart-2: 217 17% 23%;
+  --chart-3: 199 89% 38%;
+  --chart-4: 175 60% 32%;
+  --chart-5: 35 80% 50%;
+
+  /* CEL brand */
+  --cel-navy: 214 68% 15%;       /* PANTONE 289 C ≈ #122E55 */
+  --cel-navy-deep: 214 68% 10%;
+  --cel-ink: 222 47% 11%;
+  --cel-paper: 210 40% 98%;
+  --cel-line: 214 32% 88%;
+  --cel-accent-teal: 175 60% 32%;
+  --cel-accent-amber: 35 80% 50%;
+}
