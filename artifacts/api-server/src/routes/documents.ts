@@ -9,6 +9,7 @@ import {
 } from "@workspace/db";
 import {
   ListDocumentFoldersResponse,
+  CreateDocumentFolderBody,
   ListDocumentsResponse,
   ListDocumentsQueryParams,
   CreateDocumentBody,
@@ -86,6 +87,81 @@ router.get(
         })),
       ),
     );
+  },
+);
+
+function slugifyFolderKey(input: string): string {
+  return input
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "")
+    .slice(0, 40);
+}
+
+router.post(
+  "/documents/folders",
+  requireAuth,
+  async (req, res): Promise<void> => {
+    const userId = (req as { userId?: string }).userId;
+    if (!userId) {
+      res.status(401).json({ error: "No autenticado" });
+      return;
+    }
+    if (!(await isUserPM(userId))) {
+      res
+        .status(403)
+        .json({ error: "Solo el PM puede crear carpetas en el repositorio." });
+      return;
+    }
+
+    const parsed = CreateDocumentFolderBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    const label = parsed.data.label.trim();
+    if (!label) {
+      res.status(400).json({ error: "El nombre de la carpeta es obligatorio." });
+      return;
+    }
+    let key = (parsed.data.key ?? slugifyFolderKey(label)).trim();
+    if (!key) {
+      res
+        .status(400)
+        .json({ error: "No se pudo generar una clave para la carpeta." });
+      return;
+    }
+
+    const existing = await db
+      .select()
+      .from(documentFoldersTable)
+      .where(eq(documentFoldersTable.key, key))
+      .limit(1);
+    if (existing.length > 0) {
+      res.status(409).json({ error: `Ya existe una carpeta con la clave "${key}".` });
+      return;
+    }
+
+    const allRows = await db
+      .select({ sortOrder: documentFoldersTable.sortOrder })
+      .from(documentFoldersTable);
+    const nextSortOrder =
+      allRows.length === 0
+        ? 1
+        : Math.max(...allRows.map((r) => r.sortOrder ?? 0)) + 1;
+
+    const [created] = await db
+      .insert(documentFoldersTable)
+      .values({ key, label, sortOrder: nextSortOrder })
+      .returning();
+
+    res.status(201).json({
+      key: created.key,
+      label: created.label,
+      sortOrder: created.sortOrder,
+    });
   },
 );
 

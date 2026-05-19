@@ -21,6 +21,7 @@ export * from './displayNameInput';
 export * from './document';
 export * from './documentDownloadUrl';
 export * from './documentFolder';
+export * from './documentFolderInput';
 export * from './documentInput';
 export * from './documentUpdate';
 export * from './errorResponse';

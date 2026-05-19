@@ -32,6 +32,7 @@ import type {
   Document,
   DocumentDownloadUrl,
   DocumentFolder,
+  DocumentFolderInput,
   DocumentInput,
   DocumentUpdate,
   ErrorResponse,
@@ -2361,6 +2362,77 @@ export function useListDocumentFolders<TData = Awaited<ReturnType<typeof listDoc
 
 
 
+
+export const getCreateDocumentFolderUrl = () => {
+
+
+
+
+  return `/api/documents/folders`
+}
+
+/**
+ * @summary Create a new document folder (PM only)
+ */
+export const createDocumentFolder = async (documentFolderInput: DocumentFolderInput, options?: RequestInit): Promise<DocumentFolder> => {
+
+  return customFetch<DocumentFolder>(getCreateDocumentFolderUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      documentFolderInput,)
+  }
+);}
+
+
+
+
+export const getCreateDocumentFolderMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDocumentFolder>>, TError,{data: BodyType<DocumentFolderInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createDocumentFolder>>, TError,{data: BodyType<DocumentFolderInput>}, TContext> => {
+
+const mutationKey = ['createDocumentFolder'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createDocumentFolder>>, {data: BodyType<DocumentFolderInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createDocumentFolder(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateDocumentFolderMutationResult = NonNullable<Awaited<ReturnType<typeof createDocumentFolder>>>
+    export type CreateDocumentFolderMutationBody = BodyType<DocumentFolderInput>
+    export type CreateDocumentFolderMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a new document folder (PM only)
+ */
+export const useCreateDocumentFolder = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDocumentFolder>>, TError,{data: BodyType<DocumentFolderInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createDocumentFolder>>,
+        TError,
+        {data: BodyType<DocumentFolderInput>},
+        TContext
+      > => {
+      return useMutation(getCreateDocumentFolderMutationOptions(options));
+    }
 
 export const getListDocumentsUrl = (params?: ListDocumentsParams,) => {
   const normalizedParams = new URLSearchParams();

@@ -3,6 +3,7 @@ import {
   useListDocuments,
   useListDocumentFolders,
   useCreateDocument,
+  useCreateDocumentFolder,
   useDeleteDocument,
   useUpdateDocument,
   getDocumentDownloadUrl,
@@ -10,6 +11,7 @@ import {
   useGetMe,
   useRequestUploadUrl,
   getListDocumentsQueryKey,
+  getListDocumentFoldersQueryKey,
   type Document,
   type DocumentFolder,
 } from "@workspace/api-client-react";
@@ -92,7 +94,10 @@ export default function Documentos() {
             informes, datasheets, actas y presentaciones.
           </p>
         </div>
-        <UploadDialog folders={folders ?? []} />
+        <div className="flex gap-2">
+          {isPM && <NewFolderDialog />}
+          <UploadDialog folders={folders ?? []} />
+        </div>
 
       </div>
 
@@ -631,6 +636,116 @@ function EditDocumentDialog({
           </Button>
           <Button onClick={handleSubmit} disabled={updateMutation.isPending}>
             {updateMutation.isPending ? "Guardando…" : "Guardar cambios"}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function NewFolderDialog() {
+  const [open, setOpen] = useState(false);
+  const [label, setLabel] = useState("");
+  const [key, setKey] = useState("");
+  const [busy, setBusy] = useState(false);
+  const createFolder = useCreateDocumentFolder();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const reset = () => {
+    setLabel("");
+    setKey("");
+  };
+
+  const handleSubmit = async () => {
+    const trimmed = label.trim();
+    if (!trimmed) {
+      toast({ title: "Ingresa un nombre para la carpeta.", variant: "destructive" });
+      return;
+    }
+    setBusy(true);
+    try {
+      await createFolder.mutateAsync({
+        data: {
+          label: trimmed,
+          ...(key.trim() ? { key: key.trim() } : {}),
+        },
+      });
+      queryClient.invalidateQueries({ queryKey: getListDocumentFoldersQueryKey() });
+      toast({
+        title: "Carpeta creada",
+        description: `"${trimmed}" se agregó al repositorio.`,
+      });
+      reset();
+      setOpen(false);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Ocurrió un error inesperado.";
+      toast({
+        title: "No se pudo crear la carpeta",
+        description: message,
+        variant: "destructive",
+      });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Dialog
+      open={open}
+      onOpenChange={(o) => {
+        setOpen(o);
+        if (!o) reset();
+      }}
+    >
+      <DialogTrigger asChild>
+        <Button variant="outline">Nueva carpeta</Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Crear nueva carpeta</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-2">
+          <div className="space-y-2">
+            <Label>Nombre</Label>
+            <Input
+              value={label}
+              onChange={(e) => setLabel(e.target.value)}
+              placeholder="Ej. Cartografía"
+              maxLength={80}
+            />
+            <p className="text-xs text-muted-foreground">
+              Nombre visible de la carpeta en el repositorio.
+            </p>
+          </div>
+          <div className="space-y-2">
+            <Label>Clave técnica (opcional)</Label>
+            <Input
+              value={key}
+              onChange={(e) => setKey(e.target.value.toLowerCase())}
+              placeholder="Ej. cartografia"
+              maxLength={40}
+              pattern="[a-z0-9_-]+"
+            />
+            <p className="text-xs text-muted-foreground">
+              Solo minúsculas, números, guion bajo o medio. Si la dejas vacía, se
+              generará automáticamente a partir del nombre.
+            </p>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button
+            variant="ghost"
+            onClick={() => {
+              reset();
+              setOpen(false);
+            }}
+            disabled={busy}
+          >
+            Cancelar
+          </Button>
+          <Button onClick={handleSubmit} disabled={busy}>
+            {busy ? "Creando…" : "Crear carpeta"}
           </Button>
         </DialogFooter>
       </DialogContent>

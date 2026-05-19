@@ -528,6 +528,23 @@ export const ListDocumentFoldersResponse = zod.array(ListDocumentFoldersResponse
 
 
 /**
+ * @summary Create a new document folder (PM only)
+ */
+export const createDocumentFolderBodyLabelMax = 80;
+
+export const createDocumentFolderBodyKeyMax = 40;
+
+
+export const createDocumentFolderBodyKeyRegExp = new RegExp('^[a-z0-9_-]+$');
+
+
+export const CreateDocumentFolderBody = zod.object({
+  "label": zod.string().min(1).max(createDocumentFolderBodyLabelMax),
+  "key": zod.string().min(1).max(createDocumentFolderBodyKeyMax).regex(createDocumentFolderBodyKeyRegExp).optional()
+})
+
+
+/**
  * @summary List documents (filterable)
  */
 export const ListDocumentsQueryParams = zod.object({

@@ -593,6 +593,23 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/DocumentFolder"
+    post:
+      operationId: createDocumentFolder
+      tags: [documents]
+      summary: Create a new document folder (PM only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DocumentFolderInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DocumentFolder"
 
   /documents:
     get:
@@ -1366,6 +1383,20 @@ components:
           type: string
         sortOrder:
           type: integer
+
+    DocumentFolderInput:
+      type: object
+      required: [label]
+      properties:
+        label:
+          type: string
+          minLength: 1
+          maxLength: 80
+        key:
+          type: string
+          minLength: 1
+          maxLength: 40
+          pattern: "^[a-z0-9_-]+$"
 
     Document:
       type: object

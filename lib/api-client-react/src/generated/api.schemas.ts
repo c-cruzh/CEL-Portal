@@ -309,6 +309,20 @@ export interface DocumentFolder {
   sortOrder: number;
 }
 
+export interface DocumentFolderInput {
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  label: string;
+  /**
+     * @minLength 1
+     * @maxLength 40
+     * @pattern ^[a-z0-9_-]+$
+     */
+  key?: string;
+}
+
 export interface Document {
   id: string;
   name: string;
