@@ -16,8 +16,11 @@ import {
   SetMyCvBody,
   SetMyCvResponse,
   GetMyCvResponse,
+  UpdateMyNotificationPrefsBody,
+  UpdateMyNotificationPrefsResponse,
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
+import { notifyAsync } from "../lib/notifications";
 
 const router: IRouter = Router();
 
@@ -47,6 +50,7 @@ async function buildMe(userId: string) {
     roles: roles.map((r) => r.roleId),
     joinedAt: user.createdAt,
     hasCv: !!cv,
+    emailNotificationsOptOut: user.emailNotificationsOptOut,
     cv: cv
       ? {
           fileName: cv.fileName,
@@ -104,6 +108,16 @@ router.put("/me/roles", requireAuth, async (req, res): Promise<void> => {
 
   const desired = Array.from(new Set(parsed.data.roles));
 
+  const previousRows = await db
+    .select({ roleId: userRolesTable.roleId })
+    .from(userRolesTable)
+    .where(eq(userRolesTable.userId, req.userId!));
+  const previousRoles = previousRows.map((r) => r.roleId).sort();
+  const newRoles = [...desired].sort();
+  const changed =
+    previousRoles.length !== newRoles.length ||
+    previousRoles.some((r, i) => r !== newRoles[i]);
+
   await db.transaction(async (tx) => {
     await tx
       .delete(userRolesTable)
@@ -115,6 +129,26 @@ router.put("/me/roles", requireAuth, async (req, res): Promise<void> => {
         .onConflictDoNothing();
     }
   });
+
+  if (changed) {
+    const [actor] = await db
+      .select({
+        id: usersTable.id,
+        email: usersTable.email,
+        displayName: usersTable.displayName,
+      })
+      .from(usersTable)
+      .where(eq(usersTable.id, req.userId!))
+      .limit(1);
+    if (actor) {
+      notifyAsync({
+        kind: "roles_changed",
+        actor,
+        previousRoles,
+        newRoles,
+      });
+    }
+  }
 
   res.json(SetMyRolesResponse.parse(desired));
 });
@@ -175,6 +209,23 @@ router.put("/me/cv", requireAuth, async (req, res): Promise<void> => {
     .where(eq(userCvsTable.userId, req.userId!))
     .limit(1);
 
+  const [actor] = await db
+    .select({
+      id: usersTable.id,
+      email: usersTable.email,
+      displayName: usersTable.displayName,
+    })
+    .from(usersTable)
+    .where(eq(usersTable.id, req.userId!))
+    .limit(1);
+  if (actor) {
+    notifyAsync({
+      kind: "cv_uploaded",
+      actor,
+      fileName: cv!.fileName,
+    });
+  }
+
   res.json(
     SetMyCvResponse.parse({
       fileName: cv!.fileName,
@@ -185,6 +236,24 @@ router.put("/me/cv", requireAuth, async (req, res): Promise<void> => {
     }),
   );
 });
+
+router.patch(
+  "/me/notifications",
+  requireAuth,
+  async (req, res): Promise<void> => {
+    const parsed = UpdateMyNotificationPrefsBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    await db
+      .update(usersTable)
+      .set({ emailNotificationsOptOut: parsed.data.emailNotificationsOptOut })
+      .where(eq(usersTable.id, req.userId!));
+    const me = await buildMe(req.userId!);
+    res.json(UpdateMyNotificationPrefsResponse.parse(me));
+  },
+);
 
 router.delete("/me/cv", requireAuth, async (req, res): Promise<void> => {
   await db.delete(userCvsTable).where(eq(userCvsTable.userId, req.userId!));

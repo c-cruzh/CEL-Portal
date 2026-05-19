@@ -2,6 +2,7 @@ import { type Request, type Response, type NextFunction } from "express";
 import { getAuth, clerkClient } from "@clerk/express";
 import { eq } from "drizzle-orm";
 import { db, usersTable } from "@workspace/db";
+import { notifyAsync } from "../lib/notifications";
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -103,10 +104,22 @@ export async function requireAuth(
         [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ") ||
         primaryEmail.split("@")[0];
 
-      await db
+      const inserted = await db
         .insert(usersTable)
         .values({ id: clerkUserId, email, displayName })
-        .onConflictDoNothing();
+        .onConflictDoNothing()
+        .returning({ id: usersTable.id });
+
+      if (inserted.length > 0) {
+        notifyAsync({
+          kind: "member_joined",
+          actor: {
+            id: clerkUserId,
+            email: email!,
+            displayName: displayName!,
+          },
+        });
+      }
     } else if (email && !isEmailAllowed(email, allowedDomains)) {
       // Domain allowlist tightened after this user was provisioned: deny access.
       res.status(403).json({

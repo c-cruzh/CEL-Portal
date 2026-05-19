@@ -27,6 +27,7 @@ import type {
   HealthStatus,
   Member,
   MemberMe,
+  NotificationPrefsInput,
   ProjectConfig,
   ProjectConfigUpdate,
   RoleDefinition,
@@ -271,6 +272,77 @@ export const useUpdateMyDisplayName = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getUpdateMyDisplayNameMutationOptions(options));
+    }
+
+export const getUpdateMyNotificationPrefsUrl = () => {
+
+
+
+
+  return `/api/me/notifications`
+}
+
+/**
+ * @summary Update my email notification preferences (opt-in/opt-out)
+ */
+export const updateMyNotificationPrefs = async (notificationPrefsInput: NotificationPrefsInput, options?: RequestInit): Promise<MemberMe> => {
+
+  return customFetch<MemberMe>(getUpdateMyNotificationPrefsUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      notificationPrefsInput,)
+  }
+);}
+
+
+
+
+export const getUpdateMyNotificationPrefsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMyNotificationPrefs>>, TError,{data: BodyType<NotificationPrefsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateMyNotificationPrefs>>, TError,{data: BodyType<NotificationPrefsInput>}, TContext> => {
+
+const mutationKey = ['updateMyNotificationPrefs'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateMyNotificationPrefs>>, {data: BodyType<NotificationPrefsInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateMyNotificationPrefs(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateMyNotificationPrefsMutationResult = NonNullable<Awaited<ReturnType<typeof updateMyNotificationPrefs>>>
+    export type UpdateMyNotificationPrefsMutationBody = BodyType<NotificationPrefsInput>
+    export type UpdateMyNotificationPrefsMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update my email notification preferences (opt-in/opt-out)
+ */
+export const useUpdateMyNotificationPrefs = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMyNotificationPrefs>>, TError,{data: BodyType<NotificationPrefsInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateMyNotificationPrefs>>,
+        TError,
+        {data: BodyType<NotificationPrefsInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateMyNotificationPrefsMutationOptions(options));
     }
 
 export const getGetMyRolesUrl = () => {

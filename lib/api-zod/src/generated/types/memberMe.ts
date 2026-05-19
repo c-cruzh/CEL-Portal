@@ -15,4 +15,5 @@ export interface MemberMe {
   joinedAt: Date;
   hasCv: boolean;
   cv?: Cv | null;
+  emailNotificationsOptOut: boolean;
 }

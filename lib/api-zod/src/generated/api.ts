@@ -32,7 +32,8 @@ export const GetMeResponse = zod.object({
   "objectPath": zod.string(),
   "sizeBytes": zod.number(),
   "uploadedAt": zod.coerce.date()
-}),zod.null()]).optional()
+}),zod.null()]).optional(),
+  "emailNotificationsOptOut": zod.boolean()
 })
 
 
@@ -60,7 +61,33 @@ export const UpdateMyDisplayNameResponse = zod.object({
   "objectPath": zod.string(),
   "sizeBytes": zod.number(),
   "uploadedAt": zod.coerce.date()
-}),zod.null()]).optional()
+}),zod.null()]).optional(),
+  "emailNotificationsOptOut": zod.boolean()
+})
+
+
+/**
+ * @summary Update my email notification preferences (opt-in/opt-out)
+ */
+export const UpdateMyNotificationPrefsBody = zod.object({
+  "emailNotificationsOptOut": zod.boolean()
+})
+
+export const UpdateMyNotificationPrefsResponse = zod.object({
+  "id": zod.string(),
+  "email": zod.string(),
+  "displayName": zod.string(),
+  "roles": zod.array(zod.string()),
+  "joinedAt": zod.coerce.date(),
+  "hasCv": zod.boolean(),
+  "cv": zod.union([zod.object({
+  "fileName": zod.string(),
+  "contentType": zod.string(),
+  "objectPath": zod.string(),
+  "sizeBytes": zod.number(),
+  "uploadedAt": zod.coerce.date()
+}),zod.null()]).optional(),
+  "emailNotificationsOptOut": zod.boolean()
 })
 
 

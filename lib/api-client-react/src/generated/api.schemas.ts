@@ -56,6 +56,11 @@ export interface MemberMe {
   joinedAt: string;
   hasCv: boolean;
   cv?: Cv | null;
+  emailNotificationsOptOut: boolean;
+}
+
+export interface NotificationPrefsInput {
+  emailNotificationsOptOut: boolean;
 }
 
 export interface DisplayNameInput {
