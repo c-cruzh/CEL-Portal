@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
   useListDocuments,
   useListDocumentFolders,
@@ -255,6 +255,7 @@ function DocumentRow({
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [downloading, setDownloading] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
   const deleteMutation = useDeleteDocument();
   const folderLabel =
     folders.find((f) => f.key === doc.folder)?.label ?? doc.folder;
@@ -335,6 +336,14 @@ function DocumentRow({
         <Button
           size="sm"
           variant="outline"
+          onClick={() => setPreviewOpen(true)}
+        >
+          Ver
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          className="ml-2"
           onClick={handleDownload}
           disabled={downloading}
         >
@@ -351,8 +360,118 @@ function DocumentRow({
             Eliminar
           </Button>
         )}
+        <PreviewDialog
+          doc={doc}
+          open={previewOpen}
+          onOpenChange={setPreviewOpen}
+          onDownload={handleDownload}
+          downloading={downloading}
+        />
       </TableCell>
     </TableRow>
+  );
+}
+
+function PreviewDialog({
+  doc,
+  open,
+  onOpenChange,
+  onDownload,
+  downloading,
+}: {
+  doc: Document;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  onDownload: () => void;
+  downloading: boolean;
+}) {
+  const { toast } = useToast();
+  const [url, setUrl] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const mime = (doc.mimeType || "").toLowerCase();
+  const name = doc.name.toLowerCase();
+  const isPdf = mime === "application/pdf" || name.endsWith(".pdf");
+  const isImage =
+    mime.startsWith("image/") ||
+    /\.(png|jpe?g|gif|webp|svg|bmp|avif)$/i.test(doc.name);
+  const canPreview = isPdf || isImage;
+
+  useEffect(() => {
+    if (!open || !canPreview) return;
+    setLoading(true);
+    setError(null);
+    setUrl(null);
+    getDocumentDownloadUrl(doc.id)
+      .then((result) => {
+        if (!result?.url) throw new Error("No se pudo obtener el enlace.");
+        setUrl(result.url);
+      })
+      .catch((err) => {
+        const msg =
+          err instanceof Error ? err.message : "Intenta de nuevo en un momento.";
+        setError(msg);
+        toast({
+          title: "No se pudo cargar la vista previa",
+          description: msg,
+          variant: "destructive",
+        });
+      })
+      .finally(() => setLoading(false));
+  }, [open, canPreview, doc.id, toast]);
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-5xl w-[95vw]">
+        <DialogHeader>
+          <DialogTitle className="truncate pr-8">{doc.name}</DialogTitle>
+        </DialogHeader>
+        <div className="min-h-[60vh] flex items-center justify-center bg-muted/30 rounded-md overflow-hidden">
+          {!canPreview ? (
+            <div className="text-center p-8 space-y-2">
+              <p className="text-foreground font-medium">
+                Vista previa no disponible para este tipo de archivo
+              </p>
+              <p className="text-sm text-muted-foreground">
+                Solo se puede previsualizar PDFs e imágenes. Usa Descargar para
+                abrirlo en tu equipo.
+              </p>
+            </div>
+          ) : loading ? (
+            <div className="w-full h-[60vh] p-4 space-y-2">
+              <Skeleton className="h-full w-full" />
+            </div>
+          ) : error ? (
+            <div className="text-center p-8 text-sm text-destructive">
+              {error}
+            </div>
+          ) : url && isPdf ? (
+            <iframe
+              src={url}
+              title={doc.name}
+              className="w-full h-[75vh] border-0 bg-white"
+            />
+          ) : url && isImage ? (
+            <img
+              src={url}
+              alt={doc.name}
+              className="max-h-[75vh] max-w-full object-contain"
+            />
+          ) : null}
+        </div>
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={onDownload}
+            disabled={downloading}
+          >
+            Descargar
+          </Button>
+          <Button onClick={() => onOpenChange(false)}>Cerrar</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
