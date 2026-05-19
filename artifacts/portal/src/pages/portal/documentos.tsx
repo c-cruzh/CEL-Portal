@@ -4,6 +4,7 @@ import {
   useListDocumentFolders,
   useCreateDocument,
   useDeleteDocument,
+  useUpdateDocument,
   getDocumentDownloadUrl,
   useListTeamMembers,
   useGetMe,
@@ -200,6 +201,7 @@ export default function Documentos() {
                         key={doc.id}
                         doc={doc}
                         folders={folders ?? []}
+                        canEdit={isPM || doc.uploadedBy === me?.id}
                         canDelete={isPM || doc.uploadedBy === me?.id}
                       />
                     ))}
@@ -246,16 +248,19 @@ function FolderRow({
 function DocumentRow({
   doc,
   folders,
+  canEdit,
   canDelete,
 }: {
   doc: Document;
   folders: DocumentFolder[];
+  canEdit: boolean;
   canDelete: boolean;
 }) {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [downloading, setDownloading] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
   const deleteMutation = useDeleteDocument();
   const folderLabel =
     folders.find((f) => f.key === doc.folder)?.label ?? doc.folder;
@@ -349,6 +354,16 @@ function DocumentRow({
         >
           Descargar
         </Button>
+        {canEdit && (
+          <Button
+            size="sm"
+            variant="ghost"
+            className="ml-2"
+            onClick={() => setEditOpen(true)}
+          >
+            Editar
+          </Button>
+        )}
         {canDelete && (
           <Button
             size="sm"
@@ -367,6 +382,14 @@ function DocumentRow({
           onDownload={handleDownload}
           downloading={downloading}
         />
+        {canEdit && (
+          <EditDocumentDialog
+            doc={doc}
+            folders={folders}
+            open={editOpen}
+            onOpenChange={setEditOpen}
+          />
+        )}
       </TableCell>
     </TableRow>
   );
@@ -469,6 +492,147 @@ function PreviewDialog({
             Descargar
           </Button>
           <Button onClick={() => onOpenChange(false)}>Cerrar</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function EditDocumentDialog({
+  doc,
+  folders,
+  open,
+  onOpenChange,
+}: {
+  doc: Document;
+  folders: DocumentFolder[];
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const updateMutation = useUpdateDocument();
+  const [name, setName] = useState(doc.name);
+  const [description, setDescription] = useState(doc.description ?? "");
+  const [folder, setFolder] = useState(doc.folder);
+  const [phaseId, setPhaseId] = useState<string>(doc.phaseId ?? "");
+
+  const handleOpenChange = (next: boolean) => {
+    if (next) {
+      setName(doc.name);
+      setDescription(doc.description ?? "");
+      setFolder(doc.folder);
+      setPhaseId(doc.phaseId ?? "");
+    }
+    onOpenChange(next);
+  };
+
+  const handleSubmit = async () => {
+    const trimmedName = name.trim();
+    if (!trimmedName) {
+      toast({ title: "El nombre es obligatorio.", variant: "destructive" });
+      return;
+    }
+    if (!folder) {
+      toast({ title: "Selecciona una carpeta.", variant: "destructive" });
+      return;
+    }
+    try {
+      await updateMutation.mutateAsync({
+        id: doc.id,
+        data: {
+          name: trimmedName,
+          description: description.trim() ? description.trim() : null,
+          folder,
+          phaseId: phaseId || null,
+        },
+      });
+      queryClient.invalidateQueries({ queryKey: getListDocumentsQueryKey() });
+      toast({
+        title: "Documento actualizado",
+        description: `Se guardaron los cambios de "${trimmedName}".`,
+      });
+      onOpenChange(false);
+    } catch (err) {
+      toast({
+        title: "No se pudo actualizar",
+        description:
+          err instanceof Error ? err.message : "Intenta de nuevo en un momento.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Editar documento</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-4 py-2 text-left">
+          <div className="space-y-2">
+            <Label>Nombre</Label>
+            <Input value={name} onChange={(e) => setName(e.target.value)} />
+            <p className="text-xs text-muted-foreground">
+              Editar estos datos no crea una nueva versión del archivo.
+            </p>
+          </div>
+          <div className="space-y-2">
+            <Label>Descripción (opcional)</Label>
+            <Textarea
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              rows={2}
+            />
+          </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label>Carpeta</Label>
+              <Select value={folder} onValueChange={setFolder}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecciona…" />
+                </SelectTrigger>
+                <SelectContent>
+                  {folders.map((f) => (
+                    <SelectItem key={f.key} value={f.key}>
+                      {f.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Fase (opcional)</Label>
+              <Select
+                value={phaseId || "__none__"}
+                onValueChange={(v) => setPhaseId(v === "__none__" ? "" : v)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Ninguna" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">Ninguna</SelectItem>
+                  {PHASES.map((p) => (
+                    <SelectItem key={p.id} value={p.id}>
+                      {p.id} — {p.shortName}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+        </div>
+        <DialogFooter>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={updateMutation.isPending}
+          >
+            Cancelar
+          </Button>
+          <Button onClick={handleSubmit} disabled={updateMutation.isPending}>
+            {updateMutation.isPending ? "Guardando…" : "Guardar cambios"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
