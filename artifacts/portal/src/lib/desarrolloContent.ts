@@ -294,18 +294,339 @@ export const RACI_LEGEND = [
   { k: "I", v: "Informado del progreso y entregables clave" },
 ];
 
-export const INFRA_PLACEHOLDER = {
-  title: "Infraestructura local para el silo de IA de CEL",
-  intro:
-    "Aquí se documentará el desglose de la arquitectura final y el Bill of Materials (BOM) definitivo de hardware y software del silo de IA on-premise.",
-  pending: [
-    "Diagrama de arquitectura final (cómputo, almacenamiento, red, energía)",
-    "BOM final de hardware (servidores, GPU, NAS, switches, UPS, racks)",
-    "BOM final de software (SO, virtualización, MongoDB, PostgreSQL/PostGIS, Mage, monitoreo)",
-    "Plan de comisionamiento y pruebas de aceptación",
-    "Plan de respaldo, recuperación y políticas de seguridad",
-  ],
-};
+export type InfraStatus = "confirmado" | "por-confirmar";
+
+export interface InfraArchNode {
+  id: string;
+  name: string;
+  layer: "Compute" | "Data & ETL" | "Backup" | "Red" | "Energía";
+  role: string;
+  specs: string[];
+}
+
+export interface HardwareItem {
+  category: "Cómputo / ML" | "Almacenamiento" | "Red" | "Energía / Rack";
+  item: string;
+  qty: string;
+  specs: string;
+  role: string;
+  status: InfraStatus;
+}
+
+export interface SoftwareItem {
+  layer: "Sistema operativo" | "Bases de datos" | "Orquestación / ETL" | "ML / Modelos" | "Aplicación" | "Monitoreo / Seguridad";
+  product: string;
+  version: string;
+  purpose: string;
+  status: InfraStatus;
+}
+
+export interface CommissioningTest {
+  id: string;
+  area: "GPU / Cómputo" | "Almacenamiento / E-S" | "Red / VPN" | "Datos / ETL" | "Aplicación";
+  test: string;
+  criteria: string;
+  status: InfraStatus;
+}
+
+export interface BackupPolicy {
+  title: string;
+  body: string;
+  status: InfraStatus;
+}
+
+export const INFRA_INTRO =
+  "El silo de IA es un entorno on-premise dedicado, instalado dentro del data center de CEL, que aloja el pipeline completo de pronóstico hidrológico (ingesta, ETL, entrenamiento y servicio del modelo, base histórica y dashboard). Opera como cliente en solo-lectura sobre las bases productivas de CEL (PostgreSQL y MongoDB) y mantiene aislado todo el cómputo intensivo, evitando impacto en los sistemas operativos del negocio. Los ítems pendientes de cierre con el equipo de CEL se identifican explícitamente como “Por confirmar con CEL”.";
+
+export const INFRA_ARCHITECTURE: InfraArchNode[] = [
+  {
+    id: "ml",
+    name: "Nodo ML / Compute",
+    layer: "Compute",
+    role: "Entrenamiento e inferencia del LSTM y del modelo de inundación manifold",
+    specs: [
+      "1× servidor workstation con GPU NVIDIA RTX 4090 (24 GB VRAM)",
+      "CPU multi-núcleo, 64–128 GB RAM (Por confirmar con CEL)",
+      "Almacenamiento NVMe local para datasets de entrenamiento",
+    ],
+  },
+  {
+    id: "data",
+    name: "Nodo Datos & ETL",
+    layer: "Data & ETL",
+    role: "Mage, scripts de extracción, PostgreSQL/PostGIS y MongoDB locales",
+    specs: [
+      "1× servidor (RAID 1/10) — Por confirmar con CEL",
+      "PostgreSQL + PostGIS para históricos y geometrías",
+      "MongoDB para datos operativos en tiempo real",
+    ],
+  },
+  {
+    id: "app",
+    name: "Nodo Aplicación",
+    layer: "Compute",
+    role: "API Node.js, dashboard React y servicio de notificaciones",
+    specs: [
+      "Puede co-residir con Nodo Datos en el piloto (Por confirmar con CEL)",
+      "Tras firewall de CEL, expuesto solo en intranet",
+    ],
+  },
+  {
+    id: "nas",
+    name: "NAS de Respaldo",
+    layer: "Backup",
+    role: "Backup de DBs, modelos entrenados y artefactos ETL",
+    specs: [
+      "NAS dedicado con discos en RAID (capacidad y modelo Por confirmar con CEL)",
+      "Snapshots diarios + retención semanal/mensual",
+    ],
+  },
+  {
+    id: "net",
+    name: "Red interna y VPN",
+    layer: "Red",
+    role: "Switching del silo y enlace seguro hacia DBs productivas y consultor",
+    specs: [
+      "Switch gigabit gestionado (modelo Por confirmar con CEL)",
+      "VLAN dedicada al silo, ACLs hacia PostgreSQL/MongoDB productivos en solo-lectura",
+      "VPN site-to-site / acceso remoto para el equipo consultor",
+    ],
+  },
+  {
+    id: "ups",
+    name: "Energía protegida",
+    layer: "Energía",
+    role: "Continuidad y protección eléctrica del rack",
+    specs: [
+      "UPS de rack con autonomía mínima para apagado ordenado (capacidad Por confirmar con CEL)",
+      "Doble PSU en servidores donde aplique",
+    ],
+  },
+];
+
+export const INFRA_HARDWARE: HardwareItem[] = [
+  {
+    category: "Cómputo / ML",
+    item: "Servidor / workstation GPU para entrenamiento e inferencia",
+    qty: "1",
+    specs: "NVIDIA RTX 4090 (24 GB VRAM), CPU multi-núcleo, 64–128 GB RAM, NVMe ≥ 2 TB",
+    role: "Nodo ML — entrenar LSTM (NeuralHydrology/PyTorch) y ejecutar inferencia diaria",
+    status: "por-confirmar",
+  },
+  {
+    category: "Cómputo / ML",
+    item: "Servidor Datos & ETL (puede alojar también la aplicación en el piloto)",
+    qty: "1",
+    specs: "CPU multi-núcleo, 32–64 GB RAM, discos en RAID 1/10 — modelo Por confirmar con CEL",
+    role: "Mage + PostgreSQL/PostGIS + MongoDB + API Node.js / dashboard",
+    status: "por-confirmar",
+  },
+  {
+    category: "Almacenamiento",
+    item: "NAS de respaldo dedicado",
+    qty: "1",
+    specs: "Capacidad útil ≥ 8 TB en RAID, doble interfaz de red — modelo Por confirmar con CEL",
+    role: "Backups de DBs, modelos entrenados, artefactos ETL y logs",
+    status: "por-confirmar",
+  },
+  {
+    category: "Red",
+    item: "Switch gigabit gestionado",
+    qty: "1",
+    specs: "≥ 24 puertos 1 GbE, soporte VLAN/ACL — modelo Por confirmar con CEL",
+    role: "Segmentación del silo y enlace controlado a la red CEL",
+    status: "por-confirmar",
+  },
+  {
+    category: "Red",
+    item: "Appliance / endpoint VPN",
+    qty: "1",
+    specs: "VPN site-to-site o acceso remoto seguro — solución Por confirmar con CEL",
+    role: "Acceso del equipo consultor y administración remota",
+    status: "por-confirmar",
+  },
+  {
+    category: "Energía / Rack",
+    item: "UPS de rack",
+    qty: "1",
+    specs: "Capacidad suficiente para apagado ordenado de todo el silo — Por confirmar con CEL",
+    role: "Continuidad eléctrica y protección frente a transitorios",
+    status: "por-confirmar",
+  },
+  {
+    category: "Energía / Rack",
+    item: "Rack y accesorios (PDU, organizadores, cableado)",
+    qty: "1",
+    specs: "Rack estándar 19” compatible con el data center de CEL",
+    role: "Alojamiento físico del silo dentro del data center",
+    status: "por-confirmar",
+  },
+];
+
+export const INFRA_SOFTWARE: SoftwareItem[] = [
+  {
+    layer: "Sistema operativo",
+    product: "Ubuntu Server LTS",
+    version: "22.04 LTS (o LTS vigente)",
+    purpose: "Base de todos los nodos del silo; soporte largo plazo y compatibilidad con CUDA",
+    status: "confirmado",
+  },
+  {
+    layer: "Sistema operativo",
+    product: "NVIDIA Driver + CUDA Toolkit",
+    version: "Driver ≥ 535 / CUDA 12.x",
+    purpose: "Aceleración GPU para entrenamiento e inferencia del LSTM",
+    status: "confirmado",
+  },
+  {
+    layer: "Bases de datos",
+    product: "PostgreSQL + PostGIS",
+    version: "PostgreSQL 16 / PostGIS 3.x",
+    purpose: "Históricos depurados, geometrías de cuenca y mapas de inundación",
+    status: "confirmado",
+  },
+  {
+    layer: "Bases de datos",
+    product: "MongoDB Community",
+    version: "7.x",
+    purpose: "Datos operativos en tiempo real (lluvia reciente, caudales, predicciones diarias)",
+    status: "confirmado",
+  },
+  {
+    layer: "Orquestación / ETL",
+    product: "Mage",
+    version: "Última estable LTS — versión exacta Por confirmar con CEL",
+    purpose: "Orquestación de pipelines ETL en Python, monitoreo y reintentos",
+    status: "por-confirmar",
+  },
+  {
+    layer: "Orquestación / ETL",
+    product: "Python + librerías de datos",
+    version: "Python 3.11 + Pandas, GeoPandas, rasterio, psycopg2, pymongo",
+    purpose: "Extracción, transformación y limpieza de datos meteorológicos, hidrológicos y geoespaciales",
+    status: "confirmado",
+  },
+  {
+    layer: "ML / Modelos",
+    product: "PyTorch + NeuralHydrology",
+    version: "PyTorch 2.x (con CUDA)",
+    purpose: "Entrenamiento e inferencia del modelo LSTM hidrológico",
+    status: "confirmado",
+  },
+  {
+    layer: "ML / Modelos",
+    product: "Optuna",
+    version: "Última estable",
+    purpose: "Búsqueda bayesiana de hiperparámetros del LSTM",
+    status: "confirmado",
+  },
+  {
+    layer: "Aplicación",
+    product: "Node.js + React (dashboard)",
+    version: "Node.js LTS",
+    purpose: "API y dashboard interactivo del portal interno de CEL",
+    status: "confirmado",
+  },
+  {
+    layer: "Aplicación",
+    product: "Leaflet / Mapbox GL JS",
+    version: "Última estable",
+    purpose: "Mapas interactivos con capas dinámicas de inundación",
+    status: "confirmado",
+  },
+  {
+    layer: "Monitoreo / Seguridad",
+    product: "Prometheus + Grafana",
+    version: "Última estable (Por confirmar con CEL)",
+    purpose: "Monitoreo de hardware, GPU, pipelines y bases de datos",
+    status: "por-confirmar",
+  },
+  {
+    layer: "Monitoreo / Seguridad",
+    product: "GitLab (versionamiento de código y modelos)",
+    version: "Self-hosted o instancia CEL — Por confirmar con CEL",
+    purpose: "Repositorio de pipelines ETL, código del modelo y configuración como código",
+    status: "por-confirmar",
+  },
+  {
+    layer: "Monitoreo / Seguridad",
+    product: "Backup tool (restic / Borg / nativo NAS)",
+    version: "Por confirmar con CEL",
+    purpose: "Respaldos cifrados de DBs, modelos y artefactos al NAS",
+    status: "por-confirmar",
+  },
+];
+
+export const INFRA_COMMISSIONING: CommissioningTest[] = [
+  {
+    id: "C1",
+    area: "GPU / Cómputo",
+    test: "Benchmark de la RTX 4090 (nvidia-smi, PyTorch, entrenamiento corto del LSTM)",
+    criteria: "Uso estable de VRAM, throughput esperado y temperatura dentro de rango bajo carga sostenida",
+    status: "por-confirmar",
+  },
+  {
+    id: "C2",
+    area: "Almacenamiento / E-S",
+    test: "Pruebas de I/O secuencial y aleatorio en NVMe local y en NAS (fio)",
+    criteria: "Cumple umbrales mínimos definidos con CEL para ingesta y backups (Por confirmar con CEL)",
+    status: "por-confirmar",
+  },
+  {
+    id: "C3",
+    area: "Red / VPN",
+    test: "Latencia y ancho de banda entre silo ↔ DBs productivas y consultor ↔ silo vía VPN",
+    criteria: "Latencia estable, sin pérdidas y suficiente ancho de banda para descargas ECMWF/GPM",
+    status: "por-confirmar",
+  },
+  {
+    id: "C4",
+    area: "Datos / ETL",
+    test: "Ejecución end-to-end de un pipeline Mage (descarga ECMWF → preprocesamiento → carga en DBs)",
+    criteria: "Pipeline corre sin errores, datos llegan a PostgreSQL/MongoDB y pasan QA/QC",
+    status: "por-confirmar",
+  },
+  {
+    id: "C5",
+    area: "Aplicación",
+    test: "Despliegue del dashboard y verificación de un pronóstico simulado end-to-end",
+    criteria: "Dashboard renderiza mapa e hidrograma; alerta de prueba se envía por email/SMS",
+    status: "por-confirmar",
+  },
+];
+
+export const INFRA_BACKUP_POLICIES: BackupPolicy[] = [
+  {
+    title: "Respaldo de bases de datos",
+    body: "Dumps diarios de PostgreSQL y MongoDB al NAS, con retención semanal y mensual. Verificación periódica de restauración en entorno aislado.",
+    status: "por-confirmar",
+  },
+  {
+    title: "Respaldo de modelos y artefactos",
+    body: "Checkpoints del LSTM y artefactos del modelo de inundación versionados en GitLab + copia en NAS por release.",
+    status: "por-confirmar",
+  },
+  {
+    title: "Recuperación ante desastre (DR)",
+    body: "Procedimiento documentado de re-instalación del silo (SO, drivers, stack) y restauración desde NAS. RTO/RPO objetivo Por confirmar con CEL.",
+    status: "por-confirmar",
+  },
+  {
+    title: "Seguridad de red",
+    body: "Silo detrás de los firewalls de CEL, segmentado en VLAN propia. Acceso a DBs productivas solo en lectura y desde el Nodo de Datos. Acceso remoto exclusivamente por VPN.",
+    status: "confirmado",
+  },
+  {
+    title: "Gestión de identidades y secretos",
+    body: "Usuarios nominales con MFA donde el stack lo permita, llaves SSH gestionadas y secretos fuera del repositorio (gestor a definir con CEL).",
+    status: "por-confirmar",
+  },
+  {
+    title: "Monitoreo y alertas operativas",
+    body: "Métricas de hardware, GPU, pipelines y bases de datos en Prometheus/Grafana; notificación de fallas críticas a administradores por email/Slack.",
+    status: "por-confirmar",
+  },
+];
 
 export const LEMPA = {
   title: "Anexo Técnico — Dinámicas Hidrológicas y Gobernanza Trinacional",

@@ -20,8 +20,14 @@ import {
   RACI_ROLES,
   RACI_TASKS,
   RACI_LEGEND,
-  INFRA_PLACEHOLDER,
+  INFRA_INTRO,
+  INFRA_ARCHITECTURE,
+  INFRA_HARDWARE,
+  INFRA_SOFTWARE,
+  INFRA_COMMISSIONING,
+  INFRA_BACKUP_POLICIES,
   LEMPA,
+  type InfraStatus,
 } from "@/lib/desarrolloContent";
 
 export default function Desarrollo() {
@@ -458,30 +464,196 @@ function RaciSection() {
   );
 }
 
+function StatusBadge({ status }: { status: InfraStatus }) {
+  if (status === "confirmado") {
+    return (
+      <span className="inline-block text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/30 text-emerald-900 dark:text-emerald-200 whitespace-nowrap">
+        Confirmado
+      </span>
+    );
+  }
+  return (
+    <span className="inline-block text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-900 dark:text-amber-200 whitespace-nowrap">
+      Por confirmar con CEL
+    </span>
+  );
+}
+
 function InfraSection() {
+  const layerStyles: Record<string, string> = {
+    Compute: "border-primary/40 bg-primary/5",
+    "Data & ETL": "border-blue-500/40 bg-blue-500/5",
+    Backup: "border-emerald-500/40 bg-emerald-500/5",
+    Red: "border-violet-500/40 bg-violet-500/5",
+    Energía: "border-amber-500/40 bg-amber-500/5",
+  };
+
   return (
     <section>
-      <SectionHeader id="infraestructura" eyebrow="10" title={INFRA_PLACEHOLDER.title} intro={INFRA_PLACEHOLDER.intro} />
-      <Card className="border-dashed border-2 border-border bg-muted/20">
-        <CardHeader>
-          <div className="flex items-center gap-2">
-            <span className="text-xs font-semibold uppercase tracking-wider px-2 py-1 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-900 dark:text-amber-200">
-              Pendiente
-            </span>
-            <CardTitle className="text-base">Contenido por definir</CardTitle>
-          </div>
-        </CardHeader>
-        <CardContent>
-          <ul className="space-y-2">
-            {INFRA_PLACEHOLDER.pending.map((p, i) => (
-              <li key={i} className="flex items-start gap-2 text-sm text-muted-foreground">
-                <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-foreground/30 shrink-0" />
-                <span className="leading-relaxed">{p}</span>
-              </li>
+      <SectionHeader
+        id="infraestructura"
+        eyebrow="10"
+        title="Infraestructura local para el silo de IA de CEL"
+        intro={INFRA_INTRO}
+      />
+
+      <div className="space-y-8">
+        <div>
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+            Diagrama de arquitectura final
+          </h3>
+          <Card className="border-border">
+            <CardContent className="p-5">
+              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                {INFRA_ARCHITECTURE.map((n) => (
+                  <div
+                    key={n.id}
+                    className={`rounded-md border-2 p-3 ${layerStyles[n.layer] ?? "border-border bg-muted/30"}`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                        {n.layer}
+                      </span>
+                    </div>
+                    <h4 className="text-sm font-semibold text-foreground">{n.name}</h4>
+                    <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{n.role}</p>
+                    <ul className="mt-2 space-y-1">
+                      {n.specs.map((s, i) => (
+                        <li key={i} className="flex items-start gap-1.5 text-xs text-foreground/80">
+                          <span className="mt-1 h-1 w-1 rounded-full bg-foreground/50 shrink-0" />
+                          <span className="leading-relaxed">{s}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground mt-4 leading-relaxed">
+                Flujo lógico: <strong>Datos & ETL</strong> ingiere y normaliza, alimenta a <strong>ML / Compute</strong> para entrenamiento e inferencia, los resultados se publican vía <strong>Aplicación</strong>, y todo se respalda al <strong>NAS</strong>. La <strong>Red</strong> conecta el silo a las DBs productivas de CEL en solo-lectura y al consultor por VPN; la <strong>Energía</strong> protegida garantiza continuidad operativa.
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+
+        <div>
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+            BOM de hardware
+          </h3>
+          <Card className="border-border overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/40 text-muted-foreground">
+                  <tr>
+                    <th className="text-left font-medium px-4 py-3">Categoría</th>
+                    <th className="text-left font-medium px-4 py-3">Ítem</th>
+                    <th className="text-left font-medium px-4 py-3 w-16">Cant.</th>
+                    <th className="text-left font-medium px-4 py-3">Especificaciones</th>
+                    <th className="text-left font-medium px-4 py-3">Rol</th>
+                    <th className="text-left font-medium px-4 py-3 w-40">Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {INFRA_HARDWARE.map((h, i) => (
+                    <tr key={i} className="border-t border-border align-top">
+                      <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{h.category}</td>
+                      <td className="px-4 py-3 font-medium text-foreground">{h.item}</td>
+                      <td className="px-4 py-3 text-foreground">{h.qty}</td>
+                      <td className="px-4 py-3 text-muted-foreground leading-relaxed">{h.specs}</td>
+                      <td className="px-4 py-3 text-muted-foreground leading-relaxed">{h.role}</td>
+                      <td className="px-4 py-3"><StatusBadge status={h.status} /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </div>
+
+        <div>
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+            BOM de software
+          </h3>
+          <Card className="border-border overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/40 text-muted-foreground">
+                  <tr>
+                    <th className="text-left font-medium px-4 py-3">Capa</th>
+                    <th className="text-left font-medium px-4 py-3">Producto</th>
+                    <th className="text-left font-medium px-4 py-3">Versión</th>
+                    <th className="text-left font-medium px-4 py-3">Propósito</th>
+                    <th className="text-left font-medium px-4 py-3 w-40">Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {INFRA_SOFTWARE.map((s, i) => (
+                    <tr key={i} className="border-t border-border align-top">
+                      <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{s.layer}</td>
+                      <td className="px-4 py-3 font-medium text-foreground">{s.product}</td>
+                      <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{s.version}</td>
+                      <td className="px-4 py-3 text-muted-foreground leading-relaxed">{s.purpose}</td>
+                      <td className="px-4 py-3"><StatusBadge status={s.status} /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </div>
+
+        <div>
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+            Plan de comisionamiento y pruebas de aceptación
+          </h3>
+          <Card className="border-border overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-muted/40 text-muted-foreground">
+                  <tr>
+                    <th className="text-left font-medium px-4 py-3 w-12">ID</th>
+                    <th className="text-left font-medium px-4 py-3">Área</th>
+                    <th className="text-left font-medium px-4 py-3">Prueba</th>
+                    <th className="text-left font-medium px-4 py-3">Criterio de aceptación</th>
+                    <th className="text-left font-medium px-4 py-3 w-40">Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {INFRA_COMMISSIONING.map((c) => (
+                    <tr key={c.id} className="border-t border-border align-top">
+                      <td className="px-4 py-3 font-mono text-foreground">{c.id}</td>
+                      <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{c.area}</td>
+                      <td className="px-4 py-3 font-medium text-foreground leading-relaxed">{c.test}</td>
+                      <td className="px-4 py-3 text-muted-foreground leading-relaxed">{c.criteria}</td>
+                      <td className="px-4 py-3"><StatusBadge status={c.status} /></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </div>
+
+        <div>
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+            Plan de respaldo, recuperación y políticas de seguridad
+          </h3>
+          <div className="grid gap-4 md:grid-cols-2">
+            {INFRA_BACKUP_POLICIES.map((p) => (
+              <Card key={p.title} className="border-border">
+                <CardHeader className="pb-2">
+                  <div className="flex items-start justify-between gap-3">
+                    <CardTitle className="text-base">{p.title}</CardTitle>
+                    <StatusBadge status={p.status} />
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{p.body}</p>
+                </CardContent>
+              </Card>
             ))}
-          </ul>
-        </CardContent>
-      </Card>
+          </div>
+        </div>
+      </div>
     </section>
   );
 }
