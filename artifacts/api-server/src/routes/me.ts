@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import {
   db,
   usersTable,
@@ -116,17 +116,32 @@ router.put("/me/roles", requireAuth, async (req, res): Promise<void> => {
 
   const PRIVILEGED_ROLES = new Set(["pm_lead", "pm_cel"]);
   const previousSet = new Set(previousRoles);
-  const illegallyAdded = desired.filter(
+  const candidateAdds = desired.filter(
     (r) => PRIVILEGED_ROLES.has(r) && !previousSet.has(r),
   );
-  if (illegallyAdded.length > 0) {
-    res.status(403).json({
-      error:
-        "Los roles de PM no se pueden auto-asignar. Pide a un PM actual que te los otorgue.",
-      code: "privileged_role_self_assignment",
-      roles: illegallyAdded,
-    });
-    return;
+  if (candidateAdds.length > 0) {
+    // Bootstrap: si todavía nadie en el sistema tiene un rol de PM, el primer
+    // usuario que lo pida puede auto-asignárselo. Una vez asignado, vuelve a
+    // estar protegido (solo otro PM puede otorgarlo).
+    const existingPMs = await db
+      .select({ userId: userRolesTable.userId, roleId: userRolesTable.roleId })
+      .from(userRolesTable)
+      .where(inArray(userRolesTable.roleId, Array.from(PRIVILEGED_ROLES)));
+    const rolesAlreadyHeldBySomeone = new Set(
+      existingPMs.map((r) => r.roleId),
+    );
+    const illegallyAdded = candidateAdds.filter((r) =>
+      rolesAlreadyHeldBySomeone.has(r),
+    );
+    if (illegallyAdded.length > 0) {
+      res.status(403).json({
+        error:
+          "Los roles de PM no se pueden auto-asignar. Pide a un PM actual que te los otorgue.",
+        code: "privileged_role_self_assignment",
+        roles: illegallyAdded,
+      });
+      return;
+    }
   }
   const newRoles = [...desired].sort();
   const changed =
