@@ -1,45 +1,25 @@
 import { useGetProjectConfig, useUpdateProjectConfig, getGetProjectConfigQueryKey } from "@workspace/api-client-react";
 import type { ProjectConfig } from "@workspace/api-client-react";
 import { PHASES, type Phase } from "@/lib/projectContent";
+import { GANTT_PHASES, GANTT_TOTAL_MONTHS } from "@/lib/ganttContent";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { addWeeks, differenceInWeeks, format, parseISO } from "date-fns";
+import { addMonths, format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 
-const TOTAL_WEEKS = 30;
-const COL_WIDTH = 36;
-const LABEL_WIDTH = 200;
+const MONTH_COL_WIDTH = 56;
+const LABEL_WIDTH = 320;
 
 export default function Cronograma() {
   const { data: config, isLoading } = useGetProjectConfig();
   const [selectedPhase, setSelectedPhase] = useState<string | null>(null);
 
   const startDate = config?.startDate ? parseISO(config.startDate) : null;
-
-  const currentWeekIndex = useMemo(() => {
-    if (!startDate) return null;
-    const diff = differenceInWeeks(new Date(), startDate);
-    if (diff < 0 || diff >= TOTAL_WEEKS) return null;
-    return diff;
-  }, [startDate]);
-
-  const monthGroups = useMemo(() => {
-    if (!startDate) return [];
-    const groups: { label: string; span: number }[] = [];
-    for (let i = 0; i < TOTAL_WEEKS; i++) {
-      const d = addWeeks(startDate, i);
-      const label = format(d, "LLLL yyyy", { locale: es });
-      const last = groups[groups.length - 1];
-      if (last && last.label === label) last.span += 1;
-      else groups.push({ label, span: 1 });
-    }
-    return groups;
-  }, [startDate]);
 
   if (isLoading)
     return (
@@ -57,7 +37,8 @@ export default function Cronograma() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Cronograma del Piloto</h1>
           <p className="text-muted-foreground mt-1">
-            Planificación a {TOTAL_WEEKS} semanas. Modo {startDate ? "calendario" : "T0 + n semanas"}.
+            Distribución mensual de fases y actividades a lo largo de 12 meses
+            {startDate ? ` desde ${format(startDate, "MMMM yyyy", { locale: es })}` : ""}.
           </p>
         </div>
         <ConfigDate config={config} />
@@ -70,115 +51,26 @@ export default function Cronograma() {
             del equipo CEL y respeta los feriados nacionales. Confirma fechas críticas con Gerencia de Proyecto antes de
             comprometer entregables externos.
           </span>
-          <span className="text-xs text-muted-foreground/80">28 semanas planificadas + 2 de contingencia</span>
+          <span className="text-xs text-muted-foreground/80">12 meses planificados</span>
         </CardContent>
       </Card>
 
-      <Card className="overflow-x-auto border-border bg-card">
-        <div
-          className="p-6"
-          style={{ minWidth: `${LABEL_WIDTH + COL_WIDTH * TOTAL_WEEKS + 48}px` }}
-        >
-          {monthGroups.length > 0 && (
-            <div className="flex border-b border-border/30 pb-1 mb-1">
-              <div style={{ width: LABEL_WIDTH }} className="shrink-0" />
-              <div className="flex-1 grid" style={{ gridTemplateColumns: `repeat(${TOTAL_WEEKS}, ${COL_WIDTH}px)` }}>
-                {monthGroups.map((g, i) => (
-                  <div
-                    key={i}
-                    className="text-[11px] uppercase tracking-wider text-muted-foreground/80 font-medium text-center border-l border-border/40 first:border-l-0 py-1"
-                    style={{ gridColumn: `span ${g.span}` }}
-                  >
-                    {g.label}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+      <MonthlyGantt startDate={startDate} />
 
-          <div className="flex border-b border-border/50 pb-2 mb-4">
-            <div
-              style={{ width: LABEL_WIDTH }}
-              className="shrink-0 font-medium text-sm text-muted-foreground flex items-end"
-            >
-              Fases
-            </div>
-            <div
-              className="flex-1 grid gap-0"
-              style={{ gridTemplateColumns: `repeat(${TOTAL_WEEKS}, ${COL_WIDTH}px)` }}
-            >
-              {Array.from({ length: TOTAL_WEEKS }).map((_, i) => {
-                const weekNum = i + 1;
-                const dateStr = startDate ? format(addWeeks(startDate, i), "d MMM", { locale: es }) : "";
-                const isCurrent = currentWeekIndex === i;
-                return (
-                  <div key={i} className="flex flex-col items-center justify-end">
-                    {startDate && (
-                      <span className="text-[10px] text-muted-foreground/70 mb-1 whitespace-nowrap">{dateStr}</span>
-                    )}
-                    <span
-                      className={`text-xs font-medium w-full text-center ${
-                        isCurrent ? "text-primary" : "text-foreground"
-                      }`}
-                    >
-                      S{weekNum}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
+      <div className="flex flex-wrap gap-3">
+        {GANTT_PHASES.map((p) => (
+          <div key={p.num} className="flex items-center gap-2 text-xs text-muted-foreground">
+            <span
+              className="inline-block h-3 w-3 rounded-sm"
+              style={{ backgroundColor: p.color }}
+              aria-hidden="true"
+            />
+            <span>
+              <span className="font-semibold text-foreground">{p.num}.</span> {p.label}
+            </span>
           </div>
-
-          <div className="relative space-y-3">
-            {currentWeekIndex !== null && (
-              <div
-                className="pointer-events-none absolute top-[-8px] bottom-0 z-10"
-                style={{
-                  left: `${LABEL_WIDTH + currentWeekIndex * COL_WIDTH + COL_WIDTH / 2}px`,
-                  width: 0,
-                  borderLeft: "2px dashed var(--primary)",
-                }}
-                aria-hidden="true"
-              >
-                <span className="absolute -top-3 -translate-x-1/2 text-[10px] font-semibold text-primary bg-background px-1.5 py-0.5 rounded border border-primary/40">
-                  Hoy
-                </span>
-              </div>
-            )}
-
-            {PHASES.map((phase) => {
-              return (
-                <div key={phase.id} className="flex items-center group">
-                  <div style={{ width: LABEL_WIDTH }} className="shrink-0 py-2 pr-4 text-sm font-medium leading-tight">
-                    {phase.label}
-                  </div>
-                  <div
-                    className="flex-1 grid gap-0 py-1"
-                    style={{ gridTemplateColumns: `repeat(${TOTAL_WEEKS}, ${COL_WIDTH}px)` }}
-                  >
-                    <div
-                      className="rounded-md border cursor-pointer hover:brightness-110 transition-all relative flex items-center justify-center"
-                      style={{
-                        gridColumn: `${phase.startWeek} / span ${phase.durationWeeks}`,
-                        backgroundColor: phase.colorVar,
-                        borderColor: phase.colorVar,
-                        minHeight: 28,
-                      }}
-                      onClick={() => setSelectedPhase(phase.id)}
-                      role="button"
-                      aria-label={`Ver detalles de ${phase.label}`}
-                    >
-                      <span className="text-[11px] font-semibold text-background/90 px-2 truncate">
-                        {phase.shortName} · {phase.durationWeeks}s
-                      </span>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </Card>
+        ))}
+      </div>
 
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {PHASES.map((phase) => (
@@ -213,6 +105,117 @@ export default function Cronograma() {
         </SheetContent>
       </Sheet>
     </div>
+  );
+}
+
+function MonthlyGantt({ startDate }: { startDate: Date | null }) {
+  const totalWidth = LABEL_WIDTH + MONTH_COL_WIDTH * GANTT_TOTAL_MONTHS;
+  return (
+    <Card className="overflow-x-auto border-border bg-card">
+      <div className="p-6" style={{ minWidth: `${totalWidth + 48}px` }}>
+        <div className="flex border-b border-border bg-muted/30 rounded-t-md">
+          <div
+            style={{ width: LABEL_WIDTH }}
+            className="shrink-0 px-4 py-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+          >
+            Entregable / Actividad
+          </div>
+          <div
+            className="grid"
+            style={{ gridTemplateColumns: `repeat(${GANTT_TOTAL_MONTHS}, ${MONTH_COL_WIDTH}px)` }}
+          >
+            {Array.from({ length: GANTT_TOTAL_MONTHS }).map((_, i) => {
+              const m = i + 1;
+              const dateLabel = startDate
+                ? format(addMonths(startDate, i), "MMM yy", { locale: es })
+                : null;
+              return (
+                <div
+                  key={m}
+                  className="flex flex-col items-center justify-end py-2 border-l border-border/40 first:border-l-0"
+                >
+                  {dateLabel && (
+                    <span className="text-[10px] text-muted-foreground/70 capitalize">
+                      {dateLabel}
+                    </span>
+                  )}
+                  <span className="text-xs font-semibold text-foreground">M{m}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div>
+          {GANTT_PHASES.map((phase) => (
+            <div key={phase.num}>
+              <div className="flex items-center bg-muted/15 border-b border-border/60">
+                <div
+                  style={{ width: LABEL_WIDTH }}
+                  className="shrink-0 px-4 py-2.5 text-sm font-semibold text-foreground"
+                >
+                  {phase.num}. {phase.label}
+                </div>
+                <div
+                  className="grid"
+                  style={{
+                    gridTemplateColumns: `repeat(${GANTT_TOTAL_MONTHS}, ${MONTH_COL_WIDTH}px)`,
+                  }}
+                >
+                  {Array.from({ length: GANTT_TOTAL_MONTHS }).map((_, i) => (
+                    <div key={i} className="border-l border-border/30 first:border-l-0 h-full" />
+                  ))}
+                </div>
+              </div>
+
+              {phase.tasks.map((task, idx) => {
+                const span = task.endMonth - task.startMonth + 1;
+                return (
+                  <div
+                    key={idx}
+                    className={`flex items-center border-b border-border/30 ${
+                      idx % 2 === 0 ? "bg-background" : "bg-muted/10"
+                    }`}
+                  >
+                    <div
+                      style={{ width: LABEL_WIDTH }}
+                      className="shrink-0 px-4 py-2 pl-8 text-[13px] text-muted-foreground leading-snug"
+                    >
+                      {task.label}
+                    </div>
+                    <div
+                      className="grid relative"
+                      style={{
+                        gridTemplateColumns: `repeat(${GANTT_TOTAL_MONTHS}, ${MONTH_COL_WIDTH}px)`,
+                      }}
+                    >
+                      {Array.from({ length: GANTT_TOTAL_MONTHS }).map((_, i) => (
+                        <div
+                          key={i}
+                          className="border-l border-border/20 first:border-l-0 h-9"
+                        />
+                      ))}
+                      <div
+                        className="absolute top-1/2 -translate-y-1/2 rounded-sm shadow-sm"
+                        style={{
+                          left: `${(task.startMonth - 1) * MONTH_COL_WIDTH + 6}px`,
+                          width: `${span * MONTH_COL_WIDTH - 12}px`,
+                          height: 12,
+                          backgroundColor: phase.color,
+                        }}
+                        aria-label={`${task.label} (M${task.startMonth}${
+                          task.endMonth !== task.startMonth ? `–M${task.endMonth}` : ""
+                        })`}
+                      />
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ))}
+        </div>
+      </div>
+    </Card>
   );
 }
 
