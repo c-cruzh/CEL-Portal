@@ -1,9 +1,10 @@
-import { desc, ne } from "drizzle-orm";
+import { and, desc, eq, gte, ne, inArray } from "drizzle-orm";
 import {
   db,
   usersTable,
   notificationRecipientsTable,
   notificationLogTable,
+  decisionsTable,
 } from "@workspace/db";
 import { logger } from "./logger";
 
@@ -50,6 +51,24 @@ type NotificationEvent =
       title: string;
       previousStatus: string;
       newStatus: string;
+    };
+
+type PersonalNotificationEvent =
+  | {
+      kind: "decision_assigned";
+      actor: { id: string; email: string; displayName: string } | null;
+      title: string;
+      decisionId: string;
+      dueDate: string | null;
+      isReassignment: boolean;
+      previousOwnerLabel: string | null;
+    }
+  | {
+      kind: "decision_due_reminder";
+      title: string;
+      decisionId: string;
+      dueDate: string;
+      daysUntilDue: number;
     };
 
 export type NotificationStatus =
@@ -120,6 +139,50 @@ function renderEmail(ev: NotificationEvent): {
           `Ahora: ${ev.newRoles.join(", ") || "(ninguno)"}\n` +
           (added.length ? `Agregados: ${added.join(", ")}\n` : "") +
           (removed.length ? `Quitados: ${removed.join(", ")}\n` : ""),
+      };
+    }
+  }
+}
+
+function renderPersonalEmail(ev: PersonalNotificationEvent): {
+  subject: string;
+  text: string;
+} {
+  switch (ev.kind) {
+    case "decision_assigned": {
+      const who = ev.actor
+        ? `${ev.actor.displayName} <${ev.actor.email}>`
+        : "El equipo";
+      const intro = ev.isReassignment
+        ? `${who} te transfirió una decisión pendiente`
+        : `${who} te asignó una nueva decisión pendiente`;
+      const prev = ev.isReassignment && ev.previousOwnerLabel
+        ? `Dueño anterior: ${ev.previousOwnerLabel}\n`
+        : "";
+      return {
+        subject: `[Portal CEL] Te asignaron una decisión: ${ev.title}`,
+        text:
+          `${intro} en el Portal CEL.\n\n` +
+          `Título: ${ev.title}\n` +
+          `Fecha límite: ${ev.dueDate ?? "(sin definir)"}\n` +
+          prev +
+          `\nEntra al portal para revisar el contexto y avanzar la decisión.\n`,
+      };
+    }
+    case "decision_due_reminder": {
+      const when =
+        ev.daysUntilDue < 0
+          ? `venció hace ${Math.abs(ev.daysUntilDue)} día${Math.abs(ev.daysUntilDue) === 1 ? "" : "s"}`
+          : ev.daysUntilDue === 0
+            ? "vence hoy"
+            : `vence mañana`;
+      return {
+        subject: `[Portal CEL] Recordatorio: decisión ${when} — ${ev.title}`,
+        text:
+          `Tienes una decisión asignada cuya fecha límite ${when}.\n\n` +
+          `Título: ${ev.title}\n` +
+          `Fecha límite: ${ev.dueDate}\n\n` +
+          `Entra al portal para resolverla o reagendarla.\n`,
       };
     }
   }
@@ -310,6 +373,369 @@ export async function sendTeamNotification(
 
 export function notifyAsync(ev: NotificationEvent): void {
   void sendTeamNotification(ev);
+}
+
+async function sendPersonalNotification(
+  ev: PersonalNotificationEvent,
+  recipient: { userId: string; email: string; displayName: string },
+  opts: { triggeredBy?: string | null } = {},
+): Promise<void> {
+  const triggeredBy =
+    opts.triggeredBy !== undefined
+      ? opts.triggeredBy
+      : "actor" in ev && ev.actor
+        ? `${ev.actor.displayName} <${ev.actor.email}>`
+        : "system";
+
+  try {
+    const [user] = await db
+      .select({
+        email: usersTable.email,
+        optOut: usersTable.emailNotificationsOptOut,
+      })
+      .from(usersTable)
+      .where(eq(usersTable.id, recipient.userId))
+      .limit(1);
+
+    const email = (user?.email ?? recipient.email).toLowerCase();
+    const optOut = user?.optOut ?? false;
+
+    if (optOut) {
+      logger.info(
+        { kind: ev.kind, userId: recipient.userId },
+        "Personal notification skipped (user opted out)",
+      );
+      await recordLog({
+        eventKind: ev.kind,
+        recipients: [email],
+        status: "no_recipients",
+        providerMessage: "El dueño desactivó los avisos por correo",
+        triggeredBy,
+      });
+      return;
+    }
+
+    const { subject, text } = renderPersonalEmail(ev);
+
+    if (!process.env.RESEND_API_KEY) {
+      logger.info(
+        { kind: ev.kind, userId: recipient.userId, subject },
+        "Personal notification (no email provider configured; logged only)",
+      );
+      await recordLog({
+        eventKind: ev.kind,
+        recipients: [email],
+        status: "no_provider",
+        providerMessage: "RESEND_API_KEY no configurada",
+        triggeredBy,
+      });
+      return;
+    }
+
+    const result = await sendViaResend([email], subject, text);
+    if (!result.ok) {
+      await recordLog({
+        eventKind: ev.kind,
+        recipients: [email],
+        status: "failed",
+        providerMessage: result.message,
+        triggeredBy,
+      });
+      return;
+    }
+
+    logger.info(
+      { kind: ev.kind, userId: recipient.userId },
+      "Personal notification sent",
+    );
+    await recordLog({
+      eventKind: ev.kind,
+      recipients: [email],
+      status: "sent",
+      providerMessage: null,
+      triggeredBy,
+    });
+  } catch (err) {
+    logger.error(
+      { err, kind: ev.kind, userId: recipient.userId },
+      "Failed to send personal notification",
+    );
+    await recordLog({
+      eventKind: ev.kind,
+      recipients: [recipient.email.toLowerCase()],
+      status: "failed",
+      providerMessage: err instanceof Error ? err.message : String(err),
+      triggeredBy,
+    });
+  }
+}
+
+export function notifyDecisionAssignedAsync(args: {
+  ownerUserId: string;
+  actor: { id: string; email: string; displayName: string } | null;
+  title: string;
+  decisionId: string;
+  dueDate: string | null;
+  isReassignment: boolean;
+  previousOwnerLabel: string | null;
+}): void {
+  void (async () => {
+    const [owner] = await db
+      .select({
+        id: usersTable.id,
+        email: usersTable.email,
+        displayName: usersTable.displayName,
+      })
+      .from(usersTable)
+      .where(eq(usersTable.id, args.ownerUserId))
+      .limit(1);
+    if (!owner) {
+      logger.warn(
+        { ownerUserId: args.ownerUserId },
+        "Cannot send decision_assigned notification: owner not found",
+      );
+      return;
+    }
+    if (args.actor && args.actor.id === owner.id) {
+      // Self-assignment: no need to email yourself.
+      return;
+    }
+    await sendPersonalNotification(
+      {
+        kind: "decision_assigned",
+        actor: args.actor,
+        title: args.title,
+        decisionId: args.decisionId,
+        dueDate: args.dueDate,
+        isReassignment: args.isReassignment,
+        previousOwnerLabel: args.previousOwnerLabel,
+      },
+      { userId: owner.id, email: owner.email, displayName: owner.displayName },
+    );
+  })();
+}
+
+const DUE_REMINDER_KIND = "decision_due_reminder";
+
+function toDateOnly(d: Date): string {
+  return d.toISOString().slice(0, 10);
+}
+
+function diffDays(dueIso: string, todayIso: string): number {
+  const due = new Date(`${dueIso}T00:00:00Z`).getTime();
+  const today = new Date(`${todayIso}T00:00:00Z`).getTime();
+  return Math.round((due - today) / 86_400_000);
+}
+
+export async function runDueDateReminders(now: Date = new Date()): Promise<{
+  evaluated: number;
+  sent: number;
+  skipped: number;
+  failed: number;
+  noProvider: number;
+}> {
+  const todayIso = toDateOnly(now);
+  const tomorrow = new Date(now.getTime() + 86_400_000);
+  const tomorrowIso = toDateOnly(tomorrow);
+
+  let evaluated = 0;
+  let sent = 0;
+  let skipped = 0;
+  let failed = 0;
+  let noProvider = 0;
+
+  try {
+    const candidates = await db
+      .select({
+        id: decisionsTable.id,
+        title: decisionsTable.title,
+        dueDate: decisionsTable.dueDate,
+        ownerUserId: decisionsTable.ownerUserId,
+        status: decisionsTable.status,
+      })
+      .from(decisionsTable)
+      .where(eq(decisionsTable.status, "open"));
+
+    const due = candidates.filter(
+      (d) =>
+        d.ownerUserId &&
+        d.dueDate &&
+        (d.dueDate <= tomorrowIso),
+    );
+    evaluated = due.length;
+    if (due.length === 0) return { evaluated, sent, skipped, failed, noProvider };
+
+    // Dedup: load today's reminder log entries; providerMessage encodes the decision id.
+    const startOfDay = new Date(`${todayIso}T00:00:00.000Z`);
+    const recentLogs = await db
+      .select({
+        providerMessage: notificationLogTable.providerMessage,
+        status: notificationLogTable.status,
+      })
+      .from(notificationLogTable)
+      .where(
+        and(
+          eq(notificationLogTable.eventKind, DUE_REMINDER_KIND),
+          gte(notificationLogTable.createdAt, startOfDay),
+        ),
+      );
+    const alreadySentIds = new Set<string>();
+    for (const log of recentLogs) {
+      if (log.status !== "sent" && log.status !== "no_provider") continue;
+      const tag = log.providerMessage ?? "";
+      const m = /decision:([0-9a-f-]{36})/i.exec(tag);
+      if (m && m[1]) alreadySentIds.add(m[1]);
+    }
+
+    const ownerIds = Array.from(
+      new Set(due.map((d) => d.ownerUserId!).filter(Boolean)),
+    );
+    const owners = await db
+      .select({
+        id: usersTable.id,
+        email: usersTable.email,
+        displayName: usersTable.displayName,
+        optOut: usersTable.emailNotificationsOptOut,
+      })
+      .from(usersTable)
+      .where(inArray(usersTable.id, ownerIds));
+    const ownerById = new Map(owners.map((o) => [o.id, o]));
+
+    for (const d of due) {
+      if (alreadySentIds.has(d.id)) {
+        skipped++;
+        continue;
+      }
+      const owner = ownerById.get(d.ownerUserId!);
+      if (!owner || owner.optOut) {
+        skipped++;
+        continue;
+      }
+      const daysUntilDue = diffDays(d.dueDate!, todayIso);
+      const status = await sendPersonalNotificationWithTag(
+        {
+          kind: "decision_due_reminder",
+          title: d.title,
+          decisionId: d.id,
+          dueDate: d.dueDate!,
+          daysUntilDue,
+        },
+        { userId: owner.id, email: owner.email, displayName: owner.displayName },
+        `decision:${d.id}`,
+      );
+      if (status === "sent") sent++;
+      else if (status === "no_provider") noProvider++;
+      else if (status === "failed") failed++;
+      else skipped++;
+    }
+  } catch (err) {
+    logger.error({ err }, "Failed to run due-date reminders job");
+  }
+
+  return { evaluated, sent, skipped, failed, noProvider };
+}
+
+async function sendPersonalNotificationWithTag(
+  ev: PersonalNotificationEvent,
+  recipient: { userId: string; email: string; displayName: string },
+  tag: string,
+): Promise<NotificationStatus> {
+  // We piggyback the dedup tag onto providerMessage by wrapping sendViaResend
+  // here so the log entry contains the tag, enabling daily dedup lookups.
+  try {
+    const [user] = await db
+      .select({
+        email: usersTable.email,
+        optOut: usersTable.emailNotificationsOptOut,
+      })
+      .from(usersTable)
+      .where(eq(usersTable.id, recipient.userId))
+      .limit(1);
+
+    const email = (user?.email ?? recipient.email).toLowerCase();
+    const optOut = user?.optOut ?? false;
+    const triggeredBy = "system";
+
+    if (optOut) {
+      await recordLog({
+        eventKind: ev.kind,
+        recipients: [email],
+        status: "no_recipients",
+        providerMessage: `${tag} opt_out`,
+        triggeredBy,
+      });
+      return "no_recipients";
+    }
+
+    const { subject, text } = renderPersonalEmail(ev);
+
+    if (!process.env.RESEND_API_KEY) {
+      logger.info(
+        { kind: ev.kind, userId: recipient.userId, subject, tag },
+        "Personal notification (no email provider configured; logged only)",
+      );
+      await recordLog({
+        eventKind: ev.kind,
+        recipients: [email],
+        status: "no_provider",
+        providerMessage: `${tag} RESEND_API_KEY no configurada`,
+        triggeredBy,
+      });
+      return "no_provider";
+    }
+
+    const result = await sendViaResend([email], subject, text);
+    if (!result.ok) {
+      await recordLog({
+        eventKind: ev.kind,
+        recipients: [email],
+        status: "failed",
+        providerMessage: `${tag} ${result.message ?? ""}`.trim(),
+        triggeredBy,
+      });
+      return "failed";
+    }
+
+    await recordLog({
+      eventKind: ev.kind,
+      recipients: [email],
+      status: "sent",
+      providerMessage: tag,
+      triggeredBy,
+    });
+    return "sent";
+  } catch (err) {
+    logger.error(
+      { err, kind: ev.kind, userId: recipient.userId, tag },
+      "Failed to send tagged personal notification",
+    );
+    await recordLog({
+      eventKind: ev.kind,
+      recipients: [recipient.email.toLowerCase()],
+      status: "failed",
+      providerMessage: `${tag} ${err instanceof Error ? err.message : String(err)}`,
+      triggeredBy: "system",
+    });
+    return "failed";
+  }
+}
+
+let dueReminderTimer: NodeJS.Timeout | null = null;
+
+export function startDueDateReminderScheduler(): void {
+  if (dueReminderTimer) return;
+  const intervalMs = 6 * 60 * 60 * 1000; // every 6h; per-day dedup prevents duplicates
+  // Run once shortly after boot so a freshly-deployed server still sends today's reminders.
+  setTimeout(() => {
+    void runDueDateReminders().then((r) => {
+      logger.info({ result: r }, "Decision due-date reminders job finished");
+    });
+  }, 30_000);
+  dueReminderTimer = setInterval(() => {
+    void runDueDateReminders().then((r) => {
+      logger.info({ result: r }, "Decision due-date reminders job finished");
+    });
+  }, intervalMs);
 }
 
 export type TestNotificationResult =

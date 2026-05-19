@@ -12,7 +12,7 @@ import {
   ResolveDecisionBody,
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
-import { notifyAsync } from "../lib/notifications";
+import { notifyAsync, notifyDecisionAssignedAsync } from "../lib/notifications";
 
 const router: IRouter = Router();
 
@@ -125,6 +125,18 @@ router.post("/decisions", requireAuth, async (req, res): Promise<void> => {
       ownerLabel,
       dueDate: inserted.dueDate ?? null,
     });
+
+    if (inserted.ownerUserId) {
+      notifyDecisionAssignedAsync({
+        ownerUserId: inserted.ownerUserId,
+        actor,
+        title: inserted.title,
+        decisionId: inserted.id,
+        dueDate: inserted.dueDate ?? null,
+        isReassignment: false,
+        previousOwnerLabel: null,
+      });
+    }
   }
 
   res.status(201).json(serialize(inserted!));
@@ -195,19 +207,47 @@ router.patch("/decisions/:id", requireAuth, async (req, res): Promise<void> => {
     .where(eq(decisionsTable.id, id))
     .returning();
 
-  if (
-    updated &&
-    u.status !== undefined &&
-    u.status !== existing.status
-  ) {
+  if (updated) {
     const actor = await loadActor(req.userId!);
-    if (actor) {
+
+    if (
+      u.status !== undefined &&
+      u.status !== existing.status &&
+      actor
+    ) {
       notifyAsync({
         kind: "decision_status_changed",
         actor,
         title: updated.title,
         previousStatus: existing.status,
         newStatus: updated.status,
+      });
+    }
+
+    const ownerChanged =
+      u.ownerUserId !== undefined &&
+      (updated.ownerUserId ?? null) !== (existing.ownerUserId ?? null);
+    if (ownerChanged && updated.ownerUserId) {
+      let previousOwnerLabel: string | null = existing.ownerRole ?? null;
+      if (existing.ownerUserId) {
+        const [prev] = await db
+          .select({
+            email: usersTable.email,
+            displayName: usersTable.displayName,
+          })
+          .from(usersTable)
+          .where(eq(usersTable.id, existing.ownerUserId))
+          .limit(1);
+        if (prev) previousOwnerLabel = `${prev.displayName} <${prev.email}>`;
+      }
+      notifyDecisionAssignedAsync({
+        ownerUserId: updated.ownerUserId,
+        actor,
+        title: updated.title,
+        decisionId: updated.id,
+        dueDate: updated.dueDate ?? null,
+        isReassignment: existing.ownerUserId !== null,
+        previousOwnerLabel,
       });
     }
   }
