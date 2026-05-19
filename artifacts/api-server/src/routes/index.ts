@@ -5,6 +5,7 @@ import meRouter from "./me";
 import teamRouter from "./team";
 import projectRouter from "./project";
 import notificationRecipientsRouter from "./notificationRecipients";
+import kanbanRouter from "./kanban";
 
 const router: IRouter = Router();
 
@@ -14,5 +15,6 @@ router.use(meRouter);
 router.use(teamRouter);
 router.use(projectRouter);
 router.use(notificationRecipientsRouter);
+router.use(kanbanRouter);
 
 export default router;

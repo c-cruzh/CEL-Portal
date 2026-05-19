@@ -283,6 +283,138 @@ export const DeleteNotificationRecipientParams = zod.object({
 
 
 /**
+ * @summary List Kanban columns in display order
+ */
+export const ListKanbanColumnsResponseItem = zod.object({
+  "key": zod.string(),
+  "label": zod.string(),
+  "sortOrder": zod.number()
+})
+export const ListKanbanColumnsResponse = zod.array(ListKanbanColumnsResponseItem)
+
+
+/**
+ * @summary List all Kanban cards
+ */
+export const ListKanbanCardsResponseItem = zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "columnKey": zod.string(),
+  "position": zod.number(),
+  "phaseId": zod.string().nullish(),
+  "assignedRoles": zod.array(zod.string()),
+  "priority": zod.enum(['alta', 'media', 'baja']),
+  "dueDate": zod.coerce.date().nullish(),
+  "createdBy": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+export const ListKanbanCardsResponse = zod.array(ListKanbanCardsResponseItem)
+
+
+/**
+ * @summary Create a Kanban card
+ */
+export const createKanbanCardBodyTitleMax = 200;
+
+export const createKanbanCardBodyDescriptionMax = 5000;
+
+
+
+
+export const CreateKanbanCardBody = zod.object({
+  "title": zod.string().min(1).max(createKanbanCardBodyTitleMax),
+  "description": zod.string().max(createKanbanCardBodyDescriptionMax).optional(),
+  "columnKey": zod.string().min(1),
+  "phaseId": zod.string().nullish(),
+  "assignedRoles": zod.array(zod.string()).optional(),
+  "priority": zod.enum(['alta', 'media', 'baja']).optional(),
+  "dueDate": zod.coerce.date().nullish()
+})
+
+
+/**
+ * @summary Update a Kanban card (any team member)
+ */
+export const UpdateKanbanCardParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const updateKanbanCardBodyTitleMax = 200;
+
+export const updateKanbanCardBodyDescriptionMax = 5000;
+
+
+
+export const UpdateKanbanCardBody = zod.object({
+  "title": zod.string().min(1).max(updateKanbanCardBodyTitleMax).optional(),
+  "description": zod.string().max(updateKanbanCardBodyDescriptionMax).optional(),
+  "phaseId": zod.string().nullish(),
+  "assignedRoles": zod.array(zod.string()).optional(),
+  "priority": zod.enum(['alta', 'media', 'baja']).optional(),
+  "dueDate": zod.coerce.date().nullish()
+})
+
+export const UpdateKanbanCardResponse = zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "columnKey": zod.string(),
+  "position": zod.number(),
+  "phaseId": zod.string().nullish(),
+  "assignedRoles": zod.array(zod.string()),
+  "priority": zod.enum(['alta', 'media', 'baja']),
+  "dueDate": zod.coerce.date().nullish(),
+  "createdBy": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Delete a Kanban card (creator or PM only)
+ */
+export const DeleteKanbanCardParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+
+/**
+ * @summary Move a card to a column at a given position (atomic reorder)
+ */
+export const MoveKanbanCardParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+
+export const moveKanbanCardBodyPositionMin = 0;
+
+
+
+export const MoveKanbanCardBody = zod.object({
+  "columnKey": zod.string().min(1),
+  "position": zod.number().min(moveKanbanCardBodyPositionMin)
+})
+
+export const MoveKanbanCardResponseItem = zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "columnKey": zod.string(),
+  "position": zod.number(),
+  "phaseId": zod.string().nullish(),
+  "assignedRoles": zod.array(zod.string()),
+  "priority": zod.enum(['alta', 'media', 'baja']),
+  "dueDate": zod.coerce.date().nullish(),
+  "createdBy": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+export const MoveKanbanCardResponse = zod.array(MoveKanbanCardResponseItem)
+
+
+/**
  * @summary Request a presigned URL to upload a file to object storage
  */
 export const RequestUploadUrlBody = zod.object({

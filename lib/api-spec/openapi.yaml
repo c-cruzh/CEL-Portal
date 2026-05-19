@@ -22,6 +22,8 @@ tags:
     description: Object storage (presigned uploads, downloads)
   - name: admin
     description: PM-only administrative configuration
+  - name: kanban
+    description: Operational Kanban board
 paths:
   /healthz:
     get:
@@ -342,6 +344,130 @@ paths:
         "204":
           description: No content
 
+  /kanban/columns:
+    get:
+      operationId: listKanbanColumns
+      tags: [kanban]
+      summary: List Kanban columns in display order
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/KanbanColumn"
+
+  /kanban/cards:
+    get:
+      operationId: listKanbanCards
+      tags: [kanban]
+      summary: List all Kanban cards
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/KanbanCard"
+    post:
+      operationId: createKanbanCard
+      tags: [kanban]
+      summary: Create a Kanban card
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/KanbanCardCreate"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KanbanCard"
+
+  /kanban/cards/{id}:
+    patch:
+      operationId: updateKanbanCard
+      tags: [kanban]
+      summary: Update a Kanban card (any team member)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/KanbanCardUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/KanbanCard"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteKanbanCard
+      tags: [kanban]
+      summary: Delete a Kanban card (creator or PM only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No content
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /kanban/cards/{id}/move:
+    post:
+      operationId: moveKanbanCard
+      tags: [kanban]
+      summary: Move a card to a column at a given position (atomic reorder)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/KanbanCardMove"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/KanbanCard"
+
   /storage/uploads/request-url:
     post:
       operationId: requestUploadUrl
@@ -608,6 +734,115 @@ components:
           type: string
           format: email
           minLength: 3
+
+    KanbanColumn:
+      type: object
+      required: [key, label, sortOrder]
+      properties:
+        key:
+          type: string
+        label:
+          type: string
+        sortOrder:
+          type: integer
+
+    KanbanPriority:
+      type: string
+      enum: [alta, media, baja]
+
+    KanbanCard:
+      type: object
+      required:
+        [id, title, description, columnKey, position, assignedRoles, priority, createdBy, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        columnKey:
+          type: string
+        position:
+          type: integer
+        phaseId:
+          type: ["string", "null"]
+        assignedRoles:
+          type: array
+          items:
+            type: string
+        priority:
+          $ref: "#/components/schemas/KanbanPriority"
+        dueDate:
+          type: ["string", "null"]
+          format: date
+        createdBy:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    KanbanCardCreate:
+      type: object
+      required: [title, columnKey]
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 5000
+        columnKey:
+          type: string
+          minLength: 1
+        phaseId:
+          type: ["string", "null"]
+        assignedRoles:
+          type: array
+          items:
+            type: string
+        priority:
+          $ref: "#/components/schemas/KanbanPriority"
+        dueDate:
+          type: ["string", "null"]
+          format: date
+
+    KanbanCardUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 5000
+        phaseId:
+          type: ["string", "null"]
+        assignedRoles:
+          type: array
+          items:
+            type: string
+        priority:
+          $ref: "#/components/schemas/KanbanPriority"
+        dueDate:
+          type: ["string", "null"]
+          format: date
+
+    KanbanCardMove:
+      type: object
+      required: [columnKey, position]
+      properties:
+        columnKey:
+          type: string
+          minLength: 1
+        position:
+          type: integer
+          minimum: 0
 
     UploadRequest:
       type: object

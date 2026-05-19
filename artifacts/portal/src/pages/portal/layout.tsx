@@ -31,6 +31,7 @@ export default function PortalLayout({ children }: { children: ReactNode }) {
               <NavItem href="/portal/cronograma" label="Cronograma" />
               <NavItem href="/portal/metodologia" label="Metodología" />
               <NavItem href="/portal/desarrollo-tecnico" label="Desarrollo Técnico" />
+              <NavItem href="/portal/kanban" label="Kanban" />
               {isPM && <NavItem href="/portal/configuracion" label="Configuración" />}
             </nav>
           </div>

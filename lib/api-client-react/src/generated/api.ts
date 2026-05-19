@@ -25,6 +25,11 @@ import type {
   DisplayNameInput,
   ErrorResponse,
   HealthStatus,
+  KanbanCard,
+  KanbanCardCreate,
+  KanbanCardMove,
+  KanbanCardUpdate,
+  KanbanColumn,
   Member,
   MemberMe,
   NotificationLogEntry,
@@ -1457,6 +1462,445 @@ export const useDeleteNotificationRecipient = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getDeleteNotificationRecipientMutationOptions(options));
+    }
+
+export const getListKanbanColumnsUrl = () => {
+
+
+
+
+  return `/api/kanban/columns`
+}
+
+/**
+ * @summary List Kanban columns in display order
+ */
+export const listKanbanColumns = async ( options?: RequestInit): Promise<KanbanColumn[]> => {
+
+  return customFetch<KanbanColumn[]>(getListKanbanColumnsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListKanbanColumnsQueryKey = () => {
+    return [
+    `/api/kanban/columns`
+    ] as const;
+    }
+
+
+export const getListKanbanColumnsQueryOptions = <TData = Awaited<ReturnType<typeof listKanbanColumns>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listKanbanColumns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListKanbanColumnsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listKanbanColumns>>> = ({ signal }) => listKanbanColumns({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listKanbanColumns>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListKanbanColumnsQueryResult = NonNullable<Awaited<ReturnType<typeof listKanbanColumns>>>
+export type ListKanbanColumnsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List Kanban columns in display order
+ */
+
+export function useListKanbanColumns<TData = Awaited<ReturnType<typeof listKanbanColumns>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listKanbanColumns>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListKanbanColumnsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListKanbanCardsUrl = () => {
+
+
+
+
+  return `/api/kanban/cards`
+}
+
+/**
+ * @summary List all Kanban cards
+ */
+export const listKanbanCards = async ( options?: RequestInit): Promise<KanbanCard[]> => {
+
+  return customFetch<KanbanCard[]>(getListKanbanCardsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListKanbanCardsQueryKey = () => {
+    return [
+    `/api/kanban/cards`
+    ] as const;
+    }
+
+
+export const getListKanbanCardsQueryOptions = <TData = Awaited<ReturnType<typeof listKanbanCards>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listKanbanCards>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListKanbanCardsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listKanbanCards>>> = ({ signal }) => listKanbanCards({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listKanbanCards>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListKanbanCardsQueryResult = NonNullable<Awaited<ReturnType<typeof listKanbanCards>>>
+export type ListKanbanCardsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all Kanban cards
+ */
+
+export function useListKanbanCards<TData = Awaited<ReturnType<typeof listKanbanCards>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listKanbanCards>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListKanbanCardsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateKanbanCardUrl = () => {
+
+
+
+
+  return `/api/kanban/cards`
+}
+
+/**
+ * @summary Create a Kanban card
+ */
+export const createKanbanCard = async (kanbanCardCreate: KanbanCardCreate, options?: RequestInit): Promise<KanbanCard> => {
+
+  return customFetch<KanbanCard>(getCreateKanbanCardUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      kanbanCardCreate,)
+  }
+);}
+
+
+
+
+export const getCreateKanbanCardMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createKanbanCard>>, TError,{data: BodyType<KanbanCardCreate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createKanbanCard>>, TError,{data: BodyType<KanbanCardCreate>}, TContext> => {
+
+const mutationKey = ['createKanbanCard'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createKanbanCard>>, {data: BodyType<KanbanCardCreate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createKanbanCard(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateKanbanCardMutationResult = NonNullable<Awaited<ReturnType<typeof createKanbanCard>>>
+    export type CreateKanbanCardMutationBody = BodyType<KanbanCardCreate>
+    export type CreateKanbanCardMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a Kanban card
+ */
+export const useCreateKanbanCard = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createKanbanCard>>, TError,{data: BodyType<KanbanCardCreate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createKanbanCard>>,
+        TError,
+        {data: BodyType<KanbanCardCreate>},
+        TContext
+      > => {
+      return useMutation(getCreateKanbanCardMutationOptions(options));
+    }
+
+export const getUpdateKanbanCardUrl = (id: string,) => {
+
+
+
+
+  return `/api/kanban/cards/${id}`
+}
+
+/**
+ * @summary Update a Kanban card (any team member)
+ */
+export const updateKanbanCard = async (id: string,
+    kanbanCardUpdate: KanbanCardUpdate, options?: RequestInit): Promise<KanbanCard> => {
+
+  return customFetch<KanbanCard>(getUpdateKanbanCardUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      kanbanCardUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateKanbanCardMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateKanbanCard>>, TError,{id: string;data: BodyType<KanbanCardUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateKanbanCard>>, TError,{id: string;data: BodyType<KanbanCardUpdate>}, TContext> => {
+
+const mutationKey = ['updateKanbanCard'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateKanbanCard>>, {id: string;data: BodyType<KanbanCardUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateKanbanCard(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateKanbanCardMutationResult = NonNullable<Awaited<ReturnType<typeof updateKanbanCard>>>
+    export type UpdateKanbanCardMutationBody = BodyType<KanbanCardUpdate>
+    export type UpdateKanbanCardMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Update a Kanban card (any team member)
+ */
+export const useUpdateKanbanCard = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateKanbanCard>>, TError,{id: string;data: BodyType<KanbanCardUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateKanbanCard>>,
+        TError,
+        {id: string;data: BodyType<KanbanCardUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateKanbanCardMutationOptions(options));
+    }
+
+export const getDeleteKanbanCardUrl = (id: string,) => {
+
+
+
+
+  return `/api/kanban/cards/${id}`
+}
+
+/**
+ * @summary Delete a Kanban card (creator or PM only)
+ */
+export const deleteKanbanCard = async (id: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteKanbanCardUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteKanbanCardMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteKanbanCard>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteKanbanCard>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['deleteKanbanCard'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteKanbanCard>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteKanbanCard(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteKanbanCardMutationResult = NonNullable<Awaited<ReturnType<typeof deleteKanbanCard>>>
+
+    export type DeleteKanbanCardMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Delete a Kanban card (creator or PM only)
+ */
+export const useDeleteKanbanCard = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteKanbanCard>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteKanbanCard>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getDeleteKanbanCardMutationOptions(options));
+    }
+
+export const getMoveKanbanCardUrl = (id: string,) => {
+
+
+
+
+  return `/api/kanban/cards/${id}/move`
+}
+
+/**
+ * @summary Move a card to a column at a given position (atomic reorder)
+ */
+export const moveKanbanCard = async (id: string,
+    kanbanCardMove: KanbanCardMove, options?: RequestInit): Promise<KanbanCard[]> => {
+
+  return customFetch<KanbanCard[]>(getMoveKanbanCardUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      kanbanCardMove,)
+  }
+);}
+
+
+
+
+export const getMoveKanbanCardMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof moveKanbanCard>>, TError,{id: string;data: BodyType<KanbanCardMove>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof moveKanbanCard>>, TError,{id: string;data: BodyType<KanbanCardMove>}, TContext> => {
+
+const mutationKey = ['moveKanbanCard'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof moveKanbanCard>>, {id: string;data: BodyType<KanbanCardMove>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  moveKanbanCard(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type MoveKanbanCardMutationResult = NonNullable<Awaited<ReturnType<typeof moveKanbanCard>>>
+    export type MoveKanbanCardMutationBody = BodyType<KanbanCardMove>
+    export type MoveKanbanCardMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Move a card to a column at a given position (atomic reorder)
+ */
+export const useMoveKanbanCard = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof moveKanbanCard>>, TError,{id: string;data: BodyType<KanbanCardMove>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof moveKanbanCard>>,
+        TError,
+        {id: string;data: BodyType<KanbanCardMove>},
+        TContext
+      > => {
+      return useMutation(getMoveKanbanCardMutationOptions(options));
     }
 
 export const getRequestUploadUrlUrl = () => {

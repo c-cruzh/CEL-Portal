@@ -153,6 +153,79 @@ export interface NotificationRecipientInput {
   email: string;
 }
 
+export interface KanbanColumn {
+  key: string;
+  label: string;
+  sortOrder: number;
+}
+
+export type KanbanPriority = typeof KanbanPriority[keyof typeof KanbanPriority];
+
+
+export const KanbanPriority = {
+  alta: 'alta',
+  media: 'media',
+  baja: 'baja',
+} as const;
+
+export interface KanbanCard {
+  id: string;
+  title: string;
+  description: string;
+  columnKey: string;
+  position: number;
+  /** @nullable */
+  phaseId?: string | null;
+  assignedRoles: string[];
+  priority: KanbanPriority;
+  /** @nullable */
+  dueDate?: string | null;
+  createdBy: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface KanbanCardCreate {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  title: string;
+  /** @maxLength 5000 */
+  description?: string;
+  /** @minLength 1 */
+  columnKey: string;
+  /** @nullable */
+  phaseId?: string | null;
+  assignedRoles?: string[];
+  priority?: KanbanPriority;
+  /** @nullable */
+  dueDate?: string | null;
+}
+
+export interface KanbanCardUpdate {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  title?: string;
+  /** @maxLength 5000 */
+  description?: string;
+  /** @nullable */
+  phaseId?: string | null;
+  assignedRoles?: string[];
+  priority?: KanbanPriority;
+  /** @nullable */
+  dueDate?: string | null;
+}
+
+export interface KanbanCardMove {
+  /** @minLength 1 */
+  columnKey: string;
+  /** @minimum 0 */
+  position: number;
+}
+
 export interface UploadRequest {
   name: string;
   size: number;

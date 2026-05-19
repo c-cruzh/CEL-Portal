@@ -15,6 +15,7 @@ import Cronograma from "@/pages/portal/cronograma";
 import Metodologia from "@/pages/portal/metodologia";
 import Desarrollo from "@/pages/portal/desarrollo";
 import Configuracion from "@/pages/portal/configuracion";
+import Kanban from "@/pages/portal/kanban";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -280,6 +281,7 @@ function PortalRoutes() {
         <Route path="/portal/cronograma" component={Cronograma} />
         <Route path="/portal/metodologia" component={Metodologia} />
         <Route path="/portal/desarrollo-tecnico" component={Desarrollo} />
+        <Route path="/portal/kanban" component={Kanban} />
         <Route path="/portal/configuracion" component={Configuracion} />
         <Route component={NotFound} />
       </Switch>

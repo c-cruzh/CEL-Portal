@@ -1,5 +1,13 @@
-import { db, pool, rolesTable, projectConfigTable } from "./index";
+import { db, pool, rolesTable, projectConfigTable, kanbanColumnsTable } from "./index";
 import { sql } from "drizzle-orm";
+
+const KANBAN_COLUMNS: Array<{ key: string; label: string; sortOrder: number }> = [
+  { key: "backlog", label: "Backlog", sortOrder: 1 },
+  { key: "in_progress", label: "En curso", sortOrder: 2 },
+  { key: "in_review", label: "En revisión", sortOrder: 3 },
+  { key: "blocked", label: "Bloqueado", sortOrder: 4 },
+  { key: "done", label: "Hecho", sortOrder: 5 },
+];
 
 const ROLES: Array<{
   id: string;
@@ -44,6 +52,16 @@ async function main(): Promise<void> {
     .insert(projectConfigTable)
     .values({ id: 1, startDate: null })
     .onConflictDoNothing();
+
+  for (const col of KANBAN_COLUMNS) {
+    await db
+      .insert(kanbanColumnsTable)
+      .values(col)
+      .onConflictDoUpdate({
+        target: kanbanColumnsTable.key,
+        set: { label: col.label, sortOrder: col.sortOrder },
+      });
+  }
 
   const count = await db.execute(sql`SELECT COUNT(*)::int AS n FROM roles`);
   // eslint-disable-next-line no-console
