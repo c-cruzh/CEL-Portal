@@ -1,7 +1,25 @@
-import { useEffect, useState } from "react";
+import { useMemo, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
-  DEV_SECTIONS,
+  Activity,
+  AlignLeft,
+  Box,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Database,
+  FileText,
+  Layers,
+  Map as MapIcon,
+  Play,
+  Server,
+  Settings,
+  Shield,
+  Search as SearchIcon,
+} from "lucide-react";
+import {
   FLUJO_INTRO,
   FLUJO_STAGES,
   FLUJO_OUTRO,
@@ -30,88 +48,283 @@ import {
   type InfraStatus,
 } from "@/lib/desarrolloContent";
 
+type ChapterId =
+  | "flujo"
+  | "datos"
+  | "etl"
+  | "modelos"
+  | "validacion"
+  | "decisiones"
+  | "operacion"
+  | "visualizacion"
+  | "raci"
+  | "infraestructura"
+  | "anexo-lempa";
+
+interface ChapterDef {
+  id: ChapterId;
+  num: string;
+  shortLabel: string;
+  title: string;
+  Icon: React.ComponentType<{ className?: string }>;
+  Component: React.ComponentType;
+  toc: { id: string; label: string }[];
+}
+
+const CHAPTERS: ChapterDef[] = [
+  { id: "flujo", num: "1", shortLabel: "Flujo del sistema", title: "Flujo completo del sistema", Icon: Activity, Component: FlujoSection, toc: [{ id: "flujo-etapas", label: "Etapas del pipeline" }, { id: "flujo-sintesis", label: "Síntesis" }] },
+  { id: "datos", num: "2", shortLabel: "Datos de entrada", title: "Datos de entrada del sistema", Icon: Database, Component: DatosSection, toc: [{ id: "datos-meteo", label: "Meteorológicos" }, { id: "datos-hidro", label: "Hidrológicos" }, { id: "datos-geo", label: "Geoespaciales" }, { id: "datos-cuenca", label: "Características de la cuenca" }] },
+  { id: "etl", num: "3", shortLabel: "ETL con Mage", title: "Pipelines ETL con Mage", Icon: Settings, Component: EtlSection, toc: [{ id: "etl-extraccion", label: "Extracción" }, { id: "etl-transformacion", label: "Transformación" }, { id: "etl-carga", label: "Carga" }, { id: "etl-qa", label: "QA / QC" }] },
+  { id: "modelos", num: "4", shortLabel: "Modelos de predicción", title: "Modelos de predicción", Icon: Layers, Component: ModelosSection, toc: [{ id: "modelos-lstm", label: "Modelo LSTM" }, { id: "modelos-inundacion", label: "Modelo de inundación" }] },
+  { id: "validacion", num: "5", shortLabel: "Validación y métricas", title: "Validación y métricas", Icon: Shield, Component: ValidacionSection, toc: [{ id: "validacion-rolling", label: "Origen rodante" }, { id: "validacion-metricas", label: "Métricas" }, { id: "validacion-goals", label: "Criterios de éxito" }] },
+  { id: "decisiones", num: "6", shortLabel: "Decisiones técnicas", title: "Decisiones técnicas", Icon: FileText, Component: DecisionesSection, toc: [] },
+  { id: "operacion", num: "7", shortLabel: "Operación diaria", title: "Operación diaria", Icon: Play, Component: OperacionSection, toc: [{ id: "operacion-scheduling", label: "Programación" }, { id: "operacion-flujo", label: "Flujo diario" }, { id: "operacion-monitoreo", label: "Monitoreo y errores" }] },
+  { id: "visualizacion", num: "8", shortLabel: "Visualización y alertas", title: "Visualización y alertas", Icon: Activity, Component: VisualizacionSection, toc: [{ id: "visualizacion-features", label: "Funcionalidades" }, { id: "visualizacion-alertas", label: "Sistema de alertas" }] },
+  { id: "raci", num: "9", shortLabel: "Matriz RACI", title: "Matriz RACI", Icon: AlignLeft, Component: RaciSection, toc: [] },
+  { id: "infraestructura", num: "10", shortLabel: "Infraestructura y BOM", title: "Infraestructura local — Silo de IA", Icon: Server, Component: InfraSection, toc: [{ id: "infra-arquitectura", label: "Arquitectura" }, { id: "infra-hardware", label: "BOM hardware" }, { id: "infra-software", label: "BOM software" }, { id: "infra-comisionamiento", label: "Comisionamiento" }, { id: "infra-respaldo", label: "Respaldo y seguridad" }] },
+  { id: "anexo-lempa", num: "11", shortLabel: "Cuenca del Lempa", title: "Anexo — Cuenca del Río Lempa", Icon: MapIcon, Component: LempaSection, toc: [] },
+];
+
+const ANEXO_GROUPS: { id: string; title: string; chapters: ChapterId[] }[] = [
+  { id: "anexo-a", title: "Anexo A — Sistema IA de Pronóstico", chapters: ["flujo", "datos", "etl", "modelos", "validacion", "decisiones", "operacion", "visualizacion", "raci"] },
+  { id: "anexo-b", title: "Anexo B — Infraestructura del Silo IA", chapters: ["infraestructura"] },
+  { id: "anexo-e", title: "Anexo E — Cuenca del Lempa", chapters: ["anexo-lempa"] },
+];
+
 export default function Desarrollo() {
-  const [active, setActive] = useState<string>(DEV_SECTIONS[0].id);
+  const [activeId, setActiveId] = useState<ChapterId>("flujo");
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({
+    "anexo-a": true,
+    "anexo-b": false,
+    "anexo-e": false,
+  });
+  const [query, setQuery] = useState("");
 
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((e) => e.isIntersecting)
-          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
-        if (visible[0]) setActive(visible[0].target.id);
-      },
-      { rootMargin: "-80px 0px -70% 0px", threshold: 0 }
-    );
-    DEV_SECTIONS.forEach((s) => {
-      const el = document.getElementById(s.id);
-      if (el) observer.observe(el);
-    });
-    return () => observer.disconnect();
-  }, []);
+  const activeIdx = CHAPTERS.findIndex((c) => c.id === activeId);
+  const active = CHAPTERS[activeIdx];
+  const prev = activeIdx > 0 ? CHAPTERS[activeIdx - 1] : null;
+  const next = activeIdx < CHAPTERS.length - 1 ? CHAPTERS[activeIdx + 1] : null;
+  const activeAnexo = useMemo(
+    () => ANEXO_GROUPS.find((g) => g.chapters.includes(activeId))!,
+    [activeId],
+  );
 
-  const scrollTo = (id: string) => {
-    const el = document.getElementById(id);
-    if (el) {
-      const y = el.getBoundingClientRect().top + window.scrollY - 80;
-      window.scrollTo({ top: y, behavior: "smooth" });
-    }
+  const goTo = (id: ChapterId) => {
+    setActiveId(id);
+    const anexo = ANEXO_GROUPS.find((g) => g.chapters.includes(id));
+    if (anexo) setExpanded((prev) => ({ ...prev, [anexo.id]: true }));
+    if (typeof window !== "undefined") window.scrollTo({ top: 0, behavior: "smooth" });
   };
+
+  const toggleGroup = (gid: string) =>
+    setExpanded((prev) => ({ ...prev, [gid]: !prev[gid] }));
+
+  const filteredGroups = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return ANEXO_GROUPS;
+    return ANEXO_GROUPS.map((g) => ({
+      ...g,
+      chapters: g.chapters.filter((cid) => {
+        const ch = CHAPTERS.find((c) => c.id === cid)!;
+        return (
+          ch.shortLabel.toLowerCase().includes(q) ||
+          ch.title.toLowerCase().includes(q) ||
+          ch.num.toLowerCase().includes(q)
+        );
+      }),
+    })).filter((g) => g.chapters.length > 0);
+  }, [query]);
+
+  const ActiveComponent = active.Component;
 
   return (
     <div className="animate-in fade-in duration-500">
-      <div className="max-w-6xl mx-auto">
-        <header className="mb-8">
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Desarrollo Técnico</h1>
-          <p className="text-muted-foreground mt-1">
-            Arquitectura, datos, pipelines, modelos, validación, operación y gobernanza técnica del sistema de pronóstico hidrológico con IA para el Río Lempa.
-          </p>
-        </header>
-
-        <div className="lg:grid lg:grid-cols-[220px_1fr] lg:gap-10">
-          <aside className="hidden lg:block">
-            <nav className="sticky top-24 space-y-1">
-              {DEV_SECTIONS.map((s) => (
-                <button
-                  key={s.id}
-                  onClick={() => scrollTo(s.id)}
-                  className={`block w-full text-left px-3 py-2 rounded-md text-sm transition-colors ${
-                    active === s.id
-                      ? "bg-primary/10 text-primary font-medium"
-                      : "text-muted-foreground hover:bg-muted hover:text-foreground"
-                  }`}
-                >
-                  {s.label}
-                </button>
-              ))}
-            </nav>
-          </aside>
-
-          <div className="space-y-16 min-w-0">
-            <FlujoSection />
-            <DatosSection />
-            <EtlSection />
-            <ModelosSection />
-            <ValidacionSection />
-            <DecisionesSection />
-            <OperacionSection />
-            <VisualizacionSection />
-            <RaciSection />
-            <InfraSection />
-            <LempaSection />
+      <div className="lg:grid lg:grid-cols-[260px_minmax(0,1fr)_200px] lg:gap-8">
+        {/* Sidebar izquierdo */}
+        <aside className="hidden lg:flex flex-col border-r border-border pr-4 -ml-2">
+          <div className="sticky top-20 max-h-[calc(100vh-6rem)] flex flex-col">
+            <div className="relative mb-3">
+              <SearchIcon className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+              <input
+                type="text"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Buscar capítulo"
+                className="w-full bg-muted/60 border border-border rounded-md pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-shadow"
+              />
+            </div>
+            <ScrollArea className="flex-1 pr-1">
+              <nav className="space-y-3 pb-6">
+                {filteredGroups.map((g) => {
+                  const isOpen = expanded[g.id] ?? false;
+                  return (
+                    <div key={g.id} className="space-y-1">
+                      <button
+                        type="button"
+                        onClick={() => toggleGroup(g.id)}
+                        className="flex items-center justify-between w-full px-2 py-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
+                      >
+                        <span>{g.title}</span>
+                        <ChevronDown
+                          className={`w-3.5 h-3.5 transition-transform ${isOpen ? "" : "-rotate-90"}`}
+                        />
+                      </button>
+                      {isOpen && (
+                        <div className="space-y-0.5">
+                          {g.chapters.map((cid) => {
+                            const ch = CHAPTERS.find((c) => c.id === cid)!;
+                            const isActive = ch.id === activeId;
+                            return (
+                              <button
+                                key={ch.id}
+                                type="button"
+                                onClick={() => goTo(ch.id)}
+                                className={`flex items-center w-full text-left px-2 py-1.5 text-sm rounded-md transition-colors ${
+                                  isActive
+                                    ? "bg-primary text-primary-foreground font-medium"
+                                    : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                                }`}
+                              >
+                                <ch.Icon className="w-4 h-4 mr-2 shrink-0" />
+                                <span className="truncate">
+                                  {ch.num}. {ch.shortLabel}
+                                </span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+                {filteredGroups.length === 0 && (
+                  <p className="px-2 py-3 text-sm text-muted-foreground">
+                    Sin resultados para "{query}".
+                  </p>
+                )}
+              </nav>
+            </ScrollArea>
           </div>
-        </div>
+        </aside>
+
+        {/* Contenido principal */}
+        <main className="min-w-0">
+          <div className="max-w-[760px] mx-auto">
+            <nav className="text-sm text-muted-foreground mb-4 flex items-center gap-1.5 flex-wrap">
+              <span>Desarrollo Técnico</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+              <span>{activeAnexo.title.replace(/ — .*$/, "")}</span>
+              <ChevronRight className="w-3.5 h-3.5" />
+              <span className="text-foreground font-medium">
+                {active.num}. {active.shortLabel}
+              </span>
+            </nav>
+
+            <header className="mb-8">
+              <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-2">
+                Capítulo {active.num}
+              </p>
+              <h1 className="text-3xl font-bold tracking-tight text-foreground">
+                {active.title}
+              </h1>
+            </header>
+
+            {/* Selector móvil */}
+            <div className="lg:hidden mb-6">
+              <label className="block text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+                Capítulo
+              </label>
+              <select
+                value={activeId}
+                onChange={(e) => goTo(e.target.value as ChapterId)}
+                className="w-full border border-border rounded-md px-3 py-2 text-sm bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+              >
+                {ANEXO_GROUPS.map((g) => (
+                  <optgroup key={g.id} label={g.title}>
+                    {g.chapters.map((cid) => {
+                      const ch = CHAPTERS.find((c) => c.id === cid)!;
+                      return (
+                        <option key={ch.id} value={ch.id}>
+                          {ch.num}. {ch.shortLabel}
+                        </option>
+                      );
+                    })}
+                  </optgroup>
+                ))}
+              </select>
+            </div>
+
+            <ActiveComponent />
+
+            {/* Navegación inferior */}
+            <div className="mt-12 pt-6 border-t border-border flex items-center justify-between gap-3">
+              {prev ? (
+                <Button
+                  variant="ghost"
+                  className="text-muted-foreground hover:text-foreground gap-2 h-auto py-2 px-3 text-left flex-col items-start"
+                  onClick={() => goTo(prev.id)}
+                >
+                  <span className="text-xs flex items-center gap-1">
+                    <ChevronLeft className="w-3.5 h-3.5" /> Anterior
+                  </span>
+                  <span className="text-sm font-medium">
+                    {prev.num}. {prev.shortLabel}
+                  </span>
+                </Button>
+              ) : (
+                <span />
+              )}
+              {next ? (
+                <Button
+                  variant="ghost"
+                  className="text-primary hover:bg-primary/10 hover:text-primary gap-2 h-auto py-2 px-3 text-right flex-col items-end"
+                  onClick={() => goTo(next.id)}
+                >
+                  <span className="text-xs flex items-center gap-1">
+                    Siguiente <ChevronRight className="w-3.5 h-3.5" />
+                  </span>
+                  <span className="text-sm font-medium">
+                    {next.num}. {next.shortLabel}
+                  </span>
+                </Button>
+              ) : (
+                <span />
+              )}
+            </div>
+          </div>
+        </main>
+
+        {/* TOC derecho — "En esta página" */}
+        <aside className="hidden lg:block">
+          <div className="sticky top-24">
+            {active.toc.length > 0 ? (
+              <>
+                <h4 className="font-semibold text-sm mb-3 text-foreground">En esta página</h4>
+                <nav className="flex flex-col space-y-2 text-sm border-l border-border">
+                  {active.toc.map((t) => (
+                    <a
+                      key={t.id}
+                      href={`#${t.id}`}
+                      className="text-muted-foreground hover:text-foreground pl-3 -ml-px border-l-2 border-transparent hover:border-border transition-colors"
+                    >
+                      {t.label}
+                    </a>
+                  ))}
+                </nav>
+              </>
+            ) : null}
+          </div>
+        </aside>
       </div>
     </div>
   );
 }
 
-function SectionHeader({ id, eyebrow, title, intro }: { id: string; eyebrow?: string; title: string; intro?: string }) {
+function SectionHeader({ intro }: { id?: string; eyebrow?: string; title?: string; intro?: string }) {
+  if (!intro) return null;
   return (
-    <header className="mb-6 scroll-mt-24" id={id}>
-      {eyebrow && <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-2">{eyebrow}</p>}
-      <h2 className="text-2xl font-bold tracking-tight border-b border-border pb-2">{title}</h2>
-      {intro && <p className="text-sm text-foreground leading-relaxed mt-4">{intro}</p>}
+    <header className="mb-6">
+      <p className="text-base text-muted-foreground leading-relaxed">{intro}</p>
     </header>
   );
 }
@@ -119,8 +332,8 @@ function SectionHeader({ id, eyebrow, title, intro }: { id: string; eyebrow?: st
 function FlujoSection() {
   return (
     <section>
-      <SectionHeader id="flujo" eyebrow="1" title="Flujo completo del sistema" intro={FLUJO_INTRO} />
-      <div className="space-y-4">
+      <SectionHeader intro={FLUJO_INTRO} />
+      <div id="flujo-etapas" className="space-y-4 scroll-mt-24">
         {FLUJO_STAGES.map((s) => (
           <Card key={s.id} className="border-border">
             <CardHeader className="pb-3">
@@ -137,7 +350,7 @@ function FlujoSection() {
           </Card>
         ))}
       </div>
-      <Card className="mt-6 bg-primary/5 border-primary/20">
+      <Card id="flujo-sintesis" className="mt-6 bg-primary/5 border-primary/20 scroll-mt-24">
         <CardContent className="p-5">
           <p className="text-sm text-foreground leading-relaxed">{FLUJO_OUTRO}</p>
         </CardContent>
@@ -149,10 +362,10 @@ function FlujoSection() {
 function DatosSection() {
   return (
     <section>
-      <SectionHeader id="datos" eyebrow="2" title="Datos de entrada del sistema" intro={DATOS_INTRO} />
+      <SectionHeader intro={DATOS_INTRO} />
       <div className="grid gap-4 md:grid-cols-2">
         {DATOS_CATEGORIES.map((c) => (
-          <Card key={c.id} className="border-border h-full">
+          <Card key={c.id} id={`datos-${c.id}`} className="border-border h-full scroll-mt-24">
             <CardHeader className="pb-3">
               <CardTitle className="text-base">{c.title}</CardTitle>
             </CardHeader>
@@ -179,10 +392,14 @@ function DatosSection() {
 function EtlSection() {
   return (
     <section>
-      <SectionHeader id="etl" eyebrow="3" title="Preprocesamiento y pipelines ETL con Mage" intro={ETL_INTRO} />
+      <SectionHeader intro={ETL_INTRO} />
       <div className="grid gap-4 md:grid-cols-2">
-        {ETL_STAGES.map((s) => (
-          <Card key={s.title} className="border-border">
+        {ETL_STAGES.map((s, idx) => (
+          <Card
+            key={s.title}
+            id={["etl-extraccion", "etl-transformacion", "etl-carga", "etl-qa"][idx]}
+            className="border-border scroll-mt-24"
+          >
             <CardHeader className="pb-3">
               <CardTitle className="text-base">{s.title}</CardTitle>
             </CardHeader>
@@ -206,9 +423,8 @@ function EtlSection() {
 function ModelosSection() {
   return (
     <section>
-      <SectionHeader id="modelos" eyebrow="4" title="Arquitectura y entrenamiento de modelos" />
       <div className="space-y-6">
-        <Card className="border-border">
+        <Card id="modelos-lstm" className="border-border scroll-mt-24">
           <CardHeader>
             <CardTitle className="text-lg">{MODEL_LSTM.title}</CardTitle>
             <CardDescription className="leading-relaxed pt-2">{MODEL_LSTM.body}</CardDescription>
@@ -225,7 +441,7 @@ function ModelosSection() {
           </CardContent>
         </Card>
 
-        <Card className="border-border">
+        <Card id="modelos-inundacion" className="border-border scroll-mt-24">
           <CardHeader>
             <CardTitle className="text-lg">{MODEL_FLOOD.title}</CardTitle>
             <CardDescription className="pt-2">{MODEL_FLOOD.body}</CardDescription>
@@ -253,9 +469,8 @@ function ModelosSection() {
 function ValidacionSection() {
   return (
     <section>
-      <SectionHeader id="validacion" eyebrow="5" title="Validación cruzada y métricas de evaluación" />
       <div className="space-y-6">
-        <Card className="border-border">
+        <Card id="validacion-rolling" className="border-border scroll-mt-24">
           <CardHeader>
             <CardTitle className="text-base">{VALIDATION_ROLLING.title}</CardTitle>
           </CardHeader>
@@ -264,7 +479,7 @@ function ValidacionSection() {
           </CardContent>
         </Card>
 
-        <div>
+        <div id="validacion-metricas" className="scroll-mt-24">
           <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">Métricas</h3>
           <Card className="border-border overflow-hidden">
             <div className="overflow-x-auto">
@@ -288,7 +503,7 @@ function ValidacionSection() {
           </Card>
         </div>
 
-        <Card className="bg-primary/5 border-primary/20">
+        <Card id="validacion-goals" className="bg-primary/5 border-primary/20 scroll-mt-24">
           <CardHeader>
             <CardTitle className="text-base">Criterios de éxito</CardTitle>
           </CardHeader>
@@ -311,7 +526,6 @@ function ValidacionSection() {
 function DecisionesSection() {
   return (
     <section>
-      <SectionHeader id="decisiones" eyebrow="6" title="Decisiones técnicas / informáticas" />
       <div className="grid gap-4 md:grid-cols-2">
         {DECISIONES_TECNICAS.map((d) => (
           <Card key={d.title} className="border-border">
@@ -331,9 +545,8 @@ function DecisionesSection() {
 function OperacionSection() {
   return (
     <section>
-      <SectionHeader id="operacion" eyebrow="7" title="Automatización y operación diaria" />
       <div className="space-y-6">
-        <Card className="border-border">
+        <Card id="operacion-scheduling" className="border-border scroll-mt-24">
           <CardHeader>
             <CardTitle className="text-base">Programación de ejecuciones</CardTitle>
           </CardHeader>
@@ -342,7 +555,7 @@ function OperacionSection() {
           </CardContent>
         </Card>
 
-        <Card className="border-border">
+        <Card id="operacion-flujo" className="border-border scroll-mt-24">
           <CardHeader>
             <CardTitle className="text-base">Flujo diario de ingesta y pronóstico</CardTitle>
           </CardHeader>
@@ -360,7 +573,7 @@ function OperacionSection() {
           </CardContent>
         </Card>
 
-        <div className="grid gap-4 md:grid-cols-2">
+        <div id="operacion-monitoreo" className="grid gap-4 md:grid-cols-2 scroll-mt-24">
           <Card className="border-border">
             <CardHeader className="pb-2">
               <CardTitle className="text-base">Monitoreo y errores</CardTitle>
@@ -386,8 +599,8 @@ function OperacionSection() {
 function VisualizacionSection() {
   return (
     <section>
-      <SectionHeader id="visualizacion" eyebrow="8" title="Visualización y sistema de alertas" intro={VISUALIZACION.intro} />
-      <div className="grid gap-4 md:grid-cols-2 mb-6">
+      <SectionHeader intro={VISUALIZACION.intro} />
+      <div id="visualizacion-features" className="grid gap-4 md:grid-cols-2 mb-6 scroll-mt-24">
         {VISUALIZACION.features.map((f) => (
           <Card key={f.title} className="border-border">
             <CardHeader className="pb-2">
@@ -399,7 +612,7 @@ function VisualizacionSection() {
           </Card>
         ))}
       </div>
-      <Card className="border-border">
+      <Card id="visualizacion-alertas" className="border-border scroll-mt-24">
         <CardHeader>
           <CardTitle className="text-base">{VISUALIZACION.alerts.title}</CardTitle>
           <CardDescription className="pt-2">{VISUALIZACION.alerts.body}</CardDescription>
@@ -421,7 +634,6 @@ function VisualizacionSection() {
 function RaciSection() {
   return (
     <section>
-      <SectionHeader id="raci" eyebrow="9" title="Matriz RACI" />
       <Card className="border-border overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
@@ -490,15 +702,10 @@ function InfraSection() {
 
   return (
     <section>
-      <SectionHeader
-        id="infraestructura"
-        eyebrow="10"
-        title="Infraestructura local para el silo de IA de CEL"
-        intro={INFRA_INTRO}
-      />
+      <SectionHeader intro={INFRA_INTRO} />
 
       <div className="space-y-8">
-        <div>
+        <div id="infra-arquitectura" className="scroll-mt-24">
           <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
             Diagrama de arquitectura final
           </h3>
@@ -535,7 +742,7 @@ function InfraSection() {
           </Card>
         </div>
 
-        <div>
+        <div id="infra-hardware" className="scroll-mt-24">
           <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
             BOM de hardware
           </h3>
@@ -569,7 +776,7 @@ function InfraSection() {
           </Card>
         </div>
 
-        <div>
+        <div id="infra-software" className="scroll-mt-24">
           <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
             BOM de software
           </h3>
@@ -601,7 +808,7 @@ function InfraSection() {
           </Card>
         </div>
 
-        <div>
+        <div id="infra-comisionamiento" className="scroll-mt-24">
           <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
             Plan de comisionamiento y pruebas de aceptación
           </h3>
@@ -633,7 +840,7 @@ function InfraSection() {
           </Card>
         </div>
 
-        <div>
+        <div id="infra-respaldo" className="scroll-mt-24">
           <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
             Plan de respaldo, recuperación y políticas de seguridad
           </h3>
@@ -661,7 +868,7 @@ function InfraSection() {
 function LempaSection() {
   return (
     <section>
-      <SectionHeader id="anexo-lempa" eyebrow="Anexo" title={LEMPA.title} intro={LEMPA.intro} />
+      <SectionHeader intro={LEMPA.intro} />
       <div className="space-y-6">
         <LempaGroup title={LEMPA.geo.title} items={LEMPA.geo.items} />
         <LempaGroup title={LEMPA.climate.title} items={LEMPA.climate.items} />
