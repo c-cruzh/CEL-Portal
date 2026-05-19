@@ -86,17 +86,44 @@ const CHAPTERS: ChapterDef[] = [
 ];
 
 const ANEXO_GROUPS: { id: string; title: string; chapters: ChapterId[] }[] = [
-  { id: "anexo-a", title: "Anexo A — Sistema IA de Pronóstico", chapters: ["flujo", "datos", "etl", "modelos", "validacion", "decisiones", "operacion", "visualizacion", "raci"] },
-  { id: "anexo-b", title: "Anexo B — Infraestructura del Silo IA", chapters: ["infraestructura"] },
-  { id: "anexo-e", title: "Anexo E — Cuenca del Lempa", chapters: ["anexo-lempa"] },
+  {
+    id: "decisiones-tecnicas",
+    title: "Decisiones Técnicas",
+    chapters: [
+      "flujo",
+      "datos",
+      "etl",
+      "modelos",
+      "validacion",
+      "decisiones",
+      "operacion",
+      "visualizacion",
+    ],
+  },
+  {
+    id: "silo-ia",
+    title: "Silo de IA y BOM",
+    chapters: ["infraestructura"],
+  },
+  {
+    id: "equipo-roles",
+    title: "Equipo y Roles (RACI)",
+    chapters: ["raci"],
+  },
+  {
+    id: "lempa",
+    title: "Especificidades del Lempa (Anexo E)",
+    chapters: ["anexo-lempa"],
+  },
 ];
 
 export default function Desarrollo() {
   const [activeId, setActiveId] = useState<ChapterId>("flujo");
   const [expanded, setExpanded] = useState<Record<string, boolean>>({
-    "anexo-a": true,
-    "anexo-b": false,
-    "anexo-e": false,
+    "decisiones-tecnicas": true,
+    "silo-ia": false,
+    "equipo-roles": false,
+    "lempa": false,
   });
   const [query, setQuery] = useState("");
 
