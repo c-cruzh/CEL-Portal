@@ -10,13 +10,22 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: me
+    description: Current authenticated user
+  - name: team
+    description: Team and roles
+  - name: cvs
+    description: User CV uploads
+  - name: project
+    description: Project configuration (T0, etc.)
+  - name: storage
+    description: Object storage (presigned uploads, downloads)
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,13 +33,406 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /me:
+    get:
+      operationId: getMe
+      tags: [me]
+      summary: Get current authenticated user (with roles + CV)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MemberMe"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /me/display-name:
+    patch:
+      operationId: updateMyDisplayName
+      tags: [me]
+      summary: Update my display name
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DisplayNameInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MemberMe"
+
+  /me/roles:
+    get:
+      operationId: getMyRoles
+      tags: [me]
+      summary: List my role assignments
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+    put:
+      operationId: setMyRoles
+      tags: [me]
+      summary: Replace my role assignments (full set)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RolesInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+
+  /me/cv:
+    get:
+      operationId: getMyCv
+      tags: [cvs]
+      summary: Get metadata of my CV
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cv"
+        "404":
+          description: No CV uploaded
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    put:
+      operationId: setMyCv
+      tags: [cvs]
+      summary: Save or replace my CV (after uploading to object storage)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CvInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cv"
+    delete:
+      operationId: deleteMyCv
+      tags: [cvs]
+      summary: Remove my CV
+      responses:
+        "204":
+          description: No content
+
+  /team/members:
+    get:
+      operationId: listTeamMembers
+      tags: [team]
+      summary: List all registered team members (with roles + CV info)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Member"
+
+  /team/roles:
+    get:
+      operationId: listAvailableRoles
+      tags: [team]
+      summary: List of all role definitions available in the project
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/RoleDefinition"
+
+  /team/summary:
+    get:
+      operationId: getTeamSummary
+      tags: [team]
+      summary: Team summary (counts of members, roles filled, CVs uploaded, role coverage)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamSummary"
+
+  /project/config:
+    get:
+      operationId: getProjectConfig
+      tags: [project]
+      summary: Get project config (optional T0 / start date, etc.)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectConfig"
+    patch:
+      operationId: updateProjectConfig
+      tags: [project]
+      summary: Update project config (set or clear T0 start date)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProjectConfigUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProjectConfig"
+
+  /storage/uploads/request-url:
+    post:
+      operationId: requestUploadUrl
+      tags: [storage]
+      summary: Request a presigned URL to upload a file to object storage
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UploadRequest"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UploadUrl"
+
 components:
   schemas:
     HealthStatus:
       type: object
+      required: [status]
       properties:
         status:
           type: string
-      required:
-        - status
 
+    ErrorResponse:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: string
+
+    RoleDefinition:
+      type: object
+      required: [id, label, description]
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+        description:
+          type: string
+
+    Cv:
+      type: object
+      required: [fileName, contentType, objectPath, sizeBytes, uploadedAt]
+      properties:
+        fileName:
+          type: string
+        contentType:
+          type: string
+        objectPath:
+          type: string
+        sizeBytes:
+          type: integer
+        uploadedAt:
+          type: string
+          format: date-time
+
+    CvInput:
+      type: object
+      required: [fileName, contentType, objectPath, sizeBytes]
+      properties:
+        fileName:
+          type: string
+          minLength: 1
+        contentType:
+          type: string
+          minLength: 1
+        objectPath:
+          type: string
+          minLength: 1
+        sizeBytes:
+          type: integer
+          minimum: 0
+
+    Member:
+      type: object
+      required: [id, email, displayName, roles, joinedAt, hasCv]
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        displayName:
+          type: string
+        roles:
+          type: array
+          items:
+            type: string
+        joinedAt:
+          type: string
+          format: date-time
+        hasCv:
+          type: boolean
+        cv:
+          oneOf:
+            - $ref: "#/components/schemas/Cv"
+            - type: "null"
+
+    MemberMe:
+      type: object
+      required: [id, email, displayName, roles, joinedAt, hasCv]
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        displayName:
+          type: string
+        roles:
+          type: array
+          items:
+            type: string
+        joinedAt:
+          type: string
+          format: date-time
+        hasCv:
+          type: boolean
+        cv:
+          oneOf:
+            - $ref: "#/components/schemas/Cv"
+            - type: "null"
+
+    DisplayNameInput:
+      type: object
+      required: [displayName]
+      properties:
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 120
+
+    RolesInput:
+      type: object
+      required: [roles]
+      properties:
+        roles:
+          type: array
+          items:
+            type: string
+
+    RoleCoverage:
+      type: object
+      required: [roleId, label, count, assignees]
+      properties:
+        roleId:
+          type: string
+        label:
+          type: string
+        count:
+          type: integer
+        assignees:
+          type: array
+          items:
+            type: string
+
+    TeamSummary:
+      type: object
+      required: [memberCount, cvCount, rolesFilled, totalRoles, coverage]
+      properties:
+        memberCount:
+          type: integer
+        cvCount:
+          type: integer
+        rolesFilled:
+          type: integer
+        totalRoles:
+          type: integer
+        coverage:
+          type: array
+          items:
+            $ref: "#/components/schemas/RoleCoverage"
+
+    ProjectConfig:
+      type: object
+      required: [startDate, updatedAt]
+      properties:
+        startDate:
+          type: ["string", "null"]
+          format: date
+        updatedAt:
+          type: string
+          format: date-time
+
+    ProjectConfigUpdate:
+      type: object
+      properties:
+        startDate:
+          type: ["string", "null"]
+          format: date
+
+    UploadRequest:
+      type: object
+      required: [name, size, contentType]
+      properties:
+        name:
+          type: string
+        size:
+          type: integer
+        contentType:
+          type: string
+
+    UploadUrl:
+      type: object
+      required: [uploadURL, objectPath]
+      properties:
+        uploadURL:
+          type: string
+        objectPath:
+          type: string
