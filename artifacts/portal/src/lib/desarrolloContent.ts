@@ -316,24 +316,331 @@ export const VISUALIZACION = {
   },
 };
 
-export const RACI_ROLES = ["Consultor", "PM CEL", "Hidrología CEL", "Geoespacial CEL", "Data Eng", "ML Eng", "Stakeholder CEL"] as const;
+export const RACI_INTRO =
+  "Este capítulo consolida el equipo del piloto: estructura operativa con asignación de esfuerzo (FTE), perfiles técnicos con personas asignadas, detalle de tareas por fase y matriz RACI completa. Refleja el refresh acordado con CEL en abril de 2026, que enmarca a la Unidad de Informática como Comité Consultivo de gobernanza y centraliza la ejecución operativa en un único Ingeniero DevOps de enlace.";
 
-export const RACI_TASKS: { task: string; values: string[] }[] = [
-  { task: "Configuración Mage + GitLab", values: ["C/A", "I", "R", "I", "I", "I", "I"] },
-  { task: "Desarrollo de pipelines ETL", values: ["R/C", "I", "I", "I", "R/A", "I", "I"] },
-  { task: "Validación de pipelines", values: ["A/R", "C", "I", "I", "R", "I", "I"] },
-  { task: "Diseño y entrenamiento de IA", values: ["R/A", "C/I", "I", "I", "C", "I", "C"] },
-  { task: "Visualización (dashboard)", values: ["R", "I", "I", "I", "C", "C", "—"] },
-  { task: "Cartografía y mapas SIG", values: ["C/A", "I", "I", "I", "R", "I", "—"] },
-  { task: "Validación operacional", values: ["C", "I", "I", "I", "I", "R/A", "—"] },
-  { task: "Gestión y coordinación", values: ["C", "R/A", "I", "I", "I", "I", "I"] },
+export const FTE_BREAKDOWN: {
+  label: string;
+  fte: string;
+  scope: string;
+  detail: string;
+  tone: "external" | "committee" | "operational";
+}[] = [
+  {
+    label: "Tech Circle (soporte remoto)",
+    fte: "0.3",
+    scope: "30 horas de soporte técnico contratadas vía el proveedor de hardware.",
+    detail:
+      "Acompañamiento remoto para guiar el desarrollo del piloto y resolver bloqueos puntuales de arquitectura, hardware y stack de orquestación.",
+    tone: "external",
+  },
+  {
+    label: "Comité Consultivo de TI (6 roles)",
+    fte: "0.35 compartido",
+    scope:
+      "Lorena, Nelson, José Manuel, Carlos Sánchez, Adrián y Miladis (Unidad de Informática de CEL).",
+    detail:
+      "No tiene rol operativo diario. Funciona como comité que autoriza, informa y dicta cómo proceder en ciberseguridad, acceso a datos, infraestructura, redes y aprobaciones formales.",
+    tone: "committee",
+  },
+  {
+    label: "Ingeniero DevOps / Enlace operativo",
+    fte: "1.0",
+    scope: "Recurso 100% operativo durante la fase de ejecución (asignación TBD).",
+    detail:
+      "Único punto de contacto entre el equipo del piloto y la Unidad de Informática. Ejecuta la implementación técnica siguiendo estrictamente los lineamientos del Comité, aprovechando su conocimiento interno de la infraestructura de CEL.",
+    tone: "operational",
+  },
+];
+
+export interface TeamProfile {
+  id: string;
+  role: string;
+  person: string;
+  scope: "Externo" | "Interno CEL";
+  responsibilities: string[];
+}
+
+export const TEAM_PROFILES: TeamProfile[] = [
+  {
+    id: "consultora",
+    role: "Consultora Líder en IA e Ingeniería de Datos",
+    person: "Camila Cruz (externa)",
+    scope: "Externo",
+    responsibilities: [
+      "Diseño, desarrollo e implementación del modelo basado en redes neuronales LSTM.",
+      "Estrategia de ingeniería de datos con Mage y diseño del dashboard web.",
+      "Guía remota al equipo de CEL: especificaciones técnicas, sesiones de co-desarrollo de código y supervisión de la arquitectura.",
+      "Liderazgo de la documentación técnica exhaustiva del proyecto.",
+    ],
+  },
+  {
+    id: "pm-hidrologia",
+    role: "Líder Técnico en Hidrología y Gerente de Proyecto",
+    person: "José Mauricio (CEL)",
+    scope: "Interno CEL",
+    responsibilities: [
+      "Supervisión integral de la ejecución: cronogramas, comunicación interinstitucional y asignación de recursos.",
+      "Orientación experta y conocimiento empírico del río Lempa.",
+      "Interpretación de la dinámica hidrológica y validación de coherencia operativa de las predicciones.",
+    ],
+  },
+  {
+    id: "devops",
+    role: "Administrador de Sistemas / Ingeniero DevOps",
+    person: "Enlace operativo (TBD)",
+    scope: "Interno CEL",
+    responsibilities: [
+      "Enlace directo entre el Comité de Informática y el equipo del piloto.",
+      "Liderazgo de la implementación física y configuración del AI Silo, ejecutando estrictamente los lineamientos del Comité.",
+      "Instalación de Mage y configuración del repositorio Git/GitLab; bases para CI/CD y mantenibilidad.",
+    ],
+  },
+  {
+    id: "datos",
+    role: "Ingenieros de Datos y Backend",
+    person: "William Juárez / José Mauricio Herrera (CEL)",
+    scope: "Interno CEL",
+    responsibilities: [
+      "Migración de la lógica de negocio a los nuevos pipelines en Python con Mage.",
+      "Pair programming con la consultora para desarrollar, probar y desplegar flujos ETL como código.",
+      "Coordinación estrecha con el DBA (Carlos Sánchez) para asegurar el flujo correcto de datos históricos y en tiempo real.",
+    ],
+  },
+  {
+    id: "sig",
+    role: "Especialista SIG / Teledetección",
+    person: "Fernando Garay (CEL)",
+    scope: "Interno CEL",
+    responsibilities: [
+      "Procesamiento local de imágenes satelitales (Sentinel-1) siguiendo metodologías y scripts provistos.",
+      "Preparación del Modelo Digital de Elevación (DEM) y capas cartográficas.",
+      "Colaboración estrecha con la consultora en los aspectos geoespaciales del proyecto.",
+    ],
+  },
+  {
+    id: "operacion",
+    role: "Hidrólogo Operativo",
+    person: "Víctor Alabi (CEL)",
+    scope: "Interno CEL",
+    responsibilities: [
+      "Usuario principal del sistema durante todo el proyecto.",
+      "Monitoreo diario del desempeño e interpretación de alertas.",
+      "Validador final de coherencia y utilidad operativa de los resultados del modelo.",
+    ],
+  },
+];
+
+export interface CommitteeMember {
+  name: string;
+  area: string;
+  responsibility: string;
+}
+
+export const COMMITTEE_INTRO =
+  "Comité multidisciplinario de la Unidad de Informática de CEL. No ejecuta desarrollo diario: actúa como ente rector que autoriza, dicta lineamientos y define cómo la solución residirá y se integrará de manera segura en la infraestructura de CEL.";
+
+export const COMMITTEE_MEMBERS: CommitteeMember[] = [
+  {
+    name: "Lorena",
+    area: "Gobernanza y Autorizaciones",
+    responsibility:
+      "Toma de decisiones de alto nivel, asignación de personal y enlace entre dependencias de CEL. Principal stakeholder no operativo.",
+  },
+  {
+    name: "Nelson",
+    area: "Jefatura de DB y Redes",
+    responsibility:
+      "Aprueba accesos y sistemas; dicta lineamientos sobre cómo alojar la solución a nivel de servidores y redes internas.",
+  },
+  {
+    name: "José Manuel",
+    area: "Administración de OS y Aplicaciones",
+    responsibility:
+      "Lineamientos sobre sistemas operativos y aplicaciones que correrán en el AI Silo; aprobación de stacks de software.",
+  },
+  {
+    name: "Carlos Sánchez",
+    area: "DBA — Bases de datos",
+    responsibility:
+      "Define la gobernanza de las bases de datos del piloto (topografía, DEMs, GIS). Interdependencia crítica con los Ingenieros de Datos para replicación y accesos al ground truth.",
+  },
+  {
+    name: "Adrián",
+    area: "Redes e Infraestructura",
+    responsibility:
+      "Configuración de entornos: VLANs, túneles VPN, listas blancas de IPs. Pre-auditorías de red antes del pase a producción.",
+  },
+  {
+    name: "Miladis",
+    area: "Ciberseguridad",
+    responsibility:
+      "Lineamientos de seguridad y pre-auditorías de ciberseguridad de la solución antes del pase a producción.",
+  },
+];
+
+export interface PhaseTask {
+  task: string;
+  responsible: string;
+  notes: string;
+}
+
+export interface PhaseTaskGroup {
+  phaseId: "F0" | "F1" | "F2" | "F3";
+  title: string;
+  tasks: PhaseTask[];
+}
+
+export const PHASE_TASKS: PhaseTaskGroup[] = [
+  {
+    phaseId: "F0",
+    title: "Fase 0 — Infraestructura",
+    tasks: [
+      {
+        task: "Diseño del entorno técnico y arquitectura general",
+        responsible: "Consultora IA",
+        notes: "Define especificaciones técnicas para AI Silo, Git y Mage.",
+      },
+      {
+        task: "Definición de lineamientos, políticas de red y seguridad",
+        responsible: "Comité de Informática (CEL)",
+        notes:
+          "Nelson, Adrián, Miladis y José Manuel dictan reglas, IPs y accesos. Lorena autoriza.",
+      },
+      {
+        task: "Montaje físico de servidores e infraestructura (AI Silo) y configuración de red",
+        responsible: "DevOps (CEL)",
+        notes: "Ejecuta basándose en los lineamientos del Comité y guía remota de la consultora.",
+      },
+      {
+        task: "Instalación de Mage, GitLab y entorno base de orquestación",
+        responsible: "DevOps (CEL)",
+        notes: "Consultora provee documentación y soporte remoto.",
+      },
+    ],
+  },
+  {
+    phaseId: "F1",
+    title: "Fase 1 — Preparación de datos",
+    tasks: [
+      {
+        task: "Aprobación y provisión de accesos a fuentes de datos (DBs, GIS)",
+        responsible: "Carlos Sánchez (DBA, CEL)",
+        notes: "Interdependencia crítica para proveer el entorno de datos ground truth.",
+      },
+      {
+        task: "Migración de lógica de negocio a nuevos pipelines",
+        responsible: "William Juárez / José Mauricio Herrera (CEL)",
+        notes: "Pair programming con la consultora.",
+      },
+      {
+        task: "Desarrollo de flujos ETL en Python usando Mage",
+        responsible: "Consultora IA + Ingenieros de Datos CEL",
+        notes: "Validación cruzada conjunta.",
+      },
+      {
+        task: "Pruebas de integración de pipelines con fuentes internas",
+        responsible: "William / José Mauricio (CEL)",
+        notes: "Consultora supervisa.",
+      },
+    ],
+  },
+  {
+    phaseId: "F2",
+    title: "Fase 2 — Modelado IA",
+    tasks: [
+      {
+        task: "Desarrollo e implementación del modelo LSTM",
+        responsible: "Consultora IA",
+        notes: "Apoyo conceptual del líder hidrológico.",
+      },
+      {
+        task: "Selección y justificación de variables de entrada",
+        responsible:
+          "Consultora IA + Líder Hidrología/PM + Hidrólogo Operativo + Fernando Garay + William/José Mauricio",
+        notes: "Basado en contexto del Lempa.",
+      },
+      {
+        task: "Entrenamiento y validación cruzada del modelo",
+        responsible: "Consultora IA",
+        notes: "Iteración con CEL.",
+      },
+      {
+        task: "Documentación del modelo y resultados de validación",
+        responsible: "Consultora IA",
+        notes: "Base para publicaciones y capacitación futura.",
+      },
+    ],
+  },
+  {
+    phaseId: "F3",
+    title: "Fase 3 — Visualización y operación",
+    tasks: [
+      {
+        task: "Implementación del dashboard web",
+        responsible: "Consultora IA",
+        notes: "Entorno React + GIS, seguimiento remoto.",
+      },
+      {
+        task: "Generación de mapas estáticos y capas cartográficas",
+        responsible: "Fernando Garay (CEL)",
+        notes: "Con scripts provistos por la consultora.",
+      },
+      {
+        task: "Pre-auditoría de ciberseguridad y redes para pase a producción",
+        responsible: "Comité de Informática (CEL)",
+        notes: "Adrián y Miladis verifican cumplimiento de lineamientos de seguridad.",
+      },
+      {
+        task: "Validación funcional y operativa del sistema",
+        responsible: "Líder Hidrología/PM + Hidrólogo Operativo (CEL)",
+        notes: "Usuario principal del sistema.",
+      },
+      {
+        task: "Ajuste final basado en retroalimentación",
+        responsible: "Consultora IA + Equipo CEL",
+        notes: "Mejora continua antes del cierre técnico.",
+      },
+    ],
+  },
+];
+
+export interface RaciRole {
+  short: string;
+  full: string;
+}
+
+export const RACI_ROLES: RaciRole[] = [
+  { short: "Consultora IA", full: "Consultora IA (Camila)" },
+  { short: "Líder/PM", full: "José Mauricio — Líder Hidrología y PM (CEL)" },
+  { short: "Comité TI", full: "Comité de Informática — Autorización y Gobernanza" },
+  { short: "DevOps", full: "DevOps / Enlace (TBD)" },
+  { short: "Datos", full: "William / José Mauricio Herrera (Datos)" },
+  { short: "SIG", full: "Fernando Garay (SIG)" },
+  { short: "Operaciones", full: "Víctor Alabi (Operaciones)" },
+];
+
+export const RACI_TASKS: { task: string; note?: string; values: string[] }[] = [
+  { task: "Diseño arquitectura AI", values: ["R/A", "C", "C", "I", "C", "I", "I"] },
+  { task: "Definición de lineamientos y permisos TI", values: ["C", "I", "A/R", "I", "I", "I", "I"] },
+  { task: "Implementación infraestructura (Fase 0)", values: ["C", "I", "A", "R", "I", "I", "I"] },
+  { task: "Configuración Mage + GitLab", values: ["C/A", "I", "I", "R", "I", "I", "I"] },
+  { task: "Gobernanza y provisión de accesos a DBs", note: "Comité: Carlos S.", values: ["I", "I", "A/R", "I", "C", "I", "I"] },
+  { task: "Desarrollo pipelines ETL", values: ["R/C", "I", "I", "I", "R/A", "I", "I"] },
+  { task: "Validación pipelines", values: ["A/R", "C", "I", "I", "R", "I", "I"] },
+  { task: "Diseño y entrenamiento IA", values: ["R/A", "C/I", "I", "I", "C", "I", "C"] },
+  { task: "Visualización (dashboard)", values: ["R", "I", "I", "I", "I", "C", "C"] },
+  { task: "Cartografía y mapas SIG", values: ["C/A", "I", "I", "I", "I", "R", "I"] },
+  { task: "Pre-auditoría y pase a producción", values: ["C", "I", "A", "R", "I", "I", "I"] },
+  { task: "Validación operacional", values: ["C", "I", "I", "I", "I", "I", "R/A"] },
+  { task: "Gestión y coordinación general", note: "Comité: Lorena (A/I)", values: ["C", "R/A", "A/I", "I", "I", "I", "I"] },
 ];
 
 export const RACI_LEGEND = [
-  { k: "R", v: "Responsable de ejecutar la tarea" },
-  { k: "A", v: "Aprobador final de la actividad" },
-  { k: "C", v: "Consultado para contribuir técnicamente o validar" },
-  { k: "I", v: "Informado del progreso y entregables clave" },
+  { k: "R", v: "Responsable directo de ejecutar y desarrollar la tarea." },
+  { k: "A", v: "Aprobador final, con autoridad y responsabilidad definitiva." },
+  { k: "C", v: "Consultado para contribuir técnicamente, brindar lineamientos o validar." },
+  { k: "I", v: "Informado del progreso y de los entregables clave." },
 ];
 
 export type InfraStatus = "confirmado" | "por-confirmar";

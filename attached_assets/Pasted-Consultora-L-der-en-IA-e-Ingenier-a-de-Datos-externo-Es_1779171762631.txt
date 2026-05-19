@@ -1,0 +1,220 @@
+Consultora Líder en IA e Ingeniería de Datos (externo): Este rol será desempeñado por
+la consultora externa. Será responsable directa del diseño, desarrollo e implementación
+del modelo basado en redes neuronales LSTM, la estrategia de ingeniería de datos
+utilizando Mage, y el diseño del dashboard web. A lo largo de todas las fases, guiará
+remotamente al equipo de CEL, proporcionando especificaciones técnicas, liderando
+sesiones de co-desarrollo de código y supervisando la correcta implementación de la
+arquitectura. Finalmente, liderará la documentación técnica exhaustiva del proyecto.
+●
+Líder Técnico en Hidrología y Gerente de Proyecto (interno CEL): Como Gerente de
+Proyecto, supervisará integralmente su ejecución, manejando cronogramas,
+comunicación interinstitucional y asignación de recursos. Como Líder Técnico en
+Hidrología, proporcionará la orientación experta y el conocimiento empírico del río
+Lempa, siendo fundamental para interpretar la dinámica hidrológica, validar los
+resultados del modelo y asegurar que las predicciones sean coherentes y
+operativamente útiles.
+●
+Administrador de Sistemas / Ingeniero DevOps (interno CEL: Su rol será protagónico
+durante la Fase 0. Liderará la implementación física y configuración de la nueva
+infraestructura de servidores (“AI Silo”), incluyendo el ‘racking’
+, la conexión de red y la
+instalación inicial, siguiendo las especificaciones y la guía remota de la consultora. Dada
+su extensa experiencia en DevOps, será responsable de establecer el entorno para la
+nueva herramienta de orquestación (Mage) y de configurar el repositorio Git/GitLab
+para el control de versiones del código, sentando las bases para la automatización
+(CI/CD) y la mantenibilidad del sistema.
+●
+Ingenieros de Datos y Backend (interno CEL): Como expertos en el stack de datos de
+CEL, su rol será crucial en la migración de la lógica de negocio a los nuevos pipelines de
+Python en Mage. Trabajarán en sesiones de desarrollo colaborativo (pair programming)
+con la consultora para desarrollar, probar y desplegar los flujos de ETL como código,
+aprovechando su experiencia en Python, SQL y bases de datos. Serán los responsables
+de ejecutar las pruebas de validación para asegurar que los nuevos pipelines se integren
+correctamente con las fuentes de datos existentes.
+●
+Especialista SIG/Teledetección (interno CEL): Trabajará en estrecha colaboración con
+la consultora para manejar los aspectos geoespaciales del proyecto. Será responsable
+de la ejecución local del procesamiento de imágenes satelitales (Sentinel-1) y la
+preparación del Modelo Digital de Elevación (DEM), siguiendo las metodologías y scripts
+proporcionados.
+●
+Hidrólogo Operativo (interno CEL): Este profesional operativo aportará conocimiento
+empírico crucial durante todo el proyecto. Será el usuario principal del sistema,
+encargado de monitorear diariamente su desempeño, interpretar las alertas y servir
+como validador final de que los resultados del modelo son coherentes y útiles para la
+operación diaria.
+Este esquema de equipo no solo asegura una ejecución técnica robusta, sino que está
+diseñado para una transferencia de conocimiento efectiva, posicionando a CEL con
+capacidades internas sólidas para operar, mantener y evolucionar esta solución de inteligencia
+37
+artificial, fortaleciendo significativamente la gestión oportuna de crecidas e influjos, respuesta
+anticipada ante eventos hidrológicos extremos y por consecuencia la optimización de la
+operación hidrológica en la cuenca del río Lempa.
+Detalle de Tareas y Matriz de Roles (RACI)
+Con el objetivo de asegurar una implementación técnica robusta y una transferencia de
+conocimiento efectiva, se estructura a continuación el desglose detallado de tareas por fase,
+así como la matriz de roles y responsabilidades asociadas al equipo multidisciplinario
+involucrado en el proyecto de pronóstico hidrológico con inteligencia artificial.
+Tabla de tareas por fase del proyecto
+Fase Tarea Principal Responsable Apoyo / Observaciones
+Fase 0: Infraestructura Diseño del entorno técnico y
+arquitectura general
+Consultora IA Define especificaciones
+para AI Silo, Git, Mage
+Montaje físico de servidores e
+infraestructura (AI Silo)
+Administrador de
+Sistemas / Ingeniero
+DevOps (CEL)
+Siguiendo guía remota de
+la consultora
+Configuración de red aislada,
+accesos VPN, usuarios
+Administrador de
+Sistemas / Ingeniero
+DevOps (CEL)
+Validación remota por la
+consultora
+Instalación de Mage, GitLab y
+entorno base de orquestación
+Administrador de
+Sistemas / Ingeniero
+DevOps (CEL)
+Consultora provee
+documentación y soporte
+Fase 1: Preparación de
+datos
+Migración de lógica de
+negocio a nuevos pipelines
+Ingenieros de Datos y
+Backend (CEL)
+Pair programming con la
+consultora
+Desarrollo de flujos ETL en
+Python usando Mage
+Consultora Líder en IA
++ Ingenieros de Datos
+(CEL)
+Validación cruzada
+conjunta
+38
+Pruebas de integración de
+pipelines con fuentes internas
+Ingenieros de Datos y
+Backend (CEL)
+Consultora supervisa
+Documentación técnica de
+pipelines y estructura de datos
+Consultora Líder en IA Para transferencia futura
+Fase 2: Modelado IA Desarrollo e implementación
+del modelo LSTM
+Consultora Líder en IA Apoyo conceptual del
+líder hidrológico
+Selección y justificación de
+variables de entrada
+Consultora Líder en IA
++ Líder Técnico en
+Hidrología (CEL)
+Basado en contexto del
+Lempa
+Entrenamiento y validación
+cruzada del modelo
+Consultora Líder en IA Iteración con CEL
+Documentación del modelo y
+resultados de validación
+Consultora Líder en IA Base para publicaciones
+futuras
+Fase 3: Visualización y
+operación
+Implementación del dashboard
+web
+Consultora Líder en IA Entorno React + GIS,
+seguimiento remoto
+Generación de mapas
+estáticos y capas cartográficas
+Especialista SIG /
+Teledetección (CEL)
+Con scripts provistos por
+la consultora
+Validación funcional y
+operativa del sistema
+Hidrólogo Operativo
+(CEL)
+Usuario principal del
+sistema
+Ajuste final del sistema basado
+en retroalimentación
+Consultora Líder en IA
++ Equipo CEL
+Mejora continua antes de
+cierre técnico
+Matriz RACI de Roles y Responsabilidades
+39
+Actividad /
+Entregable
+Consultora
+IA
+Líder Técnico
+en Hidrología
+(CEL)
+Administra
+dor de
+Sistemas /
+Ingeniero
+DevOps
+(CEL)
+Ingeniero
+s de
+Datos y
+Backend
+(CEL)
+Especialist
+a SIG /
+Teledetecci
+ón (CEL)
+Hidrólogo
+Operativo (CEL)
+Diseño
+arquitectura AI
+R / A C I C I I
+Implementación
+infraestructura
+(Fase 0)
+C I R / A I I I
+Configuración
+Mage + GitLab
+C / A I R I I I
+Desarrollo
+pipelines ETL
+R / C I I R / A I I
+Validación
+pipelines
+A / R C I R I I
+Diseño y
+entrenamiento IA
+R / A C / I I C I C
+Visualización
+(dashboard)
+R I I I C C
+Cartografía y
+mapas SIG
+C / A I I I R I
+40
+Validación
+operacional
+C I I I I R / A
+Gestión y
+coordinación
+C R / A I I I I
+Leyenda:
+●
+R = Responsable de ejecutar la tarea
+●
+A = Aprobador final de la actividad
+●
+C = Consultado para contribuir técnicamente o validar
+●
+I = Informado del progreso y entregables clave
+Este esquema permite asegurar que todas las tareas estén claramente asignadas, las
+responsabilidades debidamente distribuidas y que la interacción entre consultora externa y
+equipo CEL esté coordinada para maximizar la eficiencia y sostenibilidad del proyecto.

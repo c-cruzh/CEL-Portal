@@ -36,6 +36,12 @@ import {
   VALIDATION_GOALS,
   DECISIONES_TECNICAS,
   OPERACION_DIARIA,
+  RACI_INTRO,
+  FTE_BREAKDOWN,
+  TEAM_PROFILES,
+  COMMITTEE_INTRO,
+  COMMITTEE_MEMBERS,
+  PHASE_TASKS,
   VISUALIZACION,
   RACI_ROLES,
   RACI_TASKS,
@@ -82,7 +88,7 @@ const CHAPTERS: ChapterDef[] = [
   { id: "decisiones", num: "6", shortLabel: "Decisiones técnicas", title: "Decisiones técnicas", Icon: FileText, Component: DecisionesSection, toc: [] },
   { id: "operacion", num: "7", shortLabel: "Operación diaria", title: "Operación diaria", Icon: Play, Component: OperacionSection, toc: [{ id: "operacion-scheduling", label: "Programación" }, { id: "operacion-flujo", label: "Flujo diario" }, { id: "operacion-monitoreo", label: "Monitoreo y errores" }] },
   { id: "visualizacion", num: "8", shortLabel: "Visualización y alertas", title: "Visualización y alertas", Icon: Activity, Component: VisualizacionSection, toc: [{ id: "visualizacion-features", label: "Funcionalidades" }, { id: "visualizacion-alertas", label: "Sistema de alertas" }] },
-  { id: "raci", num: "9", shortLabel: "Matriz RACI", title: "Matriz RACI", Icon: AlignLeft, Component: RaciSection, toc: [] },
+  { id: "raci", num: "9", shortLabel: "Equipo y Roles (RACI)", title: "Equipo, FTE y matriz RACI", Icon: AlignLeft, Component: RaciSection, toc: [{ id: "raci-fte", label: "Estructura operativa y FTE" }, { id: "raci-perfiles", label: "Perfiles del equipo" }, { id: "raci-comite", label: "Comité de Informática" }, { id: "raci-tareas", label: "Tareas por fase" }, { id: "raci-matriz", label: "Matriz RACI" }] },
   { id: "infraestructura", num: "10", shortLabel: "Infraestructura y BOM", title: "Infraestructura local — Silo de IA", Icon: Server, Component: InfraSection, toc: [{ id: "infra-arquitectura", label: "Arquitectura" }, { id: "infra-hardware", label: "BOM hardware" }, { id: "infra-software", label: "BOM software" }, { id: "infra-comisionamiento", label: "Comisionamiento" }, { id: "infra-respaldo", label: "Respaldo y seguridad" }] },
   { id: "anexo-lempa", num: "11", shortLabel: "Cuenca del Lempa", title: "Anexo — Cuenca del Río Lempa", Icon: MapIcon, Component: LempaSection, toc: [] },
 ];
@@ -666,46 +672,232 @@ function VisualizacionSection() {
   );
 }
 
+function RaciCell({ value }: { value: string }) {
+  if (value === "I" || value === "—") {
+    return <span className="text-xs font-mono text-muted-foreground">{value}</span>;
+  }
+  const isResponsible = value.includes("R");
+  const isApprover = value.includes("A");
+  let cls = "text-xs font-mono px-1.5 py-0.5 rounded ";
+  if (isResponsible && isApprover) {
+    cls += "bg-primary text-primary-foreground font-semibold";
+  } else if (isResponsible) {
+    cls += "bg-primary/15 text-primary font-semibold";
+  } else if (isApprover) {
+    cls += "bg-amber-100 dark:bg-amber-900/30 text-amber-900 dark:text-amber-200 font-semibold";
+  } else {
+    cls += "bg-secondary text-secondary-foreground";
+  }
+  return <span className={cls}>{value}</span>;
+}
+
+function FteCard({ item }: { item: (typeof FTE_BREAKDOWN)[number] }) {
+  const toneCls =
+    item.tone === "external"
+      ? "border-l-4 border-l-blue-500"
+      : item.tone === "committee"
+      ? "border-l-4 border-l-amber-500"
+      : "border-l-4 border-l-emerald-500";
+  return (
+    <Card className={`border-border h-full ${toneCls}`}>
+      <CardHeader className="pb-2">
+        <div className="flex items-baseline justify-between gap-3 flex-wrap">
+          <CardTitle className="text-base leading-tight">{item.label}</CardTitle>
+          <span className="text-2xl font-bold tabular-nums text-primary">{item.fte}</span>
+        </div>
+        <p className="text-xs uppercase tracking-wider text-muted-foreground mt-1">FTE</p>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        <p className="text-sm font-medium text-foreground">{item.scope}</p>
+        <p className="text-sm text-muted-foreground leading-relaxed">{item.detail}</p>
+      </CardContent>
+    </Card>
+  );
+}
+
 function RaciSection() {
   return (
-    <section>
-      <Card className="border-border overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/40 text-muted-foreground">
-              <tr>
-                <th className="text-left font-medium px-4 py-3 sticky left-0 bg-muted/40">Tarea</th>
-                {RACI_ROLES.map((r) => (
-                  <th key={r} className="text-center font-medium px-3 py-3 whitespace-nowrap">
-                    {r}
+    <section className="space-y-10">
+      <SectionHeader intro={RACI_INTRO} />
+
+      {/* Estructura operativa y FTE */}
+      <div id="raci-fte" className="space-y-4 scroll-mt-24">
+        <h3 className="text-lg font-semibold text-foreground">Estructura operativa y asignación de esfuerzo (FTE)</h3>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          Distribución de tiempos y roles acordada para la ejecución del piloto. Centraliza la
+          operación diaria en un único Ingeniero DevOps de enlace, mientras la Unidad de
+          Informática actúa como Comité Consultivo de gobernanza.
+        </p>
+        <div className="grid gap-4 md:grid-cols-3">
+          {FTE_BREAKDOWN.map((item) => (
+            <FteCard key={item.label} item={item} />
+          ))}
+        </div>
+      </div>
+
+      {/* Perfiles del equipo */}
+      <div id="raci-perfiles" className="space-y-4 scroll-mt-24">
+        <h3 className="text-lg font-semibold text-foreground">Perfiles del equipo</h3>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          Perfiles clave del piloto, organizados según su rol estratégico y operativo. Combina el
+          liderazgo de la consultora externa con el talento técnico, el conocimiento local y la
+          infraestructura institucional de CEL.
+        </p>
+        <div className="grid gap-4 md:grid-cols-2">
+          {TEAM_PROFILES.map((p) => (
+            <Card key={p.id} className="border-border h-full">
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between gap-3 flex-wrap">
+                  <div>
+                    <CardTitle className="text-base leading-tight">{p.role}</CardTitle>
+                    <p className="text-sm text-muted-foreground mt-1">{p.person}</p>
+                  </div>
+                  <span
+                    className={`text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded whitespace-nowrap ${
+                      p.scope === "Externo"
+                        ? "bg-blue-100 dark:bg-blue-900/30 text-blue-900 dark:text-blue-200"
+                        : "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-900 dark:text-emerald-200"
+                    }`}
+                  >
+                    {p.scope}
+                  </span>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <ul className="space-y-1.5 text-sm text-muted-foreground leading-relaxed">
+                  {p.responsibilities.map((r, i) => (
+                    <li key={i} className="flex gap-2">
+                      <span className="text-primary mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+                      <span>{r}</span>
+                    </li>
+                  ))}
+                </ul>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+
+      {/* Comité de Informática */}
+      <div id="raci-comite" className="space-y-4 scroll-mt-24">
+        <h3 className="text-lg font-semibold text-foreground">
+          Comité de Informática, Gobernanza y Seguridad (CEL)
+        </h3>
+        <p className="text-sm text-muted-foreground leading-relaxed">{COMMITTEE_INTRO}</p>
+        <Card className="border-border">
+          <CardContent className="p-0 divide-y divide-border">
+            {COMMITTEE_MEMBERS.map((m) => (
+              <div key={m.name} className="p-4 grid grid-cols-1 md:grid-cols-[180px_220px_1fr] gap-3 items-baseline">
+                <div className="font-semibold text-foreground">{m.name}</div>
+                <div className="text-sm text-primary">{m.area}</div>
+                <div className="text-sm text-muted-foreground leading-relaxed">{m.responsibility}</div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Tareas por fase */}
+      <div id="raci-tareas" className="space-y-4 scroll-mt-24">
+        <h3 className="text-lg font-semibold text-foreground">Detalle de tareas por fase</h3>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          Desglose detallado de tareas por fase del proyecto, con responsable principal y
+          observaciones sobre apoyos requeridos.
+        </p>
+        <div className="space-y-4">
+          {PHASE_TASKS.map((phase) => (
+            <Card key={phase.phaseId} className="border-border">
+              <CardHeader className="pb-2">
+                <div className="flex items-center gap-3">
+                  <span className="text-xs font-semibold uppercase tracking-wider px-2 py-1 rounded bg-primary/10 text-primary">
+                    {phase.phaseId}
+                  </span>
+                  <CardTitle className="text-base">{phase.title}</CardTitle>
+                </div>
+              </CardHeader>
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-muted/40 text-muted-foreground text-xs uppercase tracking-wider">
+                      <tr>
+                        <th className="text-left font-medium px-4 py-2">Tarea principal</th>
+                        <th className="text-left font-medium px-4 py-2 whitespace-nowrap">Responsable</th>
+                        <th className="text-left font-medium px-4 py-2">Apoyo / Observaciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {phase.tasks.map((t, i) => (
+                        <tr key={i} className="border-t border-border align-top">
+                          <td className="px-4 py-3 font-medium text-foreground">{t.task}</td>
+                          <td className="px-4 py-3 text-foreground whitespace-nowrap">{t.responsible}</td>
+                          <td className="px-4 py-3 text-muted-foreground">{t.notes}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+
+      {/* Matriz RACI */}
+      <div id="raci-matriz" className="space-y-4 scroll-mt-24">
+        <h3 className="text-lg font-semibold text-foreground">Matriz RACI de roles y responsabilidades</h3>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          Resumen consolidado de responsabilidades por actividad. R/A en color primario indica
+          ejecución y aprobación combinadas; R marca al responsable directo; A al aprobador final.
+        </p>
+        <Card className="border-border overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-muted/40 text-muted-foreground">
+                <tr>
+                  <th className="text-left font-medium px-4 py-3 sticky left-0 bg-muted/40 z-10 min-w-[260px]">
+                    Actividad / Entregable
                   </th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {RACI_TASKS.map((t) => (
-                <tr key={t.task} className="border-t border-border">
-                  <td className="px-4 py-3 font-medium text-foreground sticky left-0 bg-card">{t.task}</td>
-                  {t.values.map((v, i) => (
-                    <td key={i} className="text-center px-3 py-3 text-muted-foreground font-mono">
-                      {v}
-                    </td>
+                  {RACI_ROLES.map((r) => (
+                    <th key={r.short} className="text-center font-medium px-3 py-3 whitespace-nowrap">
+                      <div className="text-xs">{r.short}</div>
+                    </th>
                   ))}
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Card>
-      <div className="mt-4 grid grid-cols-2 md:grid-cols-4 gap-3">
-        {RACI_LEGEND.map((l) => (
-          <div key={l.k} className="text-xs text-muted-foreground">
-            <span className="inline-block h-5 w-5 rounded bg-primary/10 text-primary font-semibold text-center leading-5 mr-2">
-              {l.k}
-            </span>
-            {l.v}
+              </thead>
+              <tbody>
+                {RACI_TASKS.map((t) => (
+                  <tr key={t.task} className="border-t border-border">
+                    <td className="px-4 py-3 sticky left-0 bg-card">
+                      <div className="font-medium text-foreground">{t.task}</div>
+                      {t.note && (
+                        <div className="text-xs text-muted-foreground mt-0.5">{t.note}</div>
+                      )}
+                    </td>
+                    {t.values.map((v, i) => (
+                      <td key={i} className="text-center px-3 py-3">
+                        <RaciCell value={v} />
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-        ))}
+        </Card>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
+          {RACI_LEGEND.map((l) => (
+            <div key={l.k} className="text-xs text-muted-foreground flex gap-2 items-start">
+              <span className="inline-block h-5 w-5 rounded bg-primary/10 text-primary font-semibold text-center leading-5 shrink-0">
+                {l.k}
+              </span>
+              <span className="leading-relaxed">{l.v}</span>
+            </div>
+          ))}
+        </div>
+        <p className="text-xs text-muted-foreground italic mt-2">
+          Roles del Comité: Lorena (Gobernanza/Autorizaciones), Nelson (DB y Redes), José Manuel
+          (OS/Apps), Carlos Sánchez (DBA), Adrián (Redes/Infra), Miladis (Ciberseguridad).
+        </p>
       </div>
     </section>
   );
