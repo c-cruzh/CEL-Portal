@@ -22,7 +22,7 @@ const router: IRouter = Router();
 
 const PM_ROLE_IDS = new Set(["pm_lead", "pm_cel"]);
 
-function serializeCard(row: typeof kanbanCardsTable.$inferSelect) {
+export function serializeCard(row: typeof kanbanCardsTable.$inferSelect) {
   return {
     id: row.id,
     title: row.title,
@@ -32,6 +32,9 @@ function serializeCard(row: typeof kanbanCardsTable.$inferSelect) {
     phaseId: row.phaseId ?? null,
     assignedRoles: row.assignedRoles ?? [],
     priority: row.priority as "alta" | "media" | "baja",
+    category: ((row as { category?: string }).category ?? "piloto") as
+      | "preproyecto"
+      | "piloto",
     dueDate: row.dueDate ?? null,
     createdBy: row.createdBy,
     createdAt: row.createdAt,
@@ -112,6 +115,7 @@ router.post(
         phaseId: data.phaseId ?? null,
         assignedRoles: data.assignedRoles ?? [],
         priority: data.priority ?? "media",
+        category: data.category ?? "piloto",
         dueDate: dueDateStr,
         createdBy: req.userId!,
       })
@@ -155,6 +159,7 @@ router.patch(
     if (data.assignedRoles !== undefined)
       update.assignedRoles = data.assignedRoles;
     if (data.priority !== undefined) update.priority = data.priority;
+    if (data.category !== undefined) update.category = data.category;
     if ("dueDate" in data) {
       update.dueDate = data.dueDate
         ? data.dueDate.toISOString().slice(0, 10)

@@ -187,6 +187,14 @@ export const KanbanPriority = {
   baja: 'baja',
 } as const;
 
+export type KanbanCategory = typeof KanbanCategory[keyof typeof KanbanCategory];
+
+
+export const KanbanCategory = {
+  preproyecto: 'preproyecto',
+  piloto: 'piloto',
+} as const;
+
 export interface KanbanCard {
   id: string;
   title: string;
@@ -197,6 +205,7 @@ export interface KanbanCard {
   phaseId?: string | null;
   assignedRoles: string[];
   priority: KanbanPriority;
+  category: KanbanCategory;
   /** @nullable */
   dueDate?: string | null;
   createdBy: string;
@@ -271,6 +280,7 @@ export interface KanbanCardCreate {
   phaseId?: string | null;
   assignedRoles?: string[];
   priority?: KanbanPriority;
+  category?: KanbanCategory;
   /** @nullable */
   dueDate?: string | null;
 }
@@ -427,8 +437,49 @@ export interface KanbanCardUpdate {
   phaseId?: string | null;
   assignedRoles?: string[];
   priority?: KanbanPriority;
+  category?: KanbanCategory;
   /** @nullable */
   dueDate?: string | null;
+}
+
+export interface KanbanCardBatchItem {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  title: string;
+  /**
+     * @maxLength 5000
+     * @nullable
+     */
+  description?: string | null;
+  /** @minLength 1 */
+  columnKey: string;
+  category?: KanbanCategory;
+  /** @nullable */
+  phaseId?: string | null;
+  assignedRoles?: string[];
+  priority?: KanbanPriority;
+  /**
+     * @nullable
+     * @pattern ^\d{4}-\d{2}-\d{2}$
+     */
+  dueDate?: string | null;
+}
+
+export interface BatchImportKanbanCardsInput {
+  /**
+     * @minItems 1
+     * @maxItems 500
+     */
+  cards: KanbanCardBatchItem[];
+}
+
+export interface BatchImportKanbanCardsResult {
+  created: number;
+  rejected: number;
+  errors: BatchImportRowError[];
+  cards?: KanbanCard[];
 }
 
 export interface KanbanCardMove {
@@ -698,6 +749,11 @@ export interface UploadUrl {
 
 export type BatchImportMilestonesBodyTwo = {
   /** CSV file with header row. Recognised columns: kind, title, description, weekOffset, dateOverride (YYYY-MM-DD), durationMinutes, location, notes, phaseId, ownersRoles (separated by `|` or `;`). */
+  file: Blob;
+};
+
+export type BatchImportKanbanCardsBodyTwo = {
+  /** CSV file with header row. Recognised columns: title, description, columnKey, category, phaseId, assignedRoles (separated by `|` or `;`), priority, dueDate (YYYY-MM-DD). */
   file: Blob;
 };
 

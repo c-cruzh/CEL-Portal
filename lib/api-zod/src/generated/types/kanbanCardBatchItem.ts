@@ -8,19 +8,27 @@
 import type { KanbanCategory } from './kanbanCategory';
 import type { KanbanPriority } from './kanbanPriority';
 
-export interface KanbanCardUpdate {
+export interface KanbanCardBatchItem {
   /**
      * @minLength 1
      * @maxLength 200
      */
-  title?: string;
-  /** @maxLength 5000 */
-  description?: string;
+  title: string;
+  /**
+     * @maxLength 5000
+     * @nullable
+     */
+  description?: string | null;
+  /** @minLength 1 */
+  columnKey: string;
+  category?: KanbanCategory;
   /** @nullable */
   phaseId?: string | null;
   assignedRoles?: string[];
   priority?: KanbanPriority;
-  category?: KanbanCategory;
-  /** @nullable */
-  dueDate?: Date | null;
+  /**
+     * @nullable
+     * @pattern ^\d{4}-\d{2}-\d{2}$
+     */
+  dueDate?: string | null;
 }

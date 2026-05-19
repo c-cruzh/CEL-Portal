@@ -492,6 +492,49 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /admin/kanban/cards/batch:
+    post:
+      operationId: batchImportKanbanCards
+      tags: [admin, kanban]
+      summary: Import a batch of Kanban cards (PM only). All-or-nothing.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BatchImportKanbanCardsInput"
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: >-
+                    CSV file with header row. Recognised columns: title,
+                    description, columnKey, category, phaseId, assignedRoles
+                    (separated by `|` or `;`), priority, dueDate (YYYY-MM-DD).
+      responses:
+        "200":
+          description: Imported
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchImportKanbanCardsResult"
+        "400":
+          description: Validation failed (no rows were inserted)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchImportKanbanCardsResult"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /kanban/cards:
     get:
       operationId: listKanbanCards
@@ -1490,10 +1533,14 @@ components:
       type: string
       enum: [alta, media, baja]
 
+    KanbanCategory:
+      type: string
+      enum: [preproyecto, piloto]
+
     KanbanCard:
       type: object
       required:
-        [id, title, description, columnKey, position, assignedRoles, priority, createdBy, createdAt, updatedAt]
+        [id, title, description, columnKey, position, assignedRoles, priority, category, createdBy, createdAt, updatedAt]
       properties:
         id:
           type: string
@@ -1513,6 +1560,8 @@ components:
             type: string
         priority:
           $ref: "#/components/schemas/KanbanPriority"
+        category:
+          $ref: "#/components/schemas/KanbanCategory"
         dueDate:
           type: ["string", "null"]
           format: date
@@ -1591,6 +1640,8 @@ components:
             type: string
         priority:
           $ref: "#/components/schemas/KanbanPriority"
+        category:
+          $ref: "#/components/schemas/KanbanCategory"
         dueDate:
           type: ["string", "null"]
           format: date
@@ -1740,9 +1791,67 @@ components:
             type: string
         priority:
           $ref: "#/components/schemas/KanbanPriority"
+        category:
+          $ref: "#/components/schemas/KanbanCategory"
         dueDate:
           type: ["string", "null"]
           format: date
+
+    KanbanCardBatchItem:
+      type: object
+      required: [title, columnKey]
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: ["string", "null"]
+          maxLength: 5000
+        columnKey:
+          type: string
+          minLength: 1
+        category:
+          $ref: "#/components/schemas/KanbanCategory"
+        phaseId:
+          type: ["string", "null"]
+        assignedRoles:
+          type: array
+          items:
+            type: string
+        priority:
+          $ref: "#/components/schemas/KanbanPriority"
+        dueDate:
+          type: ["string", "null"]
+          pattern: '^\d{4}-\d{2}-\d{2}$'
+
+    BatchImportKanbanCardsInput:
+      type: object
+      required: [cards]
+      properties:
+        cards:
+          type: array
+          items:
+            $ref: "#/components/schemas/KanbanCardBatchItem"
+          minItems: 1
+          maxItems: 500
+
+    BatchImportKanbanCardsResult:
+      type: object
+      required: [created, rejected, errors]
+      properties:
+        created:
+          type: integer
+        rejected:
+          type: integer
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/BatchImportRowError"
+        cards:
+          type: array
+          items:
+            $ref: "#/components/schemas/KanbanCard"
 
     KanbanCardMove:
       type: object

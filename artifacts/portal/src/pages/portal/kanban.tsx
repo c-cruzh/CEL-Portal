@@ -56,15 +56,31 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { ROLES, PHASES } from "@/lib/projectContent";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Calendar as CalendarIcon, Trash2, Pencil, Filter } from "lucide-react";
+import { Plus, Calendar as CalendarIcon, Trash2, Pencil, Filter, Upload } from "lucide-react";
+import { BatchImportKanbanCardsDialog } from "./BatchImportKanbanCardsDialog";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 
 const PM_ROLE_IDS = ["pm_lead", "pm_cel"];
 
 type Priority = "alta" | "media" | "baja";
+type Category = "preproyecto" | "piloto";
+
+const CATEGORY_META: Record<Category, { label: string; bandClass: string; badgeClass: string }> = {
+  piloto: {
+    label: "Piloto",
+    bandClass: "border-l-4 border-l-primary",
+    badgeClass: "bg-primary/10 text-primary border-primary/30",
+  },
+  preproyecto: {
+    label: "Preproyecto",
+    bandClass: "border-l-4 border-l-violet-500",
+    badgeClass: "bg-violet-100 text-violet-800 border-violet-200",
+  },
+};
 
 const PRIORITY_META: Record<Priority, { label: string; className: string }> = {
   alta: { label: "Alta", className: "bg-red-100 text-red-800 border-red-200" },
@@ -82,10 +98,12 @@ export default function KanbanPage() {
   const moveMutation = useMoveKanbanCard();
   const deleteMutation = useDeleteKanbanCard();
 
+  const [filterCategory, setFilterCategory] = useState<string>("piloto");
   const [filterPhase, setFilterPhase] = useState<string>("all");
   const [filterRole, setFilterRole] = useState<string>("all");
   const [filterPriority, setFilterPriority] = useState<string>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [batchOpen, setBatchOpen] = useState(false);
   const [editing, setEditing] = useState<KanbanCard | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<KanbanCard | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -96,12 +114,14 @@ export default function KanbanPage() {
   const filteredCards = useMemo(() => {
     if (!cards) return [];
     return cards.filter((c) => {
+      const cardCategory = (c.category ?? "piloto") as Category;
+      if (filterCategory !== "all" && cardCategory !== filterCategory) return false;
       if (filterPhase !== "all" && (c.phaseId ?? "") !== filterPhase) return false;
       if (filterRole !== "all" && !c.assignedRoles.includes(filterRole)) return false;
       if (filterPriority !== "all" && c.priority !== filterPriority) return false;
       return true;
     });
-  }, [cards, filterPhase, filterRole, filterPriority]);
+  }, [cards, filterCategory, filterPhase, filterRole, filterPriority]);
 
   const cardsByColumn = useMemo(() => {
     const map = new Map<string, KanbanCard[]>();
@@ -204,20 +224,49 @@ export default function KanbanPage() {
             Tablero operativo del piloto. Arrastra las tarjetas entre columnas para actualizar su estado.
           </p>
         </div>
-        <Button
-          onClick={() => {
-            setEditing(null);
-            setDialogOpen(true);
-          }}
-        >
-          <Plus className="h-4 w-4 mr-2" /> Nueva tarjeta
-        </Button>
+        <div className="flex items-center gap-2">
+          {isPM && (
+            <Button
+              variant="outline"
+              onClick={() => setBatchOpen(true)}
+              data-testid="button-open-batch-kanban"
+            >
+              <Upload className="h-4 w-4 mr-2" /> Importar lote
+            </Button>
+          )}
+          <Button
+            onClick={() => {
+              if (!(columns && columns.length > 0)) return;
+              setEditing(null);
+              setDialogOpen(true);
+            }}
+            disabled={!(columns && columns.length > 0)}
+            title={
+              !(columns && columns.length > 0)
+                ? "No hay columnas configuradas en el tablero. Contacta a un admin."
+                : undefined
+            }
+            data-testid="button-new-card"
+          >
+            <Plus className="h-4 w-4 mr-2" /> Nueva tarjeta
+          </Button>
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-3 border border-border rounded-lg bg-card p-3">
         <div className="flex items-center gap-1 text-sm text-muted-foreground">
           <Filter className="h-4 w-4" /> Filtros:
         </div>
+        <FilterSelect
+          value={filterCategory}
+          onChange={setFilterCategory}
+          placeholder="Categoría"
+          options={[
+            { value: "piloto", label: "Piloto" },
+            { value: "preproyecto", label: "Preproyecto" },
+            { value: "all", label: "Todas las categorías" },
+          ]}
+        />
         <FilterSelect
           value={filterPhase}
           onChange={setFilterPhase}
@@ -247,11 +296,12 @@ export default function KanbanPage() {
             { value: "baja", label: "Baja" },
           ]}
         />
-        {(filterPhase !== "all" || filterRole !== "all" || filterPriority !== "all") && (
+        {(filterCategory !== "piloto" || filterPhase !== "all" || filterRole !== "all" || filterPriority !== "all") && (
           <Button
             variant="ghost"
             size="sm"
             onClick={() => {
+              setFilterCategory("piloto");
               setFilterPhase("all");
               setFilterRole("all");
               setFilterPriority("all");
@@ -304,6 +354,12 @@ export default function KanbanPage() {
           setDialogOpen(false);
           setEditing(null);
         }}
+      />
+
+      <BatchImportKanbanCardsDialog
+        open={batchOpen}
+        onClose={() => setBatchOpen(false)}
+        columns={columns ?? []}
       />
 
       <AlertDialog
@@ -455,17 +511,30 @@ function CardItem({
 }) {
   const phase = card.phaseId ? PHASES.find((p) => p.id === card.phaseId) : null;
   const prio = PRIORITY_META[card.priority];
+  const category = ((card.category ?? "piloto") as Category);
+  const catMeta = CATEGORY_META[category];
   const canDelete = isPM || card.createdBy === currentUserId;
   return (
-    <Card className={`shadow-sm ${dragging ? "shadow-lg ring-2 ring-primary" : ""}`}>
+    <Card
+      className={`shadow-sm ${catMeta.bandClass} ${dragging ? "shadow-lg ring-2 ring-primary" : ""}`}
+      data-testid={`kanban-card-${card.id}`}
+      data-category={category}
+    >
       <CardContent className="p-3 space-y-2">
         <div className="flex items-start justify-between gap-2">
           <div className="font-medium text-sm text-foreground leading-snug">
             {card.title}
           </div>
-          <Badge variant="outline" className={`text-[10px] font-medium ${prio.className}`}>
-            {prio.label}
-          </Badge>
+          <div className="flex flex-col items-end gap-1">
+            <Badge variant="outline" className={`text-[10px] font-medium ${prio.className}`}>
+              {prio.label}
+            </Badge>
+            {category === "preproyecto" && (
+              <Badge variant="outline" className={`text-[10px] ${catMeta.badgeClass}`}>
+                {catMeta.label}
+              </Badge>
+            )}
+          </div>
         </div>
         {card.description && (
           <div className="text-xs text-muted-foreground line-clamp-2">
@@ -562,6 +631,7 @@ function CardDialog({
   const [columnKey, setColumnKey] = useState(defaultColumnKey);
   const [phaseId, setPhaseId] = useState<string>("none");
   const [priority, setPriority] = useState<Priority>("media");
+  const [category, setCategory] = useState<Category>("piloto");
   const [dueDate, setDueDate] = useState<string>("");
   const [roles, setRoles] = useState<string[]>([]);
 
@@ -571,6 +641,7 @@ function CardDialog({
     setColumnKey(card?.columnKey ?? defaultColumnKey);
     setPhaseId(card?.phaseId ?? "none");
     setPriority((card?.priority ?? "media") as Priority);
+    setCategory(((card?.category ?? "piloto") as Category));
     setDueDate(
       card?.dueDate
         ? (typeof card.dueDate === "string"
@@ -603,6 +674,7 @@ function CardDialog({
       phaseId: phaseId === "none" ? null : phaseId,
       assignedRoles: roles,
       priority,
+      category,
       dueDate: dueDate ? dueDate : null,
     };
     try {
@@ -656,6 +728,23 @@ function CardDialog({
               rows={3}
               placeholder="Detalles, criterio de listo, contexto…"
             />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Categoría</Label>
+            <RadioGroup
+              value={category}
+              onValueChange={(v) => setCategory(v as Category)}
+              className="flex gap-4"
+            >
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <RadioGroupItem value="piloto" id="kb-cat-piloto" />
+                <span>Piloto (en curso)</span>
+              </label>
+              <label className="flex items-center gap-2 text-sm cursor-pointer">
+                <RadioGroupItem value="preproyecto" id="kb-cat-pre" />
+                <span>Preproyecto (decisiones previas)</span>
+              </label>
+            </RadioGroup>
           </div>
           {!editing && (
             <div className="space-y-1.5">

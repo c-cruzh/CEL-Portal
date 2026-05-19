@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { KanbanCategory } from './kanbanCategory';
 import type { KanbanPriority } from './kanbanPriority';
 
 export interface KanbanCard {
@@ -17,6 +18,7 @@ export interface KanbanCard {
   phaseId?: string | null;
   assignedRoles: string[];
   priority: KanbanPriority;
+  category: KanbanCategory;
   /** @nullable */
   dueDate?: Date | null;
   createdBy: string;

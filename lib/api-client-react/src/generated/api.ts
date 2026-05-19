@@ -22,6 +22,9 @@ import type {
 import type {
   AdminAuditLogEntry,
   AdminRole,
+  BatchImportKanbanCardsBodyTwo,
+  BatchImportKanbanCardsInput,
+  BatchImportKanbanCardsResult,
   BatchImportMilestonesBodyTwo,
   BatchImportMilestonesInput,
   BatchImportMilestonesResult,
@@ -1927,6 +1930,77 @@ export const useBatchImportMilestones = <TError = ErrorType<BatchImportMilestone
         TContext
       > => {
       return useMutation(getBatchImportMilestonesMutationOptions(options));
+    }
+
+export const getBatchImportKanbanCardsUrl = () => {
+
+
+
+
+  return `/api/admin/kanban/cards/batch`
+}
+
+/**
+ * @summary Import a batch of Kanban cards (PM only). All-or-nothing.
+ */
+export const batchImportKanbanCards = async (batchImportKanbanCardsBody: BatchImportKanbanCardsInput | BatchImportKanbanCardsBodyTwo, options?: RequestInit): Promise<BatchImportKanbanCardsResult> => {
+
+  return customFetch<BatchImportKanbanCardsResult>(getBatchImportKanbanCardsUrl(),
+  {
+    ...options,
+    method: 'POST'
+    ,
+    body: JSON.stringify(
+      batchImportKanbanCardsBody,)
+  }
+);}
+
+
+
+
+export const getBatchImportKanbanCardsMutationOptions = <TError = ErrorType<BatchImportKanbanCardsResult | ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof batchImportKanbanCards>>, TError,{data: BodyType<BatchImportKanbanCardsInput | BatchImportKanbanCardsBodyTwo>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof batchImportKanbanCards>>, TError,{data: BodyType<BatchImportKanbanCardsInput | BatchImportKanbanCardsBodyTwo>}, TContext> => {
+
+const mutationKey = ['batchImportKanbanCards'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof batchImportKanbanCards>>, {data: BodyType<BatchImportKanbanCardsInput | BatchImportKanbanCardsBodyTwo>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  batchImportKanbanCards(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BatchImportKanbanCardsMutationResult = NonNullable<Awaited<ReturnType<typeof batchImportKanbanCards>>>
+    export type BatchImportKanbanCardsMutationBody = BodyType<BatchImportKanbanCardsInput | BatchImportKanbanCardsBodyTwo>
+    export type BatchImportKanbanCardsMutationError = ErrorType<BatchImportKanbanCardsResult | ErrorResponse>
+
+    /**
+ * @summary Import a batch of Kanban cards (PM only). All-or-nothing.
+ */
+export const useBatchImportKanbanCards = <TError = ErrorType<BatchImportKanbanCardsResult | ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof batchImportKanbanCards>>, TError,{data: BodyType<BatchImportKanbanCardsInput | BatchImportKanbanCardsBodyTwo>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof batchImportKanbanCards>>,
+        TError,
+        {data: BodyType<BatchImportKanbanCardsInput | BatchImportKanbanCardsBodyTwo>},
+        TContext
+      > => {
+      return useMutation(getBatchImportKanbanCardsMutationOptions(options));
     }
 
 export const getListKanbanCardsUrl = () => {

@@ -472,6 +472,61 @@ export const BatchImportMilestonesResponse = zod.object({
 
 
 /**
+ * @summary Import a batch of Kanban cards (PM only). All-or-nothing.
+ */
+export const batchImportKanbanCardsBodyCardsItemTitleMax = 200;
+
+export const batchImportKanbanCardsBodyCardsItemDescriptionMax = 5000;
+
+
+export const batchImportKanbanCardsBodyCardsItemDueDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const batchImportKanbanCardsBodyCardsMax = 500;
+
+
+
+export const BatchImportKanbanCardsBody = zod.object({
+  "cards": zod.array(zod.object({
+  "title": zod.string().min(1).max(batchImportKanbanCardsBodyCardsItemTitleMax),
+  "description": zod.string().max(batchImportKanbanCardsBodyCardsItemDescriptionMax).nullish(),
+  "columnKey": zod.string().min(1),
+  "category": zod.enum(['preproyecto', 'piloto']).optional(),
+  "phaseId": zod.string().nullish(),
+  "assignedRoles": zod.array(zod.string()).optional(),
+  "priority": zod.enum(['alta', 'media', 'baja']).optional(),
+  "dueDate": zod.string().regex(batchImportKanbanCardsBodyCardsItemDueDateRegExp).nullish()
+})).min(1).max(batchImportKanbanCardsBodyCardsMax)
+})
+
+
+
+
+export const BatchImportKanbanCardsResponse = zod.object({
+  "created": zod.number(),
+  "rejected": zod.number(),
+  "errors": zod.array(zod.object({
+  "row": zod.number().min(1),
+  "field": zod.string().nullish(),
+  "message": zod.string()
+})),
+  "cards": zod.array(zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "columnKey": zod.string(),
+  "position": zod.number(),
+  "phaseId": zod.string().nullish(),
+  "assignedRoles": zod.array(zod.string()),
+  "priority": zod.enum(['alta', 'media', 'baja']),
+  "category": zod.enum(['preproyecto', 'piloto']),
+  "dueDate": zod.coerce.date().nullish(),
+  "createdBy": zod.string(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})).optional()
+})
+
+
+/**
  * @summary List all Kanban cards
  */
 export const ListKanbanCardsResponseItem = zod.object({
@@ -483,6 +538,7 @@ export const ListKanbanCardsResponseItem = zod.object({
   "phaseId": zod.string().nullish(),
   "assignedRoles": zod.array(zod.string()),
   "priority": zod.enum(['alta', 'media', 'baja']),
+  "category": zod.enum(['preproyecto', 'piloto']),
   "dueDate": zod.coerce.date().nullish(),
   "createdBy": zod.string(),
   "createdAt": zod.coerce.date(),
@@ -508,6 +564,7 @@ export const CreateKanbanCardBody = zod.object({
   "phaseId": zod.string().nullish(),
   "assignedRoles": zod.array(zod.string()).optional(),
   "priority": zod.enum(['alta', 'media', 'baja']).optional(),
+  "category": zod.enum(['preproyecto', 'piloto']).optional(),
   "dueDate": zod.coerce.date().nullish()
 })
 
@@ -531,6 +588,7 @@ export const UpdateKanbanCardBody = zod.object({
   "phaseId": zod.string().nullish(),
   "assignedRoles": zod.array(zod.string()).optional(),
   "priority": zod.enum(['alta', 'media', 'baja']).optional(),
+  "category": zod.enum(['preproyecto', 'piloto']).optional(),
   "dueDate": zod.coerce.date().nullish()
 })
 
@@ -543,6 +601,7 @@ export const UpdateKanbanCardResponse = zod.object({
   "phaseId": zod.string().nullish(),
   "assignedRoles": zod.array(zod.string()),
   "priority": zod.enum(['alta', 'media', 'baja']),
+  "category": zod.enum(['preproyecto', 'piloto']),
   "dueDate": zod.coerce.date().nullish(),
   "createdBy": zod.string(),
   "createdAt": zod.coerce.date(),
@@ -651,6 +710,7 @@ export const MoveKanbanCardResponseItem = zod.object({
   "phaseId": zod.string().nullish(),
   "assignedRoles": zod.array(zod.string()),
   "priority": zod.enum(['alta', 'media', 'baja']),
+  "category": zod.enum(['preproyecto', 'piloto']),
   "dueDate": zod.coerce.date().nullish(),
   "createdBy": zod.string(),
   "createdAt": zod.coerce.date(),
