@@ -30,7 +30,7 @@ export default function Equipo() {
           <p className="text-muted-foreground mt-1">Directorio de personal y asignación de roles para el proyecto de pronóstico.</p>
         </div>
         <div className="flex items-center gap-3">
-          <MyProfileDialog me={me} />
+          {me && <MyProfileDialog me={me} />}
         </div>
       </div>
 
@@ -107,7 +107,9 @@ export default function Equipo() {
   );
 }
 
-function MemberCard({ member }: { member: any }) {
+import type { Member, MemberMe } from "@workspace/api-client-react";
+
+function MemberCard({ member }: { member: Member }) {
   const getInitials = (name: string) => name ? name.substring(0, 2).toUpperCase() : "?";
   
   return (
@@ -150,7 +152,7 @@ function MemberCard({ member }: { member: any }) {
   );
 }
 
-function MyProfileDialog({ me }: { me: any }) {
+function MyProfileDialog({ me }: { me: MemberMe }) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(me?.displayName || "");
   const [selectedRoles, setSelectedRoles] = useState<string[]>(me?.roles || []);
@@ -215,10 +217,10 @@ function MyProfileDialog({ me }: { me: any }) {
       
       toast({ title: "Perfil actualizado", description: "Tus datos se han guardado correctamente." });
       setOpen(false);
-    } catch (err: any) {
+    } catch (err) {
       toast({ 
         title: "Error al guardar", 
-        description: err.message || "Ocurrió un error inesperado.", 
+        description: err instanceof Error ? err.message : "Ocurrió un error inesperado.", 
         variant: "destructive" 
       });
     } finally {

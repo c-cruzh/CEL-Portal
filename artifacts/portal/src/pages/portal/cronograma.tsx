@@ -110,7 +110,9 @@ export default function Cronograma() {
   );
 }
 
-function ConfigDate({ config }: { config: any }) {
+import type { ProjectConfig } from "@workspace/api-client-react";
+
+function ConfigDate({ config }: { config: ProjectConfig | undefined }) {
   const [date, setDate] = useState(config?.startDate ? config.startDate.split('T')[0] : "");
   const [isEditing, setIsEditing] = useState(false);
   const updateConfig = useUpdateProjectConfig();

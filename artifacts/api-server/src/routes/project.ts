@@ -48,11 +48,13 @@ router.patch(
       return;
     }
     await ensureConfig();
+    const startDateStr = parsed.data.startDate
+      ? parsed.data.startDate.toISOString().slice(0, 10)
+      : null;
     const [updated] = await db
       .update(projectConfigTable)
       .set({
-        startDate: parsed.data.startDate ?? null,
-        updatedAt: new Date(),
+        startDate: startDateStr,
       })
       .where(eq(projectConfigTable.id, 1))
       .returning();
