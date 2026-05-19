@@ -82,23 +82,56 @@ export default function Equipo() {
         </div>
 
         <div className="space-y-4">
-          <h2 className="text-xl font-semibold tracking-tight">Cobertura de Roles</h2>
+          <h2 className="text-xl font-semibold tracking-tight">Roles del proyecto</h2>
+          <p className="text-xs text-muted-foreground -mt-2">
+            Un mismo rol puede ser asumido por más de una persona. Los roles con co‑liderazgo se resaltan.
+          </p>
           <Card>
             <CardContent className="p-0 divide-y divide-border">
               {ROLES.map(role => {
                 const coverage = summary?.coverage?.find(c => c.roleId === role.id);
                 const count = coverage?.count || 0;
+                const holders = (coverage?.assignees ?? []).map((name) => {
+                  const m = members?.find((mm) => mm.displayName === name);
+                  return { name, email: m?.email };
+                });
+                const isCoLed = count > 1;
                 return (
-                  <div key={role.id} className="p-4 flex flex-col gap-2">
-                    <div className="flex items-center justify-between">
-                      <span className="font-medium text-sm">{role.label}</span>
-                      <Badge variant={count > 0 ? "default" : "secondary"}>
-                        {count > 0 ? `${count} asignado(s)` : "Sin asignar"}
+                  <div
+                    key={role.id}
+                    className={`p-4 flex flex-col gap-2 ${isCoLed ? "bg-primary/5" : ""}`}
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm leading-tight">{role.label}</p>
+                        {isCoLed && (
+                          <p className="text-[10px] text-primary font-medium mt-0.5">
+                            Co‑liderazgo · {count} personas
+                          </p>
+                        )}
+                      </div>
+                      <Badge variant={count > 0 ? "default" : "secondary"} className="shrink-0">
+                        {count > 0 ? `${count}` : "Sin asignar"}
                       </Badge>
                     </div>
                     {count > 0 && (
-                      <div className="text-xs text-muted-foreground">
-                        {coverage?.assignees?.map(email => members?.find(m => m.id === email)?.displayName || email).join(", ")}
+                      <div className="flex flex-wrap gap-1.5 pt-1">
+                        {holders.map((h, i) => (
+                          <div
+                            key={`${role.id}-${i}`}
+                            className="flex items-center gap-1.5 bg-muted/50 rounded-full pl-1 pr-2 py-0.5"
+                            title={h.email}
+                          >
+                            <Avatar className="h-5 w-5 border border-border">
+                              <AvatarFallback className="bg-primary/10 text-primary text-[9px]">
+                                {h.name ? h.name.substring(0, 2).toUpperCase() : "?"}
+                              </AvatarFallback>
+                            </Avatar>
+                            <span className="text-[11px] text-foreground/80 leading-none">
+                              {h.name}
+                            </span>
+                          </div>
+                        ))}
                       </div>
                     )}
                   </div>

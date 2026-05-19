@@ -444,7 +444,7 @@ export const TEAM_PROFILES: TeamProfile[] = [
   {
     id: "consultora",
     role: "Consultora Líder en IA e Ingeniería de Datos",
-    person: "Camila Cruz (externa)",
+    person: "Equipo C2Labs (externo)",
     scope: "Externo",
     responsibilities: [
       "Diseño, desarrollo e implementación del modelo basado en redes neuronales LSTM.",
@@ -690,7 +690,7 @@ export interface RaciRole {
 }
 
 export const RACI_ROLES: RaciRole[] = [
-  { short: "Consultora IA", full: "Consultora IA (Camila)" },
+  { short: "Consultora IA", full: "Consultora IA (Equipo C2Labs)" },
   { short: "Líder/PM", full: "José Mauricio — Líder Hidrología y PM (CEL)" },
   { short: "Comité TI", full: "Comité de Informática — Autorización y Gobernanza" },
   { short: "DevOps", full: "DevOps / Enlace (TBD)" },
