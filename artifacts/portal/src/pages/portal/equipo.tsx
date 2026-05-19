@@ -1,4 +1,4 @@
-import { useListAvailableRoles, useGetTeamSummary, useListTeamMembers, useGetMe, useUpdateMyDisplayName, useSetMyRoles, useSetMyCv, getGetMeQueryKey, getListTeamMembersQueryKey, getGetTeamSummaryQueryKey, useRequestUploadUrl } from "@workspace/api-client-react";
+import { useListAvailableRoles, useGetTeamSummary, useListTeamMembers, useGetMe, useUpdateMyDisplayName, useSetMyRoles, useSetMyCv, getGetMeQueryKey, getListTeamMembersQueryKey, getGetTeamSummaryQueryKey, useRequestUploadUrl, useUpdateMyNotificationPrefs } from "@workspace/api-client-react";
 import { ROLES } from "@/lib/projectContent";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Equipo() {
@@ -163,8 +164,35 @@ function MyProfileDialog({ me }: { me: MemberMe }) {
   const setRoles = useSetMyRoles();
   const setCv = useSetMyCv();
   const requestUrl = useRequestUploadUrl();
+  const updateNotificationPrefs = useUpdateMyNotificationPrefs();
   const queryClient = useQueryClient();
   const { toast } = useToast();
+
+  const emailNotificationsEnabled = !(me?.emailNotificationsOptOut ?? false);
+
+  const handleToggleNotifications = async (enabled: boolean) => {
+    const previous = me;
+    queryClient.setQueryData(getGetMeQueryKey(), (old: MemberMe | undefined) =>
+      old ? { ...old, emailNotificationsOptOut: !enabled } : old
+    );
+    try {
+      await updateNotificationPrefs.mutateAsync({ data: { emailNotificationsOptOut: !enabled } });
+      queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
+      toast({
+        title: enabled ? "Avisos activados" : "Avisos desactivados",
+        description: enabled
+          ? "Recibirás los avisos por correo del equipo."
+          : "Ya no recibirás avisos por correo del equipo.",
+      });
+    } catch (err) {
+      queryClient.setQueryData(getGetMeQueryKey(), previous);
+      toast({
+        title: "No se pudo actualizar",
+        description: err instanceof Error ? err.message : "Intenta de nuevo en un momento.",
+        variant: "destructive",
+      });
+    }
+  };
 
   const handleSave = async () => {
     try {
@@ -267,6 +295,26 @@ function MyProfileDialog({ me }: { me: MemberMe }) {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+
+          <div className="space-y-3">
+            <Label>Avisos por correo</Label>
+            <div className="flex items-start justify-between gap-4 p-3 border rounded-lg">
+              <div className="space-y-1">
+                <Label htmlFor="email-notifications" className="font-medium cursor-pointer">
+                  Recibir avisos por correo del equipo
+                </Label>
+                <p className="text-xs text-muted-foreground leading-snug">
+                  Activa esta opción para recibir notificaciones por correo sobre actualizaciones del Piloto.
+                </p>
+              </div>
+              <Switch
+                id="email-notifications"
+                checked={emailNotificationsEnabled}
+                onCheckedChange={handleToggleNotifications}
+                disabled={updateNotificationPrefs.isPending}
+              />
             </div>
           </div>
 
