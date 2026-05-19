@@ -26,6 +26,8 @@ tags:
     description: Operational Kanban board
   - name: milestones
     description: Project milestones / calendar (relative to T0)
+  - name: decisions
+    description: Outstanding decision board
 paths:
   /healthz:
     get:
@@ -700,6 +702,160 @@ paths:
               schema:
                 $ref: "#/components/schemas/DocumentDownloadUrl"
 
+  /decisions:
+    get:
+      operationId: listDecisions
+      tags: [decisions]
+      summary: List decisions (with optional filters)
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [open, in_analysis, resolved, cancelled]
+        - name: ownerUserId
+          in: query
+          schema:
+            type: string
+        - name: ownerRole
+          in: query
+          schema:
+            type: string
+        - name: phase
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Decision"
+    post:
+      operationId: createDecision
+      tags: [decisions]
+      summary: Create a new decision
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DecisionInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Decision"
+
+  /decisions/{id}:
+    get:
+      operationId: getDecision
+      tags: [decisions]
+      summary: Get a decision
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Decision"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateDecision
+      tags: [decisions]
+      summary: Update a decision (title, context, owner, etc.)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DecisionUpdate"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Decision"
+    delete:
+      operationId: deleteDecision
+      tags: [decisions]
+      summary: Delete a decision (creator or PM only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No content
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /decisions/{id}/resolve:
+    post:
+      operationId: resolveDecision
+      tags: [decisions]
+      summary: Mark a decision as resolved (owner or PM only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DecisionResolveInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Decision"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /storage/uploads/request-url:
     post:
       operationId: requestUploadUrl
@@ -1225,6 +1381,104 @@ components:
           type: string
           format: date-time
 
+
+    Decision:
+      type: object
+      required:
+        [id, title, context, optionsConsidered, status, requestedAt, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        context:
+          type: string
+        optionsConsidered:
+          type: string
+        phase:
+          type: ["string", "null"]
+        ownerUserId:
+          type: ["string", "null"]
+        ownerRole:
+          type: ["string", "null"]
+        requestedAt:
+          type: string
+          format: date-time
+        dueDate:
+          type: ["string", "null"]
+          format: date
+        status:
+          type: string
+          enum: [open, in_analysis, resolved, cancelled]
+        resolution:
+          type: ["string", "null"]
+        resolvedAt:
+          type: ["string", "null"]
+          format: date-time
+        resolvedBy:
+          type: ["string", "null"]
+        createdBy:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    DecisionInput:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 240
+        context:
+          type: string
+        optionsConsidered:
+          type: string
+        phase:
+          type: ["string", "null"]
+        ownerUserId:
+          type: ["string", "null"]
+        ownerRole:
+          type: ["string", "null"]
+        dueDate:
+          type: ["string", "null"]
+          format: date
+
+    DecisionUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 240
+        context:
+          type: string
+        optionsConsidered:
+          type: string
+        phase:
+          type: ["string", "null"]
+        ownerUserId:
+          type: ["string", "null"]
+        ownerRole:
+          type: ["string", "null"]
+        dueDate:
+          type: ["string", "null"]
+          format: date
+        status:
+          type: string
+          enum: [open, in_analysis, cancelled]
+
+    DecisionResolveInput:
+      type: object
+      required: [resolution]
+      properties:
+        resolution:
+          type: string
+          minLength: 1
 
     UploadRequest:
       type: object

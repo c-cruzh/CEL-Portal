@@ -1,8 +1,10 @@
 import { ReactNode } from "react";
 import { Link, useRoute } from "wouter";
 import { useClerk, useUser } from "@clerk/react";
-import { useGetMe } from "@workspace/api-client-react";
+import { useGetMe, useListDecisions } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { isDecisionOverdue } from "./decisiones";
 
 const PM_ROLE_IDS = ["pm_lead", "pm_cel"];
 
@@ -10,8 +12,10 @@ export default function PortalLayout({ children }: { children: ReactNode }) {
   const { signOut } = useClerk();
   const { user } = useUser();
   const { data: me } = useGetMe();
+  const { data: decisions } = useListDecisions();
   const isPM = me?.roles?.some((r) => PM_ROLE_IDS.includes(r)) ?? false;
   const basePath = import.meta.env.BASE_URL.replace(/\/$/, "");
+  const overdueCount = decisions?.filter(isDecisionOverdue).length ?? 0;
 
   return (
     <div className="min-h-[100dvh] flex flex-col bg-slate-50 dark:bg-background">
@@ -34,6 +38,7 @@ export default function PortalLayout({ children }: { children: ReactNode }) {
               <NavItem href="/portal/desarrollo-tecnico" label="Desarrollo Técnico" />
               <NavItem href="/portal/kanban" label="Kanban" />
               <NavItem href="/portal/documentos" label="Documentos" />
+              <NavItem href="/portal/decisiones" label="Decisiones" badgeCount={overdueCount} />
               {isPM && <NavItem href="/portal/configuracion" label="Configuración" />}
             </nav>
           </div>
@@ -61,19 +66,24 @@ export default function PortalLayout({ children }: { children: ReactNode }) {
   );
 }
 
-function NavItem({ href, label }: { href: string; label: string }) {
+function NavItem({ href, label, badgeCount }: { href: string; label: string; badgeCount?: number }) {
   const [isActive] = useRoute(href);
   
   return (
     <Link 
       href={href} 
-      className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+      className={`px-3 py-2 rounded-md text-sm font-medium transition-colors inline-flex items-center gap-2 ${
         isActive 
           ? "bg-primary/10 text-primary" 
           : "text-muted-foreground hover:bg-muted hover:text-foreground"
       }`}
     >
-      {label}
+      <span>{label}</span>
+      {badgeCount !== undefined && badgeCount > 0 && (
+        <Badge variant="destructive" className="h-5 min-w-5 px-1.5 text-[10px]">
+          {badgeCount}
+        </Badge>
+      )}
     </Link>
   );
 }

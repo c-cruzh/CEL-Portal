@@ -624,6 +624,166 @@ export const GetDocumentDownloadUrlResponse = zod.object({
 
 
 /**
+ * @summary List decisions (with optional filters)
+ */
+export const ListDecisionsQueryParams = zod.object({
+  "status": zod.enum(['open', 'in_analysis', 'resolved', 'cancelled']).optional(),
+  "ownerUserId": zod.coerce.string().optional(),
+  "ownerRole": zod.coerce.string().optional(),
+  "phase": zod.coerce.string().optional()
+})
+
+export const ListDecisionsResponseItem = zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "context": zod.string(),
+  "optionsConsidered": zod.string(),
+  "phase": zod.string().nullish(),
+  "ownerUserId": zod.string().nullish(),
+  "ownerRole": zod.string().nullish(),
+  "requestedAt": zod.coerce.date(),
+  "dueDate": zod.coerce.date().nullish(),
+  "status": zod.enum(['open', 'in_analysis', 'resolved', 'cancelled']),
+  "resolution": zod.string().nullish(),
+  "resolvedAt": zod.coerce.date().nullish(),
+  "resolvedBy": zod.string().nullish(),
+  "createdBy": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+export const ListDecisionsResponse = zod.array(ListDecisionsResponseItem)
+
+
+/**
+ * @summary Create a new decision
+ */
+export const createDecisionBodyTitleMax = 240;
+
+
+
+export const CreateDecisionBody = zod.object({
+  "title": zod.string().min(1).max(createDecisionBodyTitleMax),
+  "context": zod.string().optional(),
+  "optionsConsidered": zod.string().optional(),
+  "phase": zod.string().nullish(),
+  "ownerUserId": zod.string().nullish(),
+  "ownerRole": zod.string().nullish(),
+  "dueDate": zod.coerce.date().nullish()
+})
+
+
+/**
+ * @summary Get a decision
+ */
+export const GetDecisionParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const GetDecisionResponse = zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "context": zod.string(),
+  "optionsConsidered": zod.string(),
+  "phase": zod.string().nullish(),
+  "ownerUserId": zod.string().nullish(),
+  "ownerRole": zod.string().nullish(),
+  "requestedAt": zod.coerce.date(),
+  "dueDate": zod.coerce.date().nullish(),
+  "status": zod.enum(['open', 'in_analysis', 'resolved', 'cancelled']),
+  "resolution": zod.string().nullish(),
+  "resolvedAt": zod.coerce.date().nullish(),
+  "resolvedBy": zod.string().nullish(),
+  "createdBy": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Update a decision (title, context, owner, etc.)
+ */
+export const UpdateDecisionParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const updateDecisionBodyTitleMax = 240;
+
+
+
+export const UpdateDecisionBody = zod.object({
+  "title": zod.string().min(1).max(updateDecisionBodyTitleMax).optional(),
+  "context": zod.string().optional(),
+  "optionsConsidered": zod.string().optional(),
+  "phase": zod.string().nullish(),
+  "ownerUserId": zod.string().nullish(),
+  "ownerRole": zod.string().nullish(),
+  "dueDate": zod.coerce.date().nullish(),
+  "status": zod.enum(['open', 'in_analysis', 'cancelled']).optional()
+})
+
+export const UpdateDecisionResponse = zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "context": zod.string(),
+  "optionsConsidered": zod.string(),
+  "phase": zod.string().nullish(),
+  "ownerUserId": zod.string().nullish(),
+  "ownerRole": zod.string().nullish(),
+  "requestedAt": zod.coerce.date(),
+  "dueDate": zod.coerce.date().nullish(),
+  "status": zod.enum(['open', 'in_analysis', 'resolved', 'cancelled']),
+  "resolution": zod.string().nullish(),
+  "resolvedAt": zod.coerce.date().nullish(),
+  "resolvedBy": zod.string().nullish(),
+  "createdBy": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Delete a decision (creator or PM only)
+ */
+export const DeleteDecisionParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+
+/**
+ * @summary Mark a decision as resolved (owner or PM only)
+ */
+export const ResolveDecisionParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+
+
+
+export const ResolveDecisionBody = zod.object({
+  "resolution": zod.string().min(1)
+})
+
+export const ResolveDecisionResponse = zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "context": zod.string(),
+  "optionsConsidered": zod.string(),
+  "phase": zod.string().nullish(),
+  "ownerUserId": zod.string().nullish(),
+  "ownerRole": zod.string().nullish(),
+  "requestedAt": zod.coerce.date(),
+  "dueDate": zod.coerce.date().nullish(),
+  "status": zod.enum(['open', 'in_analysis', 'resolved', 'cancelled']),
+  "resolution": zod.string().nullish(),
+  "resolvedAt": zod.coerce.date().nullish(),
+  "resolvedBy": zod.string().nullish(),
+  "createdBy": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
  * @summary Request a presigned URL to upload a file to object storage
  */
 export const RequestUploadUrlBody = zod.object({

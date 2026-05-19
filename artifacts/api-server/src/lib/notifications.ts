@@ -30,6 +30,26 @@ type NotificationEvent =
       folderLabel: string;
       version: number;
       isNewVersion: boolean;
+    }
+  | {
+      kind: "decision_created";
+      actor: { id: string; email: string; displayName: string };
+      title: string;
+      ownerLabel: string | null;
+      dueDate: string | null;
+    }
+  | {
+      kind: "decision_resolved";
+      actor: { id: string; email: string; displayName: string };
+      title: string;
+      resolution: string;
+    }
+  | {
+      kind: "decision_status_changed";
+      actor: { id: string; email: string; displayName: string };
+      title: string;
+      previousStatus: string;
+      newStatus: string;
     };
 
 export type NotificationStatus =
@@ -62,6 +82,30 @@ function renderEmail(ev: NotificationEvent): {
           `Documento: ${ev.documentName}\n` +
           `Carpeta: ${ev.folderLabel}\n` +
           `Versión: v${ev.version}\n`,
+      };
+    case "decision_created":
+      return {
+        subject: `[Portal CEL] Nueva decisión pendiente: ${ev.title}`,
+        text:
+          `${who} registró una nueva decisión pendiente.\n\n` +
+          `Título: ${ev.title}\n` +
+          `Dueño: ${ev.ownerLabel ?? "(sin asignar)"}\n` +
+          `Fecha límite: ${ev.dueDate ?? "(sin definir)"}\n`,
+      };
+    case "decision_resolved":
+      return {
+        subject: `[Portal CEL] Decisión resuelta: ${ev.title}`,
+        text:
+          `${who} marcó como resuelta la decisión "${ev.title}".\n\n` +
+          `Resolución:\n${ev.resolution}\n`,
+      };
+    case "decision_status_changed":
+      return {
+        subject: `[Portal CEL] Decisión actualizada: ${ev.title}`,
+        text:
+          `${who} cambió el estado de la decisión "${ev.title}".\n\n` +
+          `Antes: ${ev.previousStatus}\n` +
+          `Ahora: ${ev.newStatus}\n`,
       };
     case "roles_changed": {
       const added = ev.newRoles.filter((r) => !ev.previousRoles.includes(r));

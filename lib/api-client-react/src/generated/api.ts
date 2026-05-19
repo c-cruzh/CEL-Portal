@@ -22,6 +22,10 @@ import type {
 import type {
   Cv,
   CvInput,
+  Decision,
+  DecisionInput,
+  DecisionResolveInput,
+  DecisionUpdate,
   DisplayNameInput,
   Document,
   DocumentDownloadUrl,
@@ -35,6 +39,7 @@ import type {
   KanbanCardMove,
   KanbanCardUpdate,
   KanbanColumn,
+  ListDecisionsParams,
   ListDocumentsParams,
   Member,
   MemberMe,
@@ -2651,6 +2656,452 @@ export function useGetDocumentDownloadUrl<TData = Awaited<ReturnType<typeof getD
 
 
 
+
+export const getListDecisionsUrl = (params?: ListDecisionsParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/decisions?${stringifiedParams}` : `/api/decisions`
+}
+
+/**
+ * @summary List decisions (with optional filters)
+ */
+export const listDecisions = async (params?: ListDecisionsParams, options?: RequestInit): Promise<Decision[]> => {
+
+  return customFetch<Decision[]>(getListDecisionsUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListDecisionsQueryKey = (params?: ListDecisionsParams,) => {
+    return [
+    `/api/decisions`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListDecisionsQueryOptions = <TData = Awaited<ReturnType<typeof listDecisions>>, TError = ErrorType<unknown>>(params?: ListDecisionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listDecisions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListDecisionsQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listDecisions>>> = ({ signal }) => listDecisions(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listDecisions>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListDecisionsQueryResult = NonNullable<Awaited<ReturnType<typeof listDecisions>>>
+export type ListDecisionsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List decisions (with optional filters)
+ */
+
+export function useListDecisions<TData = Awaited<ReturnType<typeof listDecisions>>, TError = ErrorType<unknown>>(
+ params?: ListDecisionsParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listDecisions>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListDecisionsQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateDecisionUrl = () => {
+
+
+
+
+  return `/api/decisions`
+}
+
+/**
+ * @summary Create a new decision
+ */
+export const createDecision = async (decisionInput: DecisionInput, options?: RequestInit): Promise<Decision> => {
+
+  return customFetch<Decision>(getCreateDecisionUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      decisionInput,)
+  }
+);}
+
+
+
+
+export const getCreateDecisionMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDecision>>, TError,{data: BodyType<DecisionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createDecision>>, TError,{data: BodyType<DecisionInput>}, TContext> => {
+
+const mutationKey = ['createDecision'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createDecision>>, {data: BodyType<DecisionInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createDecision(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateDecisionMutationResult = NonNullable<Awaited<ReturnType<typeof createDecision>>>
+    export type CreateDecisionMutationBody = BodyType<DecisionInput>
+    export type CreateDecisionMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Create a new decision
+ */
+export const useCreateDecision = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createDecision>>, TError,{data: BodyType<DecisionInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createDecision>>,
+        TError,
+        {data: BodyType<DecisionInput>},
+        TContext
+      > => {
+      return useMutation(getCreateDecisionMutationOptions(options));
+    }
+
+export const getGetDecisionUrl = (id: string,) => {
+
+
+
+
+  return `/api/decisions/${id}`
+}
+
+/**
+ * @summary Get a decision
+ */
+export const getDecision = async (id: string, options?: RequestInit): Promise<Decision> => {
+
+  return customFetch<Decision>(getGetDecisionUrl(id),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetDecisionQueryKey = (id: string,) => {
+    return [
+    `/api/decisions/${id}`
+    ] as const;
+    }
+
+
+export const getGetDecisionQueryOptions = <TData = Awaited<ReturnType<typeof getDecision>>, TError = ErrorType<ErrorResponse>>(id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDecision>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetDecisionQueryKey(id);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getDecision>>> = ({ signal }) => getDecision(id, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, enabled: !!(id), ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getDecision>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetDecisionQueryResult = NonNullable<Awaited<ReturnType<typeof getDecision>>>
+export type GetDecisionQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary Get a decision
+ */
+
+export function useGetDecision<TData = Awaited<ReturnType<typeof getDecision>>, TError = ErrorType<ErrorResponse>>(
+ id: string, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getDecision>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetDecisionQueryOptions(id,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUpdateDecisionUrl = (id: string,) => {
+
+
+
+
+  return `/api/decisions/${id}`
+}
+
+/**
+ * @summary Update a decision (title, context, owner, etc.)
+ */
+export const updateDecision = async (id: string,
+    decisionUpdate: DecisionUpdate, options?: RequestInit): Promise<Decision> => {
+
+  return customFetch<Decision>(getUpdateDecisionUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      decisionUpdate,)
+  }
+);}
+
+
+
+
+export const getUpdateDecisionMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateDecision>>, TError,{id: string;data: BodyType<DecisionUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateDecision>>, TError,{id: string;data: BodyType<DecisionUpdate>}, TContext> => {
+
+const mutationKey = ['updateDecision'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateDecision>>, {id: string;data: BodyType<DecisionUpdate>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateDecision(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateDecisionMutationResult = NonNullable<Awaited<ReturnType<typeof updateDecision>>>
+    export type UpdateDecisionMutationBody = BodyType<DecisionUpdate>
+    export type UpdateDecisionMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update a decision (title, context, owner, etc.)
+ */
+export const useUpdateDecision = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateDecision>>, TError,{id: string;data: BodyType<DecisionUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateDecision>>,
+        TError,
+        {id: string;data: BodyType<DecisionUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateDecisionMutationOptions(options));
+    }
+
+export const getDeleteDecisionUrl = (id: string,) => {
+
+
+
+
+  return `/api/decisions/${id}`
+}
+
+/**
+ * @summary Delete a decision (creator or PM only)
+ */
+export const deleteDecision = async (id: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteDecisionUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteDecisionMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteDecision>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteDecision>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['deleteDecision'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteDecision>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteDecision(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteDecisionMutationResult = NonNullable<Awaited<ReturnType<typeof deleteDecision>>>
+
+    export type DeleteDecisionMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Delete a decision (creator or PM only)
+ */
+export const useDeleteDecision = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteDecision>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteDecision>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getDeleteDecisionMutationOptions(options));
+    }
+
+export const getResolveDecisionUrl = (id: string,) => {
+
+
+
+
+  return `/api/decisions/${id}/resolve`
+}
+
+/**
+ * @summary Mark a decision as resolved (owner or PM only)
+ */
+export const resolveDecision = async (id: string,
+    decisionResolveInput: DecisionResolveInput, options?: RequestInit): Promise<Decision> => {
+
+  return customFetch<Decision>(getResolveDecisionUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      decisionResolveInput,)
+  }
+);}
+
+
+
+
+export const getResolveDecisionMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resolveDecision>>, TError,{id: string;data: BodyType<DecisionResolveInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof resolveDecision>>, TError,{id: string;data: BodyType<DecisionResolveInput>}, TContext> => {
+
+const mutationKey = ['resolveDecision'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof resolveDecision>>, {id: string;data: BodyType<DecisionResolveInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  resolveDecision(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ResolveDecisionMutationResult = NonNullable<Awaited<ReturnType<typeof resolveDecision>>>
+    export type ResolveDecisionMutationBody = BodyType<DecisionResolveInput>
+    export type ResolveDecisionMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Mark a decision as resolved (owner or PM only)
+ */
+export const useResolveDecision = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resolveDecision>>, TError,{id: string;data: BodyType<DecisionResolveInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof resolveDecision>>,
+        TError,
+        {id: string;data: BodyType<DecisionResolveInput>},
+        TContext
+      > => {
+      return useMutation(getResolveDecisionMutationOptions(options));
+    }
 
 export const getRequestUploadUrlUrl = () => {
 

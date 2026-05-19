@@ -354,6 +354,94 @@ export interface DocumentDownloadUrl {
   expiresAt: string;
 }
 
+export type DecisionStatus = typeof DecisionStatus[keyof typeof DecisionStatus];
+
+
+export const DecisionStatus = {
+  open: 'open',
+  in_analysis: 'in_analysis',
+  resolved: 'resolved',
+  cancelled: 'cancelled',
+} as const;
+
+export interface Decision {
+  id: string;
+  title: string;
+  context: string;
+  optionsConsidered: string;
+  /** @nullable */
+  phase?: string | null;
+  /** @nullable */
+  ownerUserId?: string | null;
+  /** @nullable */
+  ownerRole?: string | null;
+  requestedAt: string;
+  /** @nullable */
+  dueDate?: string | null;
+  status: DecisionStatus;
+  /** @nullable */
+  resolution?: string | null;
+  /** @nullable */
+  resolvedAt?: string | null;
+  /** @nullable */
+  resolvedBy?: string | null;
+  /** @nullable */
+  createdBy?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface DecisionInput {
+  /**
+     * @minLength 1
+     * @maxLength 240
+     */
+  title: string;
+  context?: string;
+  optionsConsidered?: string;
+  /** @nullable */
+  phase?: string | null;
+  /** @nullable */
+  ownerUserId?: string | null;
+  /** @nullable */
+  ownerRole?: string | null;
+  /** @nullable */
+  dueDate?: string | null;
+}
+
+export type DecisionUpdateStatus = typeof DecisionUpdateStatus[keyof typeof DecisionUpdateStatus];
+
+
+export const DecisionUpdateStatus = {
+  open: 'open',
+  in_analysis: 'in_analysis',
+  cancelled: 'cancelled',
+} as const;
+
+export interface DecisionUpdate {
+  /**
+     * @minLength 1
+     * @maxLength 240
+     */
+  title?: string;
+  context?: string;
+  optionsConsidered?: string;
+  /** @nullable */
+  phase?: string | null;
+  /** @nullable */
+  ownerUserId?: string | null;
+  /** @nullable */
+  ownerRole?: string | null;
+  /** @nullable */
+  dueDate?: string | null;
+  status?: DecisionUpdateStatus;
+}
+
+export interface DecisionResolveInput {
+  /** @minLength 1 */
+  resolution: string;
+}
+
 export interface UploadRequest {
   name: string;
   size: number;
@@ -374,4 +462,21 @@ uploadedBy?: string;
 search?: string;
 includeInactive?: boolean;
 };
+
+export type ListDecisionsParams = {
+status?: ListDecisionsStatus;
+ownerUserId?: string;
+ownerRole?: string;
+phase?: string;
+};
+
+export type ListDecisionsStatus = typeof ListDecisionsStatus[keyof typeof ListDecisionsStatus];
+
+
+export const ListDecisionsStatus = {
+  open: 'open',
+  in_analysis: 'in_analysis',
+  resolved: 'resolved',
+  cancelled: 'cancelled',
+} as const;
 

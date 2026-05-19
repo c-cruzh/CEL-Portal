@@ -8,6 +8,7 @@ import notificationRecipientsRouter from "./notificationRecipients";
 import kanbanRouter from "./kanban";
 import milestonesRouter from "./milestones";
 import documentsRouter from "./documents";
+import decisionsRouter from "./decisions";
 
 const router: IRouter = Router();
 
@@ -20,5 +21,6 @@ router.use(notificationRecipientsRouter);
 router.use(kanbanRouter);
 router.use(milestonesRouter);
 router.use(documentsRouter);
+router.use(decisionsRouter);
 
 export default router;

@@ -8,6 +8,12 @@
 
 export * from './cv';
 export * from './cvInput';
+export * from './decision';
+export * from './decisionInput';
+export * from './decisionResolveInput';
+export * from './decisionStatus';
+export * from './decisionUpdate';
+export * from './decisionUpdateStatus';
 export * from './displayNameInput';
 export * from './document';
 export * from './documentDownloadUrl';
@@ -22,6 +28,8 @@ export * from './kanbanCardMove';
 export * from './kanbanCardUpdate';
 export * from './kanbanColumn';
 export * from './kanbanPriority';
+export * from './listDecisionsParams';
+export * from './listDecisionsStatus';
 export * from './listDocumentsParams';
 export * from './member';
 export * from './memberMe';
