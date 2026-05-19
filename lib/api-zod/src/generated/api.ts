@@ -248,6 +248,17 @@ export const AddNotificationRecipientResponse = zod.object({
 
 
 /**
+ * @summary Send a test notification to the current recipient list (PM only)
+ */
+export const TestNotificationRecipientsResponse = zod.object({
+  "status": zod.enum(['sent', 'no_provider', 'no_recipients', 'failed']),
+  "recipientCount": zod.number(),
+  "recipients": zod.array(zod.string()),
+  "message": zod.string()
+})
+
+
+/**
  * @summary Remove a fixed notification recipient (PM only)
  */
 export const DeleteNotificationRecipientParams = zod.object({

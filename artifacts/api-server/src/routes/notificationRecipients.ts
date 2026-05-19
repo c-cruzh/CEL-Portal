@@ -1,13 +1,15 @@
 import { Router, type IRouter } from "express";
 import { asc, eq } from "drizzle-orm";
-import { db, notificationRecipientsTable } from "@workspace/db";
+import { db, notificationRecipientsTable, usersTable } from "@workspace/db";
 import {
   ListNotificationRecipientsResponse,
   AddNotificationRecipientBody,
   AddNotificationRecipientResponse,
+  TestNotificationRecipientsResponse,
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
 import { requirePM } from "../middlewares/requirePM";
+import { sendTestNotification } from "../lib/notifications";
 
 const router: IRouter = Router();
 
@@ -83,6 +85,32 @@ router.delete(
       .delete(notificationRecipientsTable)
       .where(eq(notificationRecipientsTable.email, email));
     res.sendStatus(204);
+  },
+);
+
+router.post(
+  "/admin/notification-recipients/test",
+  requireAuth,
+  requirePM,
+  async (req, res): Promise<void> => {
+    let displayName = req.userEmail ?? "PM";
+    if (req.userId) {
+      const [u] = await db
+        .select({ displayName: usersTable.displayName })
+        .from(usersTable)
+        .where(eq(usersTable.id, req.userId))
+        .limit(1);
+      if (u?.displayName) displayName = u.displayName;
+    }
+
+    const result = await sendTestNotification({
+      triggeredBy: {
+        email: req.userEmail ?? "desconocido",
+        displayName,
+      },
+    });
+
+    res.json(TestNotificationRecipientsResponse.parse(result));
   },
 );
 

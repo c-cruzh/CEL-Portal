@@ -4,6 +4,7 @@ import {
   useListNotificationRecipients,
   useAddNotificationRecipient,
   useDeleteNotificationRecipient,
+  useTestNotificationRecipients,
   getListNotificationRecipientsQueryKey,
   ApiError,
 } from "@workspace/api-client-react";
@@ -62,8 +63,46 @@ function NotificationRecipientsSection() {
   const queryClient = useQueryClient();
   const addMutation = useAddNotificationRecipient();
   const deleteMutation = useDeleteNotificationRecipient();
+  const testMutation = useTestNotificationRecipients();
   const { toast } = useToast();
   const [email, setEmail] = useState("");
+
+  const handleTest = async () => {
+    try {
+      const result = await testMutation.mutateAsync();
+      const variant =
+        result.status === "sent"
+          ? "default"
+          : result.status === "no_provider"
+            ? "default"
+            : "destructive";
+      const title =
+        result.status === "sent"
+          ? "Correo de prueba enviado"
+          : result.status === "no_provider"
+            ? "Proveedor de correo no configurado"
+            : result.status === "no_recipients"
+              ? "Sin destinatarios"
+              : "No se pudo enviar";
+      const countLine = `Destinatarios evaluados: ${result.recipientCount}`;
+      toast({
+        title,
+        description: `${countLine}. ${result.message}`,
+        variant,
+      });
+    } catch (err) {
+      toast({
+        title: "No se pudo enviar el correo de prueba",
+        description:
+          err instanceof ApiError
+            ? err.data?.error || err.message
+            : err instanceof Error
+              ? err.message
+              : "Error inesperado",
+        variant: "destructive",
+      });
+    }
+  };
 
   const invalidate = () =>
     queryClient.invalidateQueries({
@@ -125,14 +164,28 @@ function NotificationRecipientsSection() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Destinatarios fijos de avisos</CardTitle>
-        <CardDescription>
-          Estos correos siempre reciben las notificaciones del equipo (nuevos
-          miembros, CV actualizados, cambios de roles), además de los miembros
-          registrados que no hayan desactivado los avisos. La variable de
-          entorno <code className="text-xs">TEAM_NOTIFICATION_RECIPIENTS</code>{" "}
-          sigue vigente y se combina con esta lista.
-        </CardDescription>
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-3">
+          <div className="space-y-1.5">
+            <CardTitle>Destinatarios fijos de avisos</CardTitle>
+            <CardDescription>
+              Estos correos siempre reciben las notificaciones del equipo (nuevos
+              miembros, CV actualizados, cambios de roles), además de los miembros
+              registrados que no hayan desactivado los avisos. La variable de
+              entorno <code className="text-xs">TEAM_NOTIFICATION_RECIPIENTS</code>{" "}
+              sigue vigente y se combina con esta lista.
+            </CardDescription>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={handleTest}
+            disabled={testMutation.isPending}
+            className="shrink-0"
+          >
+            {testMutation.isPending ? "Enviando..." : "Enviar prueba"}
+          </Button>
+        </div>
       </CardHeader>
       <CardContent className="space-y-6">
         <form

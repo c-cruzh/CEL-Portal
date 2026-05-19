@@ -108,6 +108,23 @@ export interface NotificationRecipient {
   createdAt: string;
 }
 
+export type TestNotificationResultStatus = typeof TestNotificationResultStatus[keyof typeof TestNotificationResultStatus];
+
+
+export const TestNotificationResultStatus = {
+  sent: 'sent',
+  no_provider: 'no_provider',
+  no_recipients: 'no_recipients',
+  failed: 'failed',
+} as const;
+
+export interface TestNotificationResult {
+  status: TestNotificationResultStatus;
+  recipientCount: number;
+  recipients: string[];
+  message: string;
+}
+
 export interface NotificationRecipientInput {
   /** @minLength 3 */
   email: string;

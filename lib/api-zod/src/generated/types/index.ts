@@ -22,5 +22,7 @@ export * from './roleCoverage';
 export * from './roleDefinition';
 export * from './rolesInput';
 export * from './teamSummary';
+export * from './testNotificationResult';
+export * from './testNotificationResultStatus';
 export * from './uploadRequest';
 export * from './uploadUrl';

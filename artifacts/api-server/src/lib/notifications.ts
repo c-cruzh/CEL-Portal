@@ -174,3 +174,67 @@ export async function sendTeamNotification(
 export function notifyAsync(ev: NotificationEvent): void {
   void sendTeamNotification(ev);
 }
+
+export type TestNotificationResult =
+  | { status: "sent"; recipientCount: number; recipients: string[]; message: string }
+  | { status: "no_provider"; recipientCount: number; recipients: string[]; message: string }
+  | { status: "no_recipients"; recipientCount: 0; recipients: []; message: string }
+  | { status: "failed"; recipientCount: number; recipients: string[]; message: string };
+
+export async function sendTestNotification(opts: {
+  triggeredBy: { email: string; displayName: string };
+}): Promise<TestNotificationResult> {
+  const recipients = await resolveRecipients("");
+  if (recipients.length === 0) {
+    return {
+      status: "no_recipients",
+      recipientCount: 0,
+      recipients: [],
+      message:
+        "No hay destinatarios configurados. Agrega correos fijos o registra miembros con avisos activados.",
+    };
+  }
+
+  const subject = "[Portal CEL] Correo de prueba";
+  const text =
+    `Este es un correo de prueba enviado desde el Portal CEL para confirmar que las notificaciones del equipo funcionan.\n\n` +
+    `Solicitado por: ${opts.triggeredBy.displayName} <${opts.triggeredBy.email}>\n` +
+    `Fecha: ${new Date().toISOString()}\n\n` +
+    `Si recibiste este mensaje, la configuración de correos es correcta. Puedes ignorarlo.\n`;
+
+  if (!process.env.RESEND_API_KEY) {
+    logger.info(
+      { recipients, subject },
+      "Test notification skipped: RESEND_API_KEY not configured",
+    );
+    return {
+      status: "no_provider",
+      recipientCount: recipients.length,
+      recipients,
+      message:
+        "La variable RESEND_API_KEY no está configurada en el servidor, así que no se envió ningún correo real. Configúrala para activar el envío.",
+    };
+  }
+
+  const sent = await sendViaResend(recipients, subject, text);
+  if (!sent) {
+    return {
+      status: "failed",
+      recipientCount: recipients.length,
+      recipients,
+      message:
+        "El proveedor de correo rechazó la solicitud. Revisa los registros del servidor para más detalles.",
+    };
+  }
+
+  logger.info(
+    { recipients: recipients.length, triggeredBy: opts.triggeredBy.email },
+    "Test team notification sent",
+  );
+  return {
+    status: "sent",
+    recipientCount: recipients.length,
+    recipients,
+    message: `Correo de prueba enviado a ${recipients.length} destinatario${recipients.length === 1 ? "" : "s"}.`,
+  };
+}

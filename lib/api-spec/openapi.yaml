@@ -287,6 +287,25 @@ paths:
               schema:
                 $ref: "#/components/schemas/NotificationRecipient"
 
+  /admin/notification-recipients/test:
+    post:
+      operationId: testNotificationRecipients
+      tags: [admin]
+      summary: Send a test notification to the current recipient list (PM only)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TestNotificationResult"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /admin/notification-recipients/{email}:
     delete:
       operationId: deleteNotificationRecipient
@@ -518,6 +537,22 @@ components:
         createdAt:
           type: string
           format: date-time
+
+    TestNotificationResult:
+      type: object
+      required: [status, recipientCount, recipients, message]
+      properties:
+        status:
+          type: string
+          enum: [sent, no_provider, no_recipients, failed]
+        recipientCount:
+          type: integer
+        recipients:
+          type: array
+          items:
+            type: string
+        message:
+          type: string
 
     NotificationRecipientInput:
       type: object

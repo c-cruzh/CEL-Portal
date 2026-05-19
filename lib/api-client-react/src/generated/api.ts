@@ -35,6 +35,7 @@ import type {
   RoleDefinition,
   RolesInput,
   TeamSummary,
+  TestNotificationResult,
   UploadRequest,
   UploadUrl
 } from './api.schemas';
@@ -1238,6 +1239,76 @@ export const useAddNotificationRecipient = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getAddNotificationRecipientMutationOptions(options));
+    }
+
+export const getTestNotificationRecipientsUrl = () => {
+
+
+
+
+  return `/api/admin/notification-recipients/test`
+}
+
+/**
+ * @summary Send a test notification to the current recipient list (PM only)
+ */
+export const testNotificationRecipients = async ( options?: RequestInit): Promise<TestNotificationResult> => {
+
+  return customFetch<TestNotificationResult>(getTestNotificationRecipientsUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getTestNotificationRecipientsMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof testNotificationRecipients>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof testNotificationRecipients>>, TError,void, TContext> => {
+
+const mutationKey = ['testNotificationRecipients'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof testNotificationRecipients>>, void> = () => {
+
+
+          return  testNotificationRecipients(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type TestNotificationRecipientsMutationResult = NonNullable<Awaited<ReturnType<typeof testNotificationRecipients>>>
+
+    export type TestNotificationRecipientsMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Send a test notification to the current recipient list (PM only)
+ */
+export const useTestNotificationRecipients = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof testNotificationRecipients>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof testNotificationRecipients>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getTestNotificationRecipientsMutationOptions(options));
     }
 
 export const getDeleteNotificationRecipientUrl = (email: string,) => {
