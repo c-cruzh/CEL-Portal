@@ -672,23 +672,53 @@ function VisualizacionSection() {
   );
 }
 
+const RACI_COLORS: Record<string, string> = {
+  R: "bg-rose-500 text-white",
+  A: "bg-sky-500 text-white",
+  C: "bg-amber-500 text-white",
+  I: "bg-slate-300 dark:bg-slate-600 text-slate-700 dark:text-slate-100",
+};
+
+function RaciBadge({ letter, className = "" }: { letter: string; className?: string }) {
+  const color = RACI_COLORS[letter] ?? "bg-muted text-muted-foreground";
+  return (
+    <span
+      className={`inline-flex items-center justify-center h-7 w-7 rounded-full text-[11px] font-bold shadow-sm ${color} ${className}`}
+    >
+      {letter}
+    </span>
+  );
+}
+
 function RaciCell({ value }: { value: string }) {
-  if (value === "I" || value === "—") {
-    return <span className="text-xs font-mono text-muted-foreground">{value}</span>;
+  if (value === "—") {
+    return <span className="text-xs font-mono text-muted-foreground">—</span>;
   }
-  const isResponsible = value.includes("R");
-  const isApprover = value.includes("A");
-  let cls = "text-xs font-mono px-1.5 py-0.5 rounded ";
-  if (isResponsible && isApprover) {
-    cls += "bg-primary text-primary-foreground font-semibold";
-  } else if (isResponsible) {
-    cls += "bg-primary/15 text-primary font-semibold";
-  } else if (isApprover) {
-    cls += "bg-amber-100 dark:bg-amber-900/30 text-amber-900 dark:text-amber-200 font-semibold";
-  } else {
-    cls += "bg-secondary text-secondary-foreground";
+  const letters = value.split("/").map((s) => s.trim()).filter(Boolean);
+  if (letters.length === 1) {
+    return <RaciBadge letter={letters[0]} />;
   }
-  return <span className={cls}>{value}</span>;
+  // Split badge: two halves of a circle with each letter
+  const [a, b] = letters;
+  const colorA = RACI_COLORS[a] ?? "bg-muted text-muted-foreground";
+  const colorB = RACI_COLORS[b] ?? "bg-muted text-muted-foreground";
+  return (
+    <span
+      className="relative inline-flex items-center justify-center h-7 w-7 rounded-full overflow-hidden shadow-sm"
+      title={`${a} / ${b}`}
+    >
+      <span
+        className={`absolute inset-y-0 left-0 w-1/2 flex items-center justify-end pr-0.5 text-[10px] font-bold ${colorA}`}
+      >
+        {a}
+      </span>
+      <span
+        className={`absolute inset-y-0 right-0 w-1/2 flex items-center justify-start pl-0.5 text-[10px] font-bold ${colorB}`}
+      >
+        {b}
+      </span>
+    </span>
+  );
 }
 
 function FteCard({ item }: { item: (typeof FTE_BREAKDOWN)[number] }) {
@@ -849,32 +879,63 @@ function RaciSection() {
           Resumen consolidado de responsabilidades por actividad. R/A en color primario indica
           ejecución y aprobación combinadas; R marca al responsable directo; A al aprobador final.
         </p>
+        <div className="flex flex-wrap gap-4 mb-2">
+          {RACI_LEGEND.map((l) => (
+            <div key={l.k} className="flex items-center gap-2">
+              <RaciBadge letter={l.k} />
+              <span className="text-xs text-muted-foreground leading-tight">{l.v}</span>
+            </div>
+          ))}
+        </div>
         <Card className="border-border overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
-              <thead className="bg-muted/40 text-muted-foreground">
-                <tr>
-                  <th className="text-left font-medium px-4 py-3 sticky left-0 bg-muted/40 z-10 min-w-[260px]">
+            <table className="w-full text-sm border-collapse">
+              <thead>
+                <tr className="border-b border-border bg-muted/40">
+                  <th className="text-left font-semibold text-xs uppercase tracking-wider text-muted-foreground px-4 py-3 sticky left-0 bg-muted/40 z-10 min-w-[280px] align-bottom">
                     Actividad / Entregable
                   </th>
                   {RACI_ROLES.map((r) => (
-                    <th key={r.short} className="text-center font-medium px-3 py-3 whitespace-nowrap">
-                      <div className="text-xs">{r.short}</div>
+                    <th
+                      key={r.short}
+                      className="px-2 py-3 text-center align-bottom"
+                      style={{ minWidth: "60px" }}
+                    >
+                      <div
+                        className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground mx-auto whitespace-nowrap"
+                        style={{
+                          writingMode: "vertical-rl",
+                          transform: "rotate(180deg)",
+                          minHeight: "120px",
+                        }}
+                        title={r.full}
+                      >
+                        {r.short}
+                      </div>
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
-                {RACI_TASKS.map((t) => (
-                  <tr key={t.task} className="border-t border-border">
-                    <td className="px-4 py-3 sticky left-0 bg-card">
-                      <div className="font-medium text-foreground">{t.task}</div>
+                {RACI_TASKS.map((t, idx) => (
+                  <tr
+                    key={t.task}
+                    className={`border-t border-border ${
+                      idx % 2 === 0 ? "bg-card" : "bg-muted/20"
+                    }`}
+                  >
+                    <td
+                      className={`px-4 py-3 sticky left-0 z-10 ${
+                        idx % 2 === 0 ? "bg-card" : "bg-muted/20"
+                      }`}
+                    >
+                      <div className="font-medium text-foreground text-sm">{t.task}</div>
                       {t.note && (
                         <div className="text-xs text-muted-foreground mt-0.5">{t.note}</div>
                       )}
                     </td>
                     {t.values.map((v, i) => (
-                      <td key={i} className="text-center px-3 py-3">
+                      <td key={i} className="text-center px-2 py-3">
                         <RaciCell value={v} />
                       </td>
                     ))}
@@ -884,16 +945,6 @@ function RaciSection() {
             </table>
           </div>
         </Card>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
-          {RACI_LEGEND.map((l) => (
-            <div key={l.k} className="text-xs text-muted-foreground flex gap-2 items-start">
-              <span className="inline-block h-5 w-5 rounded bg-primary/10 text-primary font-semibold text-center leading-5 shrink-0">
-                {l.k}
-              </span>
-              <span className="leading-relaxed">{l.v}</span>
-            </div>
-          ))}
-        </div>
         <p className="text-xs text-muted-foreground italic mt-2">
           Roles del Comité: Lorena (Gobernanza/Autorizaciones), Nelson (DB y Redes), José Manuel
           (OS/Apps), Carlos Sánchez (DBA), Adrián (Redes/Infra), Miladis (Ciberseguridad).
