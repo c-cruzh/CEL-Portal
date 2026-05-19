@@ -46,6 +46,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+import { BatchImportDecisionsDialog } from "./BatchImportDecisionsDialog";
 
 const PM_ROLE_IDS = ["pm_lead", "pm_cel"];
 const NONE_VALUE = "__none__";
@@ -116,10 +117,12 @@ export default function Decisiones() {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [ownerFilter, setOwnerFilter] = useState<string>("all");
   const [phaseFilter, setPhaseFilter] = useState<string>("all");
+  const [decidedByMeOnly, setDecidedByMeOnly] = useState<boolean>(false);
 
   const [createOpen, setCreateOpen] = useState(false);
   const [editing, setEditing] = useState<Decision | null>(null);
   const [resolving, setResolving] = useState<Decision | null>(null);
+  const [batchOpen, setBatchOpen] = useState(false);
 
   const isPM = me?.roles?.some((r) => PM_ROLE_IDS.includes(r)) ?? false;
 
@@ -140,9 +143,12 @@ export default function Decisiones() {
         }
       }
       if (phaseFilter !== "all" && d.phase !== phaseFilter) return false;
+      if (decidedByMeOnly) {
+        if (!me?.id || d.decidedByUserId !== me.id) return false;
+      }
       return true;
     });
-  }, [decisions, statusFilter, ownerFilter, phaseFilter]);
+  }, [decisions, statusFilter, ownerFilter, phaseFilter, decidedByMeOnly, me?.id]);
 
   const openCount =
     decisions?.filter(
@@ -202,9 +208,24 @@ export default function Decisiones() {
     }
   };
 
-  const handleResolve = async (id: string, resolution: string) => {
+  const handleResolve = async (
+    id: string,
+    data: {
+      decidedOutcome: string;
+      decidedOptionId: string | null;
+      decidedAt: string;
+    },
+  ) => {
     try {
-      await resolveMut.mutateAsync({ id, data: { resolution } });
+      await resolveMut.mutateAsync({
+        id,
+        data: {
+          decidedOutcome: data.decidedOutcome,
+          decidedOptionId: data.decidedOptionId,
+          decidedAt: data.decidedAt,
+          resolution: data.decidedOutcome,
+        },
+      });
       await invalidate();
       setResolving(null);
       toast({ title: "Decisión marcada como resuelta" });
@@ -243,7 +264,18 @@ export default function Decisiones() {
             documentada al resolverse.
           </p>
         </div>
-        <Button onClick={() => setCreateOpen(true)}>Nueva decisión</Button>
+        <div className="flex gap-2">
+          {isPM && (
+            <Button
+              variant="outline"
+              onClick={() => setBatchOpen(true)}
+              data-testid="button-open-decisions-batch"
+            >
+              Importar lote
+            </Button>
+          )}
+          <Button onClick={() => setCreateOpen(true)}>Nueva decisión</Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -330,6 +362,24 @@ export default function Decisiones() {
               </Select>
             </div>
           </div>
+          {me?.id && (
+            <div className="mt-3 flex items-center gap-2">
+              <input
+                id="filter-decided-by-me"
+                type="checkbox"
+                className="h-4 w-4"
+                checked={decidedByMeOnly}
+                onChange={(e) => setDecidedByMeOnly(e.target.checked)}
+                data-testid="checkbox-decided-by-me"
+              />
+              <Label
+                htmlFor="filter-decided-by-me"
+                className="text-xs cursor-pointer"
+              >
+                Decididas por mí
+              </Label>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -391,7 +441,14 @@ export default function Decisiones() {
           decision={resolving}
           pending={resolveMut.isPending}
           onClose={() => setResolving(null)}
-          onSubmit={(resolution) => handleResolve(resolving.id, resolution)}
+          onSubmit={(data) => handleResolve(resolving.id, data)}
+        />
+      )}
+
+      {batchOpen && (
+        <BatchImportDecisionsDialog
+          open={batchOpen}
+          onClose={() => setBatchOpen(false)}
         />
       )}
     </div>
@@ -527,12 +584,39 @@ function DecisionCard({
               <p className="whitespace-pre-wrap">{d.optionsConsidered}</p>
             </div>
           )}
-          {d.resolution && (
-            <div className="border-l-2 border-emerald-600 pl-3">
-              <p className="font-medium text-xs uppercase tracking-wide text-emerald-700 mb-1">
-                Resolución ({formatDate(d.resolvedAt ?? null)})
-              </p>
-              <p className="whitespace-pre-wrap">{d.resolution}</p>
+          {(d.decidedOutcome || d.resolution) && (
+            <div
+              className="border-l-4 border-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 pl-3 pr-3 py-2 rounded-r"
+              data-testid={`decision-resolved-${d.id}`}
+            >
+              {(() => {
+                const outcome = d.decidedOutcome ?? d.resolution ?? "";
+                const decisorName = d.decidedByUserId
+                  ? members.find((m) => m.id === d.decidedByUserId)
+                      ?.displayName ?? "Miembro del equipo"
+                  : null;
+                const when = d.decidedAt ?? d.resolvedAt ?? null;
+                const headerParts: string[] = [];
+                if (decisorName)
+                  headerParts.push(`Decidido por ${decisorName}`);
+                if (when) headerParts.push(`el ${formatDate(when)}`);
+                return (
+                  <>
+                    <p className="font-semibold text-sm text-emerald-800 dark:text-emerald-300 mb-1">
+                      {headerParts.join(" ") || "Resolución registrada"}
+                      {d.decidedOptionId && (
+                        <>
+                          {" · "}
+                          <span className="italic">
+                            Opción: {d.decidedOptionId}
+                          </span>
+                        </>
+                      )}
+                    </p>
+                    <p className="whitespace-pre-wrap text-sm">{outcome}</p>
+                  </>
+                );
+              })()}
             </div>
           )}
         </CardContent>
@@ -771,14 +855,42 @@ function ResolveDialog({
   decision: Decision;
   pending: boolean;
   onClose: () => void;
-  onSubmit: (resolution: string) => void;
+  onSubmit: (data: {
+    decidedOutcome: string;
+    decidedOptionId: string | null;
+    decidedAt: string;
+  }) => void;
 }) {
-  const [resolution, setResolution] = useState("");
+  const today = new Date().toISOString().slice(0, 10);
+  const [decidedOutcome, setDecidedOutcome] = useState("");
+  const [decidedOptionId, setDecidedOptionId] = useState<string>(NONE_VALUE);
+  const [decidedAt, setDecidedAt] = useState<string>(today);
+
+  const optionChoices = useMemo(() => {
+    const raw = decision.optionsConsidered ?? "";
+    return raw
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean)
+      .map((line) => {
+        const sepIdx = line.search(/[:—-]/);
+        const label =
+          sepIdx > 0 ? line.slice(0, sepIdx).trim() : line;
+        return label;
+      })
+      .filter((label, idx, arr) => arr.indexOf(label) === idx);
+  }, [decision.optionsConsidered]);
 
   const submit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!resolution.trim()) return;
-    onSubmit(resolution.trim());
+    if (!decidedOutcome.trim()) return;
+    if (!decidedAt) return;
+    onSubmit({
+      decidedOutcome: decidedOutcome.trim(),
+      decidedOptionId:
+        decidedOptionId === NONE_VALUE ? null : decidedOptionId,
+      decidedAt,
+    });
   };
 
   return (
@@ -788,25 +900,74 @@ function ResolveDialog({
           <DialogTitle>Resolver decisión</DialogTitle>
           <DialogDescription>
             "{decision.title}" — describe la decisión tomada. El equipo recibirá
-            un aviso.
+            un aviso con el resultado y quién decidió.
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={submit} className="space-y-4">
+          {optionChoices.length > 0 && (
+            <div className="space-y-1.5">
+              <Label htmlFor="decided-option">Opción elegida</Label>
+              <Select
+                value={decidedOptionId}
+                onValueChange={setDecidedOptionId}
+              >
+                <SelectTrigger
+                  id="decided-option"
+                  data-testid="select-decided-option"
+                >
+                  <SelectValue placeholder="(sin opción específica)" />
+                </SelectTrigger>
+                <SelectContent>
+                  {optionChoices.map((opt) => (
+                    <SelectItem key={opt} value={opt}>
+                      {opt}
+                    </SelectItem>
+                  ))}
+                  <SelectItem value={NONE_VALUE}>
+                    Otra (especificar abajo)
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-[11px] text-muted-foreground">
+                Opciones detectadas en el cuerpo de la decisión. Si la decisión
+                final no encaja con ninguna, elige "Otra" y descríbela en el
+                resultado.
+              </p>
+            </div>
+          )}
           <div className="space-y-1.5">
-            <Label htmlFor="resolution-text">Resolución *</Label>
+            <Label htmlFor="decided-outcome">Resultado *</Label>
             <Textarea
-              id="resolution-text"
-              value={resolution}
-              onChange={(e) => setResolution(e.target.value)}
+              id="decided-outcome"
+              value={decidedOutcome}
+              onChange={(e) => setDecidedOutcome(e.target.value)}
               rows={5}
               required
+              maxLength={2000}
+              placeholder="¿Qué se decidió y por qué?"
+              data-testid="textarea-decided-outcome"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="decided-at">Fecha de la decisión *</Label>
+            <Input
+              id="decided-at"
+              type="date"
+              value={decidedAt}
+              onChange={(e) => setDecidedAt(e.target.value)}
+              required
+              data-testid="input-decided-at"
             />
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>
               Cancelar
             </Button>
-            <Button type="submit" disabled={pending}>
+            <Button
+              type="submit"
+              disabled={pending || !decidedOutcome.trim() || !decidedAt}
+              data-testid="button-submit-resolve"
+            >
               {pending ? "Guardando..." : "Marcar resuelta"}
             </Button>
           </DialogFooter>

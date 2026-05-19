@@ -24,4 +24,16 @@ export interface DecisionUpdate {
   /** @nullable */
   dueDate?: Date | null;
   status?: DecisionUpdateStatus;
+  /**
+     * @maxLength 240
+     * @nullable
+     */
+  decidedOptionId?: string | null;
+  /**
+     * @maxLength 2000
+     * @nullable
+     */
+  decidedOutcome?: string | null;
+  /** @nullable */
+  decidedAt?: Date | null;
 }

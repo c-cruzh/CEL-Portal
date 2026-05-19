@@ -29,6 +29,14 @@ export interface Decision {
   /** @nullable */
   resolvedBy?: string | null;
   /** @nullable */
+  decidedOptionId?: string | null;
+  /** @nullable */
+  decidedOutcome?: string | null;
+  /** @nullable */
+  decidedByUserId?: string | null;
+  /** @nullable */
+  decidedAt?: Date | null;
+  /** @nullable */
   createdBy?: string | null;
   createdAt: Date;
   updatedAt: Date;

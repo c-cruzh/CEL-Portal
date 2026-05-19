@@ -44,6 +44,9 @@ type NotificationEvent =
       actor: { id: string; email: string; displayName: string };
       title: string;
       resolution: string;
+      decidedByLabel?: string;
+      decidedAt?: string;
+      decidedOptionLabel?: string | null;
     }
   | {
       kind: "decision_status_changed";
@@ -118,13 +121,25 @@ function renderEmail(ev: NotificationEvent): {
           `Dueño: ${ev.ownerLabel ?? "(sin asignar)"}\n` +
           `Fecha límite: ${ev.dueDate ?? "(sin definir)"}\n`,
       };
-    case "decision_resolved":
+    case "decision_resolved": {
+      const decidedBy = ev.decidedByLabel ?? who;
+      const decidedAt = ev.decidedAt
+        ? new Date(ev.decidedAt).toLocaleDateString("es-SV", {
+            dateStyle: "medium",
+          })
+        : null;
       return {
         subject: `[Portal CEL] Decisión resuelta: ${ev.title}`,
         text:
           `${who} marcó como resuelta la decisión "${ev.title}".\n\n` +
-          `Resolución:\n${ev.resolution}\n`,
+          `Decidido por: ${decidedBy}\n` +
+          (decidedAt ? `Fecha de la decisión: ${decidedAt}\n` : "") +
+          (ev.decidedOptionLabel
+            ? `Opción elegida: ${ev.decidedOptionLabel}\n`
+            : "") +
+          `\nResultado:\n${ev.resolution}\n`,
       };
+    }
     case "decision_status_changed":
       return {
         subject: `[Portal CEL] Decisión actualizada: ${ev.title}`,

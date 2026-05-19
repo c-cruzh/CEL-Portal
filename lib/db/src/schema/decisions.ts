@@ -27,6 +27,12 @@ export const decisionsTable = pgTable("decisions", {
   resolvedBy: text("resolved_by").references(() => usersTable.id, {
     onDelete: "set null",
   }),
+  decidedOptionId: text("decided_option_id"),
+  decidedOutcome: text("decided_outcome"),
+  decidedByUserId: text("decided_by_user_id").references(() => usersTable.id, {
+    onDelete: "set null",
+  }),
+  decidedAt: timestamp("decided_at", { withTimezone: true }),
   createdBy: text("created_by").references(() => usersTable.id, {
     onDelete: "set null",
   }),

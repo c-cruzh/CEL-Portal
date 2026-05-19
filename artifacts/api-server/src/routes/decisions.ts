@@ -27,7 +27,7 @@ async function getUserRoles(userId: string): Promise<string[]> {
   return rows.map((r) => r.roleId);
 }
 
-function serialize(row: typeof decisionsTable.$inferSelect) {
+export function serializeDecision(row: typeof decisionsTable.$inferSelect) {
   return {
     id: row.id,
     title: row.title,
@@ -42,11 +42,17 @@ function serialize(row: typeof decisionsTable.$inferSelect) {
     resolution: row.resolution ?? null,
     resolvedAt: row.resolvedAt ?? null,
     resolvedBy: row.resolvedBy ?? null,
+    decidedOptionId: row.decidedOptionId ?? null,
+    decidedOutcome: row.decidedOutcome ?? null,
+    decidedByUserId: row.decidedByUserId ?? null,
+    decidedAt: row.decidedAt ?? null,
     createdBy: row.createdBy ?? null,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
 }
+
+const serialize = serializeDecision;
 
 async function loadActor(userId: string) {
   const [actor] = await db
@@ -201,6 +207,14 @@ router.patch("/decisions/:id", requireAuth, async (req, res): Promise<void> => {
       : null;
   }
   if (u.status !== undefined) patch.status = u.status;
+  if (u.decidedOptionId !== undefined)
+    patch.decidedOptionId = u.decidedOptionId ?? null;
+  if (u.decidedOutcome !== undefined) {
+    patch.decidedOutcome = u.decidedOutcome ?? null;
+    patch.resolution = u.decidedOutcome ?? null;
+  }
+  if (u.decidedAt !== undefined)
+    patch.decidedAt = u.decidedAt ?? null;
 
   const [updated] = await db
     .update(decisionsTable)
@@ -263,7 +277,31 @@ router.post(
     const id = getIdParam(req.params.id);
     const parsed = ResolveDecisionBody.safeParse(req.body);
     if (!parsed.success) {
-      res.status(400).json({ error: parsed.error.message });
+      const missing = new Set<string>();
+      for (const issue of parsed.error.issues) {
+        const top = issue.path[0];
+        if (typeof top === "string") missing.add(top);
+      }
+      const required = ["decidedOutcome", "decidedAt"];
+      const missingRequired = required.filter((f) => missing.has(f));
+      const message =
+        missingRequired.length > 0
+          ? `Para marcar la decisión como resuelta debes indicar: ${missingRequired
+              .map((f) =>
+                f === "decidedOutcome"
+                  ? "resultado (decidedOutcome)"
+                  : "fecha de la decisión (decidedAt)",
+              )
+              .join(" y ")}.`
+          : `Datos inválidos para resolver la decisión: ${parsed.error.message}`;
+      res.status(400).json({
+        error: message,
+        code: "decision_resolve_invalid",
+        issues: parsed.error.issues.map((i) => ({
+          field: i.path.join(".") || null,
+          message: i.message,
+        })),
+      });
       return;
     }
     const [existing] = await db
@@ -292,13 +330,19 @@ router.post(
     }
 
     const now = new Date();
+    const decidedAt = parsed.data.decidedAt ?? now;
+    const outcome = parsed.data.decidedOutcome;
     const [updated] = await db
       .update(decisionsTable)
       .set({
         status: "resolved",
-        resolution: parsed.data.resolution,
+        resolution: outcome,
         resolvedAt: now,
         resolvedBy: req.userId!,
+        decidedOutcome: outcome,
+        decidedOptionId: parsed.data.decidedOptionId ?? null,
+        decidedByUserId: req.userId!,
+        decidedAt,
       })
       .where(eq(decisionsTable.id, id))
       .returning();
@@ -309,7 +353,10 @@ router.post(
         kind: "decision_resolved",
         actor,
         title: updated.title,
-        resolution: updated.resolution ?? "",
+        resolution: updated.decidedOutcome ?? updated.resolution ?? "",
+        decidedByLabel: `${actor.displayName} <${actor.email}>`,
+        decidedAt: (updated.decidedAt ?? now).toISOString(),
+        decidedOptionLabel: updated.decidedOptionId ?? null,
       });
     }
 
@@ -360,6 +407,10 @@ router.post(
     }
 
     const newStatus = parsed.data.status ?? "open";
+    // Note: decidedOutcome / decidedByUserId / decidedAt / decidedOptionId are
+    // preserved on reopen as part of the audit trail. The legacy `resolution`,
+    // `resolvedAt`, `resolvedBy` fields are cleared because they encode the
+    // "currently resolved" state, not the history.
     const [updated] = await db
       .update(decisionsTable)
       .set({

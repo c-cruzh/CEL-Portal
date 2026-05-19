@@ -887,6 +887,10 @@ export const ListDecisionsResponseItem = zod.object({
   "resolution": zod.string().nullish(),
   "resolvedAt": zod.coerce.date().nullish(),
   "resolvedBy": zod.string().nullish(),
+  "decidedOptionId": zod.string().nullish(),
+  "decidedOutcome": zod.string().nullish(),
+  "decidedByUserId": zod.string().nullish(),
+  "decidedAt": zod.coerce.date().nullish(),
   "createdBy": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
@@ -933,6 +937,10 @@ export const GetDecisionResponse = zod.object({
   "resolution": zod.string().nullish(),
   "resolvedAt": zod.coerce.date().nullish(),
   "resolvedBy": zod.string().nullish(),
+  "decidedOptionId": zod.string().nullish(),
+  "decidedOutcome": zod.string().nullish(),
+  "decidedByUserId": zod.string().nullish(),
+  "decidedAt": zod.coerce.date().nullish(),
   "createdBy": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
@@ -948,6 +956,10 @@ export const UpdateDecisionParams = zod.object({
 
 export const updateDecisionBodyTitleMax = 240;
 
+export const updateDecisionBodyDecidedOptionIdMax = 240;
+
+export const updateDecisionBodyDecidedOutcomeMax = 2000;
+
 
 
 export const UpdateDecisionBody = zod.object({
@@ -958,7 +970,10 @@ export const UpdateDecisionBody = zod.object({
   "ownerUserId": zod.string().nullish(),
   "ownerRole": zod.string().nullish(),
   "dueDate": zod.coerce.date().nullish(),
-  "status": zod.enum(['open', 'in_analysis', 'cancelled']).optional()
+  "status": zod.enum(['open', 'in_analysis', 'cancelled']).optional(),
+  "decidedOptionId": zod.string().max(updateDecisionBodyDecidedOptionIdMax).nullish(),
+  "decidedOutcome": zod.string().max(updateDecisionBodyDecidedOutcomeMax).nullish(),
+  "decidedAt": zod.coerce.date().nullish()
 })
 
 export const UpdateDecisionResponse = zod.object({
@@ -975,6 +990,10 @@ export const UpdateDecisionResponse = zod.object({
   "resolution": zod.string().nullish(),
   "resolvedAt": zod.coerce.date().nullish(),
   "resolvedBy": zod.string().nullish(),
+  "decidedOptionId": zod.string().nullish(),
+  "decidedOutcome": zod.string().nullish(),
+  "decidedByUserId": zod.string().nullish(),
+  "decidedAt": zod.coerce.date().nullish(),
   "createdBy": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
@@ -996,11 +1015,17 @@ export const ResolveDecisionParams = zod.object({
   "id": zod.coerce.string()
 })
 
+export const resolveDecisionBodyDecidedOutcomeMax = 2000;
+
+export const resolveDecisionBodyDecidedOptionIdMax = 240;
 
 
 
 export const ResolveDecisionBody = zod.object({
-  "resolution": zod.string().min(1)
+  "decidedOutcome": zod.string().min(1).max(resolveDecisionBodyDecidedOutcomeMax),
+  "decidedOptionId": zod.string().max(resolveDecisionBodyDecidedOptionIdMax).nullish(),
+  "decidedAt": zod.coerce.date(),
+  "resolution": zod.string().nullish().describe('Deprecated; kept for backward compatibility. Use decidedOutcome instead.')
 })
 
 export const ResolveDecisionResponse = zod.object({
@@ -1017,6 +1042,10 @@ export const ResolveDecisionResponse = zod.object({
   "resolution": zod.string().nullish(),
   "resolvedAt": zod.coerce.date().nullish(),
   "resolvedBy": zod.string().nullish(),
+  "decidedOptionId": zod.string().nullish(),
+  "decidedOutcome": zod.string().nullish(),
+  "decidedByUserId": zod.string().nullish(),
+  "decidedAt": zod.coerce.date().nullish(),
   "createdBy": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
@@ -1048,9 +1077,81 @@ export const ReopenDecisionResponse = zod.object({
   "resolution": zod.string().nullish(),
   "resolvedAt": zod.coerce.date().nullish(),
   "resolvedBy": zod.string().nullish(),
+  "decidedOptionId": zod.string().nullish(),
+  "decidedOutcome": zod.string().nullish(),
+  "decidedByUserId": zod.string().nullish(),
+  "decidedAt": zod.coerce.date().nullish(),
   "createdBy": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Import a batch of decisions (PM only). All-or-nothing.
+ */
+export const batchImportDecisionsBodyDecisionsItemTitleMax = 240;
+
+export const batchImportDecisionsBodyDecisionsItemContextMax = 4000;
+
+export const batchImportDecisionsBodyDecisionsItemDueDateRegExp = new RegExp('^\\d{4}-\\d{2}-\\d{2}$');
+export const batchImportDecisionsBodyDecisionsItemOptionsItemLabelMax = 240;
+
+export const batchImportDecisionsBodyDecisionsItemOptionsItemBodyMax = 2000;
+
+export const batchImportDecisionsBodyDecisionsMax = 500;
+
+
+
+export const BatchImportDecisionsBody = zod.object({
+  "decisions": zod.array(zod.object({
+  "title": zod.string().min(1).max(batchImportDecisionsBodyDecisionsItemTitleMax),
+  "context": zod.string().max(batchImportDecisionsBodyDecisionsItemContextMax).nullish(),
+  "ownerRole": zod.string().nullish(),
+  "ownerUserId": zod.string().nullish(),
+  "dueDate": zod.string().regex(batchImportDecisionsBodyDecisionsItemDueDateRegExp).nullish(),
+  "phaseId": zod.string().nullish(),
+  "priority": zod.string().nullish(),
+  "options": zod.array(zod.object({
+  "label": zod.string().min(1).max(batchImportDecisionsBodyDecisionsItemOptionsItemLabelMax),
+  "body": zod.string().max(batchImportDecisionsBodyDecisionsItemOptionsItemBodyMax).nullish()
+})).optional()
+})).min(1).max(batchImportDecisionsBodyDecisionsMax)
+})
+
+
+
+
+export const BatchImportDecisionsResponse = zod.object({
+  "created": zod.number(),
+  "rejected": zod.number(),
+  "errors": zod.array(zod.object({
+  "row": zod.number().min(1),
+  "field": zod.string().nullish(),
+  "message": zod.string()
+})),
+  "decisions": zod.array(zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "context": zod.string(),
+  "optionsConsidered": zod.string(),
+  "phase": zod.string().nullish(),
+  "ownerUserId": zod.string().nullish(),
+  "ownerRole": zod.string().nullish(),
+  "requestedAt": zod.coerce.date(),
+  "dueDate": zod.coerce.date().nullish(),
+  "status": zod.enum(['open', 'in_analysis', 'resolved', 'cancelled']),
+  "resolution": zod.string().nullish(),
+  "resolvedAt": zod.coerce.date().nullish(),
+  "resolvedBy": zod.string().nullish(),
+  "decidedOptionId": zod.string().nullish(),
+  "decidedOutcome": zod.string().nullish(),
+  "decidedByUserId": zod.string().nullish(),
+  "decidedAt": zod.coerce.date().nullish(),
+  "createdBy": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})).optional()
 })
 
 

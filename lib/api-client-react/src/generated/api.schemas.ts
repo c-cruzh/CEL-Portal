@@ -600,6 +600,14 @@ export interface Decision {
   /** @nullable */
   resolvedBy?: string | null;
   /** @nullable */
+  decidedOptionId?: string | null;
+  /** @nullable */
+  decidedOutcome?: string | null;
+  /** @nullable */
+  decidedByUserId?: string | null;
+  /** @nullable */
+  decidedAt?: string | null;
+  /** @nullable */
   createdBy?: string | null;
   createdAt: string;
   updatedAt: string;
@@ -649,11 +657,92 @@ export interface DecisionUpdate {
   /** @nullable */
   dueDate?: string | null;
   status?: DecisionUpdateStatus;
+  /**
+     * @maxLength 240
+     * @nullable
+     */
+  decidedOptionId?: string | null;
+  /**
+     * @maxLength 2000
+     * @nullable
+     */
+  decidedOutcome?: string | null;
+  /** @nullable */
+  decidedAt?: string | null;
 }
 
 export interface DecisionResolveInput {
-  /** @minLength 1 */
-  resolution: string;
+  /**
+     * @minLength 1
+     * @maxLength 2000
+     */
+  decidedOutcome: string;
+  /**
+     * @maxLength 240
+     * @nullable
+     */
+  decidedOptionId?: string | null;
+  decidedAt: string;
+  /**
+     * Deprecated; kept for backward compatibility. Use decidedOutcome instead.
+     * @nullable
+     */
+  resolution?: string | null;
+}
+
+export interface DecisionBatchOption {
+  /**
+     * @minLength 1
+     * @maxLength 240
+     */
+  label: string;
+  /**
+     * @maxLength 2000
+     * @nullable
+     */
+  body?: string | null;
+}
+
+export interface DecisionBatchItem {
+  /**
+     * @minLength 1
+     * @maxLength 240
+     */
+  title: string;
+  /**
+     * @maxLength 4000
+     * @nullable
+     */
+  context?: string | null;
+  /** @nullable */
+  ownerRole?: string | null;
+  /** @nullable */
+  ownerUserId?: string | null;
+  /**
+     * @nullable
+     * @pattern ^\d{4}-\d{2}-\d{2}$
+     */
+  dueDate?: string | null;
+  /** @nullable */
+  phaseId?: string | null;
+  /** @nullable */
+  priority?: string | null;
+  options?: DecisionBatchOption[];
+}
+
+export interface BatchImportDecisionsInput {
+  /**
+     * @minItems 1
+     * @maxItems 500
+     */
+  decisions: DecisionBatchItem[];
+}
+
+export interface BatchImportDecisionsResult {
+  created: number;
+  rejected: number;
+  errors: BatchImportRowError[];
+  decisions?: Decision[];
 }
 
 export type DecisionReopenInputStatus = typeof DecisionReopenInputStatus[keyof typeof DecisionReopenInputStatus];
@@ -790,6 +879,11 @@ export const ListDecisionsStatus = {
   resolved: 'resolved',
   cancelled: 'cancelled',
 } as const;
+
+export type BatchImportDecisionsBodyTwo = {
+  /** CSV file with header row. Recognised columns: title, context, ownerRole, ownerUserId, dueDate (YYYY-MM-DD), phaseId, priority, options (label1|label2 or label1;label2). */
+  file: Blob;
+};
 
 export type ListAdminAuditLogParams = {
 action?: string;

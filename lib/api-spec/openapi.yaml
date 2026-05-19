@@ -1082,6 +1082,49 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /admin/decisions/batch:
+    post:
+      operationId: batchImportDecisions
+      tags: [admin, decisions]
+      summary: Import a batch of decisions (PM only). All-or-nothing.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BatchImportDecisionsInput"
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: >-
+                    CSV file with header row. Recognised columns: title, context,
+                    ownerRole, ownerUserId, dueDate (YYYY-MM-DD), phaseId, priority,
+                    options (label1|label2 or label1;label2).
+      responses:
+        "200":
+          description: Imported
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchImportDecisionsResult"
+        "400":
+          description: Validation failed (no rows were inserted)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BatchImportDecisionsResult"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /admin/invitations:
     get:
       operationId: listInvitations
@@ -2015,6 +2058,15 @@ components:
           format: date-time
         resolvedBy:
           type: ["string", "null"]
+        decidedOptionId:
+          type: ["string", "null"]
+        decidedOutcome:
+          type: ["string", "null"]
+        decidedByUserId:
+          type: ["string", "null"]
+        decidedAt:
+          type: ["string", "null"]
+          format: date-time
         createdBy:
           type: ["string", "null"]
         createdAt:
@@ -2069,14 +2121,100 @@ components:
         status:
           type: string
           enum: [open, in_analysis, cancelled]
+        decidedOptionId:
+          type: ["string", "null"]
+          maxLength: 240
+        decidedOutcome:
+          type: ["string", "null"]
+          maxLength: 2000
+        decidedAt:
+          type: ["string", "null"]
+          format: date-time
 
     DecisionResolveInput:
       type: object
-      required: [resolution]
+      required: [decidedOutcome, decidedAt]
       properties:
-        resolution:
+        decidedOutcome:
           type: string
           minLength: 1
+          maxLength: 2000
+        decidedOptionId:
+          type: ["string", "null"]
+          maxLength: 240
+        decidedAt:
+          type: string
+          format: date-time
+        resolution:
+          type: ["string", "null"]
+          description: Deprecated; kept for backward compatibility. Use decidedOutcome instead.
+
+    DecisionBatchItem:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 240
+        context:
+          type: ["string", "null"]
+          maxLength: 4000
+        ownerRole:
+          type: ["string", "null"]
+        ownerUserId:
+          type: ["string", "null"]
+        dueDate:
+          type: ["string", "null"]
+          pattern: '^\d{4}-\d{2}-\d{2}$'
+        phaseId:
+          type: ["string", "null"]
+        priority:
+          type: ["string", "null"]
+        options:
+          type: array
+          items:
+            $ref: "#/components/schemas/DecisionBatchOption"
+
+    DecisionBatchOption:
+      type: object
+      required: [label]
+      properties:
+        label:
+          type: string
+          minLength: 1
+          maxLength: 240
+        body:
+          type: ["string", "null"]
+          maxLength: 2000
+
+    BatchImportDecisionsInput:
+      type: object
+      required: [decisions]
+      properties:
+        decisions:
+          type: array
+          items:
+            $ref: "#/components/schemas/DecisionBatchItem"
+          minItems: 1
+          maxItems: 500
+
+    BatchImportDecisionsResult:
+      type: object
+      required: [created, rejected, errors]
+      properties:
+        created:
+          type: integer
+        rejected:
+          type: integer
+        errors:
+          type: array
+          items:
+            $ref: "#/components/schemas/BatchImportRowError"
+        decisions:
+          type: array
+          items:
+            $ref: "#/components/schemas/Decision"
 
     DecisionReopenInput:
       type: object

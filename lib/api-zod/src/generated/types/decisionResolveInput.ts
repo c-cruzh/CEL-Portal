@@ -7,6 +7,20 @@
  */
 
 export interface DecisionResolveInput {
-  /** @minLength 1 */
-  resolution: string;
+  /**
+     * @minLength 1
+     * @maxLength 2000
+     */
+  decidedOutcome: string;
+  /**
+     * @maxLength 240
+     * @nullable
+     */
+  decidedOptionId?: string | null;
+  decidedAt: Date;
+  /**
+     * Deprecated; kept for backward compatibility. Use decidedOutcome instead.
+     * @nullable
+     */
+  resolution?: string | null;
 }

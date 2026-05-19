@@ -22,6 +22,9 @@ import type {
 import type {
   AdminAuditLogEntry,
   AdminRole,
+  BatchImportDecisionsBodyTwo,
+  BatchImportDecisionsInput,
+  BatchImportDecisionsResult,
   BatchImportKanbanCardsBodyTwo,
   BatchImportKanbanCardsInput,
   BatchImportKanbanCardsResult,
@@ -3699,6 +3702,77 @@ export const useReopenDecision = <TError = ErrorType<ErrorResponse>,
         TContext
       > => {
       return useMutation(getReopenDecisionMutationOptions(options));
+    }
+
+export const getBatchImportDecisionsUrl = () => {
+
+
+
+
+  return `/api/admin/decisions/batch`
+}
+
+/**
+ * @summary Import a batch of decisions (PM only). All-or-nothing.
+ */
+export const batchImportDecisions = async (batchImportDecisionsBody: BatchImportDecisionsInput | BatchImportDecisionsBodyTwo, options?: RequestInit): Promise<BatchImportDecisionsResult> => {
+
+  return customFetch<BatchImportDecisionsResult>(getBatchImportDecisionsUrl(),
+  {
+    ...options,
+    method: 'POST'
+    ,
+    body: JSON.stringify(
+      batchImportDecisionsBody,)
+  }
+);}
+
+
+
+
+export const getBatchImportDecisionsMutationOptions = <TError = ErrorType<BatchImportDecisionsResult | ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof batchImportDecisions>>, TError,{data: BodyType<BatchImportDecisionsInput | BatchImportDecisionsBodyTwo>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof batchImportDecisions>>, TError,{data: BodyType<BatchImportDecisionsInput | BatchImportDecisionsBodyTwo>}, TContext> => {
+
+const mutationKey = ['batchImportDecisions'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof batchImportDecisions>>, {data: BodyType<BatchImportDecisionsInput | BatchImportDecisionsBodyTwo>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  batchImportDecisions(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type BatchImportDecisionsMutationResult = NonNullable<Awaited<ReturnType<typeof batchImportDecisions>>>
+    export type BatchImportDecisionsMutationBody = BodyType<BatchImportDecisionsInput | BatchImportDecisionsBodyTwo>
+    export type BatchImportDecisionsMutationError = ErrorType<BatchImportDecisionsResult | ErrorResponse>
+
+    /**
+ * @summary Import a batch of decisions (PM only). All-or-nothing.
+ */
+export const useBatchImportDecisions = <TError = ErrorType<BatchImportDecisionsResult | ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof batchImportDecisions>>, TError,{data: BodyType<BatchImportDecisionsInput | BatchImportDecisionsBodyTwo>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof batchImportDecisions>>,
+        TError,
+        {data: BodyType<BatchImportDecisionsInput | BatchImportDecisionsBodyTwo>},
+        TContext
+      > => {
+      return useMutation(getBatchImportDecisionsMutationOptions(options));
     }
 
 export const getListInvitationsUrl = () => {

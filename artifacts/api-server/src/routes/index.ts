@@ -11,6 +11,7 @@ import milestonesRouter from "./milestones";
 import adminMilestonesRouter from "./adminMilestones";
 import documentsRouter from "./documents";
 import decisionsRouter from "./decisions";
+import adminDecisionsRouter from "./adminDecisions";
 import calendarRouter from "./calendar";
 import adminRouter from "./admin";
 
@@ -28,6 +29,7 @@ router.use(milestonesRouter);
 router.use(adminMilestonesRouter);
 router.use(documentsRouter);
 router.use(decisionsRouter);
+router.use(adminDecisionsRouter);
 router.use(calendarRouter);
 router.use(adminRouter);
 
