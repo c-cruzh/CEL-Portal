@@ -9,6 +9,7 @@ import kanbanRouter from "./kanban";
 import milestonesRouter from "./milestones";
 import documentsRouter from "./documents";
 import decisionsRouter from "./decisions";
+import calendarRouter from "./calendar";
 
 const router: IRouter = Router();
 
@@ -22,5 +23,6 @@ router.use(kanbanRouter);
 router.use(milestonesRouter);
 router.use(documentsRouter);
 router.use(decisionsRouter);
+router.use(calendarRouter);
 
 export default router;

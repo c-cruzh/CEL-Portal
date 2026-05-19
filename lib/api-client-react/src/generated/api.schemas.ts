@@ -90,6 +90,11 @@ export interface TeamSummary {
   coverage: RoleCoverage[];
 }
 
+export interface CalendarFeedUrl {
+  token: string;
+  url: string;
+}
+
 export interface ProjectConfig {
   /** @nullable */
   startDate: string | null;

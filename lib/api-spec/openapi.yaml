@@ -566,6 +566,19 @@ paths:
                 items:
                   $ref: "#/components/schemas/KanbanCard"
 
+  /calendar/feed-url:
+    get:
+      operationId: getCalendarFeedUrl
+      tags: [milestones]
+      summary: Return the public iCalendar subscription URL (token-protected)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CalendarFeedUrl"
+
   /documents/folders:
     get:
       operationId: listDocumentFolders
@@ -1085,6 +1098,15 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/RoleCoverage"
+
+    CalendarFeedUrl:
+      type: object
+      required: [token, url]
+      properties:
+        token:
+          type: string
+        url:
+          type: string
 
     ProjectConfig:
       type: object

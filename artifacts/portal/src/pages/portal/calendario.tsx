@@ -6,6 +6,8 @@ import {
   useUpdateMilestone,
   useDeleteMilestone,
   useGetMe,
+  useGetCalendarFeedUrl,
+  getGetCalendarFeedUrlUrl,
   getListMilestonesQueryKey,
   type Milestone,
   type MilestoneInput,
@@ -118,11 +120,14 @@ export default function Calendario() {
             Hitos y reuniones del proyecto. Modo {startDate ? "calendario" : "T0 + n semanas"}.
           </p>
         </div>
-        {isPM && (
-          <Button onClick={() => setEditing("new")} data-testid="button-new-milestone">
-            + Nuevo hito
-          </Button>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          <ExportCalendarButtons />
+          {isPM && (
+            <Button onClick={() => setEditing("new")} data-testid="button-new-milestone">
+              + Nuevo hito
+            </Button>
+          )}
+        </div>
       </div>
 
       {!startDate && (
@@ -665,5 +670,117 @@ function MilestoneDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+function ExportCalendarButtons() {
+  const { toast } = useToast();
+  const [open, setOpen] = useState(false);
+  const [downloading, setDownloading] = useState(false);
+  const { data: feed, isLoading: loadingFeed } = useGetCalendarFeedUrl();
+
+  const handleDownload = async () => {
+    setDownloading(true);
+    try {
+      const res = await fetch(getGetCalendarFeedUrlUrl().replace(/feed-url$/, "export.ics"), {
+        credentials: "include",
+      });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "calendario-piloto-cel.ics";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast({ title: "Calendario descargado", description: "Ábrelo en Google Calendar u Outlook." });
+    } catch (err) {
+      toast({
+        title: "No se pudo descargar el calendario",
+        description: err instanceof Error ? err.message : "Error inesperado",
+        variant: "destructive",
+      });
+    } finally {
+      setDownloading(false);
+    }
+  };
+
+  const handleCopy = async () => {
+    if (!feed?.url) return;
+    try {
+      await navigator.clipboard.writeText(feed.url);
+      toast({ title: "URL copiada", description: "Pégala en tu calendario para suscribirte." });
+    } catch {
+      toast({ title: "No se pudo copiar", variant: "destructive" });
+    }
+  };
+
+  return (
+    <>
+      <Button
+        variant="outline"
+        onClick={handleDownload}
+        disabled={downloading}
+        data-testid="button-export-ics"
+      >
+        {downloading ? "Descargando…" : "Exportar (.ics)"}
+      </Button>
+      <Button
+        variant="ghost"
+        onClick={() => setOpen(true)}
+        data-testid="button-subscribe-ics"
+      >
+        Suscribirse
+      </Button>
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Suscribirse al calendario</DialogTitle>
+            <DialogDescription>
+              Usa esta URL para suscribirte desde Google Calendar u Outlook. El feed
+              se actualiza automáticamente cuando cambia T0 o algún hito.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <div className="space-y-2">
+              <Label htmlFor="feed-url">URL de suscripción</Label>
+              <div className="flex gap-2">
+                <Input
+                  id="feed-url"
+                  readOnly
+                  value={loadingFeed ? "Generando…" : (feed?.url ?? "")}
+                  onFocus={(e) => e.currentTarget.select()}
+                  data-testid="input-feed-url"
+                />
+                <Button onClick={handleCopy} disabled={!feed?.url} data-testid="button-copy-feed-url">
+                  Copiar
+                </Button>
+              </div>
+            </div>
+            <div className="text-xs text-muted-foreground space-y-1">
+              <p>
+                <span className="font-medium text-foreground">Google Calendar:</span>{" "}
+                Otros calendarios → + → Desde URL.
+              </p>
+              <p>
+                <span className="font-medium text-foreground">Outlook:</span> Agregar
+                calendario → Suscribirse desde web.
+              </p>
+              <p>
+                Cualquiera con esta URL puede ver los hitos del piloto, así que no la
+                compartas fuera del equipo.
+              </p>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpen(false)}>
+              Cerrar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

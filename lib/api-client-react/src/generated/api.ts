@@ -20,6 +20,7 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  CalendarFeedUrl,
   Cv,
   CvInput,
   Decision,
@@ -2206,6 +2207,83 @@ export const useMoveKanbanCard = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getMoveKanbanCardMutationOptions(options));
     }
+
+export const getGetCalendarFeedUrlUrl = () => {
+
+
+
+
+  return `/api/calendar/feed-url`
+}
+
+/**
+ * @summary Return the public iCalendar subscription URL (token-protected)
+ */
+export const getCalendarFeedUrl = async ( options?: RequestInit): Promise<CalendarFeedUrl> => {
+
+  return customFetch<CalendarFeedUrl>(getGetCalendarFeedUrlUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetCalendarFeedUrlQueryKey = () => {
+    return [
+    `/api/calendar/feed-url`
+    ] as const;
+    }
+
+
+export const getGetCalendarFeedUrlQueryOptions = <TData = Awaited<ReturnType<typeof getCalendarFeedUrl>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCalendarFeedUrl>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetCalendarFeedUrlQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getCalendarFeedUrl>>> = ({ signal }) => getCalendarFeedUrl({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getCalendarFeedUrl>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetCalendarFeedUrlQueryResult = NonNullable<Awaited<ReturnType<typeof getCalendarFeedUrl>>>
+export type GetCalendarFeedUrlQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Return the public iCalendar subscription URL (token-protected)
+ */
+
+export function useGetCalendarFeedUrl<TData = Awaited<ReturnType<typeof getCalendarFeedUrl>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getCalendarFeedUrl>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetCalendarFeedUrlQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getListDocumentFoldersUrl = () => {
 

@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './calendarFeedUrl';
 export * from './cv';
 export * from './cvInput';
 export * from './decision';

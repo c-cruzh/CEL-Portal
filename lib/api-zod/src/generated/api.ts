@@ -508,6 +508,15 @@ export const MoveKanbanCardResponse = zod.array(MoveKanbanCardResponseItem)
 
 
 /**
+ * @summary Return the public iCalendar subscription URL (token-protected)
+ */
+export const GetCalendarFeedUrlResponse = zod.object({
+  "token": zod.string(),
+  "url": zod.string()
+})
+
+
+/**
  * @summary List document folders available in the repository
  */
 export const ListDocumentFoldersResponseItem = zod.object({
