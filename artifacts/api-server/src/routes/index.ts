@@ -10,6 +10,7 @@ import milestonesRouter from "./milestones";
 import documentsRouter from "./documents";
 import decisionsRouter from "./decisions";
 import calendarRouter from "./calendar";
+import adminRouter from "./admin";
 
 const router: IRouter = Router();
 
@@ -24,5 +25,6 @@ router.use(milestonesRouter);
 router.use(documentsRouter);
 router.use(decisionsRouter);
 router.use(calendarRouter);
+router.use(adminRouter);
 
 export default router;

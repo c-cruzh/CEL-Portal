@@ -6,6 +6,8 @@ import {
   kanbanColumnsTable,
   milestonesTable,
   documentFoldersTable,
+  usersTable,
+  userRolesTable,
 } from "./index";
 import { sql } from "drizzle-orm";
 import { PHASES_FOR_SEED } from "@workspace/project-domain";
@@ -177,6 +179,35 @@ async function seedMilestones(): Promise<number> {
   return items.length;
 }
 
+// Idempotent admin bootstrap. Ensures that Camila and Kevin have the expected
+// PM/admin roles whenever they already have an account in the portal. Does NOT
+// create user rows (those come from Clerk-driven signup), so it is safe to run
+// before either of them has logged in.
+const ADMIN_ROLE_BOOTSTRAP: Array<{ email: string; roles: string[] }> = [
+  {
+    email: "camila@c2labs.ai",
+    roles: ["pm_lead", "ml_engineer", "data_engineer"],
+  },
+  { email: "kevin@c2labs.ai", roles: ["pm_lead"] },
+];
+
+async function bootstrapAdminRoles(): Promise<void> {
+  for (const entry of ADMIN_ROLE_BOOTSTRAP) {
+    const rows = await db.execute(
+      sql`SELECT id FROM users WHERE lower(email) = ${entry.email} LIMIT 1`,
+    );
+    const userId = (rows.rows[0] as { id?: string } | undefined)?.id;
+    if (!userId) continue;
+    for (const roleId of entry.roles) {
+      await db
+        .insert(userRolesTable)
+        .values({ userId, roleId })
+        .onConflictDoNothing();
+    }
+  }
+  void usersTable;
+}
+
 async function main(): Promise<void> {
   const validIds = ROLES.map((r) => r.id);
   await db.execute(
@@ -222,6 +253,8 @@ async function main(): Promise<void> {
         set: { label: folder.label, sortOrder: folder.sortOrder },
       });
   }
+
+  await bootstrapAdminRoles();
 
   const count = await db.execute(sql`SELECT COUNT(*)::int AS n FROM roles`);
   // eslint-disable-next-line no-console

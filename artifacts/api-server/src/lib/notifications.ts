@@ -390,6 +390,54 @@ export function notifyAsync(ev: NotificationEvent): void {
   void sendTeamNotification(ev);
 }
 
+export async function sendInvitationEmail(args: {
+  email: string;
+  invitedByLabel: string;
+  suggestedRoles: string[];
+  signupUrl: string;
+}): Promise<NotificationStatus> {
+  const triggeredBy = args.invitedByLabel;
+  const subject = `[Portal CEL] Te invitaron al Portal del Piloto`;
+  const rolesLine = args.suggestedRoles.length
+    ? `Roles sugeridos: ${args.suggestedRoles.join(", ")}\n`
+    : "";
+  const text =
+    `${args.invitedByLabel} te invitó al Portal CEL del Piloto de pronóstico hidrológico.\n\n` +
+    `Entra a ${args.signupUrl} y crea tu cuenta con este correo (${args.email}).\n` +
+    rolesLine +
+    `\nCualquier duda, contacta directamente al equipo del piloto.\n`;
+
+  if (!process.env.RESEND_API_KEY) {
+    await recordLog({
+      eventKind: "invitation_sent",
+      recipients: [args.email.toLowerCase()],
+      status: "no_provider",
+      providerMessage: "RESEND_API_KEY no configurada",
+      triggeredBy,
+    });
+    return "no_provider";
+  }
+  const result = await sendViaResend([args.email], subject, text);
+  if (!result.ok) {
+    await recordLog({
+      eventKind: "invitation_sent",
+      recipients: [args.email.toLowerCase()],
+      status: "failed",
+      providerMessage: result.message,
+      triggeredBy,
+    });
+    return "failed";
+  }
+  await recordLog({
+    eventKind: "invitation_sent",
+    recipients: [args.email.toLowerCase()],
+    status: "sent",
+    providerMessage: null,
+    triggeredBy,
+  });
+  return "sent";
+}
+
 async function sendPersonalNotification(
   ev: PersonalNotificationEvent,
   recipient: { userId: string; email: string; displayName: string },

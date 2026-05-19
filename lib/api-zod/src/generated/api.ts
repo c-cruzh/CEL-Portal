@@ -33,7 +33,8 @@ export const GetMeResponse = zod.object({
   "sizeBytes": zod.number(),
   "uploadedAt": zod.coerce.date()
 }),zod.null()]).optional(),
-  "emailNotificationsOptOut": zod.boolean()
+  "emailNotificationsOptOut": zod.boolean(),
+  "isAdmin": zod.boolean().describe('True only for the hard-coded admin principals (Camila, Kevin).')
 })
 
 
@@ -62,7 +63,8 @@ export const UpdateMyDisplayNameResponse = zod.object({
   "sizeBytes": zod.number(),
   "uploadedAt": zod.coerce.date()
 }),zod.null()]).optional(),
-  "emailNotificationsOptOut": zod.boolean()
+  "emailNotificationsOptOut": zod.boolean(),
+  "isAdmin": zod.boolean().describe('True only for the hard-coded admin principals (Camila, Kevin).')
 })
 
 
@@ -87,7 +89,8 @@ export const UpdateMyNotificationPrefsResponse = zod.object({
   "sizeBytes": zod.number(),
   "uploadedAt": zod.coerce.date()
 }),zod.null()]).optional(),
-  "emailNotificationsOptOut": zod.boolean()
+  "emailNotificationsOptOut": zod.boolean(),
+  "isAdmin": zod.boolean().describe('True only for the hard-coded admin principals (Camila, Kevin).')
 })
 
 
@@ -156,6 +159,7 @@ export const ListTeamMembersResponseItem = zod.object({
   "displayName": zod.string(),
   "roles": zod.array(zod.string()),
   "joinedAt": zod.coerce.date(),
+  "lastActivityAt": zod.coerce.date(),
   "hasCv": zod.boolean(),
   "cv": zod.union([zod.object({
   "fileName": zod.string(),
@@ -181,7 +185,8 @@ export const adminUpdateMemberBodyDisplayNameMax = 120;
 
 export const AdminUpdateMemberBody = zod.object({
   "displayName": zod.string().min(1).max(adminUpdateMemberBodyDisplayNameMax).optional(),
-  "roles": zod.array(zod.string()).optional()
+  "roles": zod.array(zod.string()).optional(),
+  "clearCv": zod.boolean().optional().describe('When true, remove the member\'s CV (PM-only admin action).')
 })
 
 export const AdminUpdateMemberResponse = zod.object({
@@ -190,6 +195,7 @@ export const AdminUpdateMemberResponse = zod.object({
   "displayName": zod.string(),
   "roles": zod.array(zod.string()),
   "joinedAt": zod.coerce.date(),
+  "lastActivityAt": zod.coerce.date(),
   "hasCv": zod.boolean(),
   "cv": zod.union([zod.object({
   "fileName": zod.string(),
@@ -870,6 +876,130 @@ export const ReopenDecisionResponse = zod.object({
   "createdBy": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary List invitations (PM only)
+ */
+export const ListInvitationsResponseItem = zod.object({
+  "id": zod.string(),
+  "email": zod.string(),
+  "invitedBy": zod.string().nullish(),
+  "suggestedRoles": zod.array(zod.string()),
+  "status": zod.enum(['pending', 'accepted', 'expired', 'revoked']),
+  "expiresAt": zod.coerce.date().nullish(),
+  "createdAt": zod.coerce.date(),
+  "acceptedAt": zod.coerce.date().nullish(),
+  "acceptedUserId": zod.string().nullish(),
+  "revokedAt": zod.coerce.date().nullish(),
+  "lastSentAt": zod.coerce.date().nullish()
+})
+export const ListInvitationsResponse = zod.array(ListInvitationsResponseItem)
+
+
+/**
+ * @summary Create and send an invitation (PM only)
+ */
+export const createInvitationBodyEmailMin = 3;
+
+
+
+export const CreateInvitationBody = zod.object({
+  "email": zod.string().email().min(createInvitationBodyEmailMin),
+  "suggestedRoles": zod.array(zod.string()).optional()
+})
+
+
+/**
+ * @summary Revoke a pending invitation (PM only)
+ */
+export const RevokeInvitationParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+
+/**
+ * @summary Resend an invitation email (PM only)
+ */
+export const ResendInvitationParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const ResendInvitationResponse = zod.object({
+  "id": zod.string(),
+  "email": zod.string(),
+  "invitedBy": zod.string().nullish(),
+  "suggestedRoles": zod.array(zod.string()),
+  "status": zod.enum(['pending', 'accepted', 'expired', 'revoked']),
+  "expiresAt": zod.coerce.date().nullish(),
+  "createdAt": zod.coerce.date(),
+  "acceptedAt": zod.coerce.date().nullish(),
+  "acceptedUserId": zod.string().nullish(),
+  "revokedAt": zod.coerce.date().nullish(),
+  "lastSentAt": zod.coerce.date().nullish()
+})
+
+
+/**
+ * @summary List recent admin audit log entries (PM only)
+ */
+export const ListAdminAuditLogQueryParams = zod.object({
+  "action": zod.coerce.string().optional(),
+  "actor": zod.coerce.string().optional()
+})
+
+export const ListAdminAuditLogResponseItem = zod.object({
+  "id": zod.string(),
+  "at": zod.coerce.date(),
+  "actorId": zod.string().nullish(),
+  "actorEmail": zod.string().nullish(),
+  "action": zod.string(),
+  "targetType": zod.string().nullish(),
+  "targetId": zod.string().nullish(),
+  "payload": zod.record(zod.string(), zod.unknown())
+})
+export const ListAdminAuditLogResponse = zod.array(ListAdminAuditLogResponseItem)
+
+
+/**
+ * @summary List role definitions with member counts (PM only)
+ */
+export const ListAdminRolesResponseItem = zod.object({
+  "id": zod.string(),
+  "label": zod.string(),
+  "description": zod.string(),
+  "sortOrder": zod.number(),
+  "memberCount": zod.number()
+})
+export const ListAdminRolesResponse = zod.array(ListAdminRolesResponseItem)
+
+
+/**
+ * @summary Update a role definition (description/label/sortOrder, PM only)
+ */
+export const UpdateRoleParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const updateRoleBodyLabelMax = 120;
+
+export const updateRoleBodyDescriptionMax = 2000;
+
+
+
+export const UpdateRoleBody = zod.object({
+  "label": zod.string().min(1).max(updateRoleBodyLabelMax).optional(),
+  "description": zod.string().min(1).max(updateRoleBodyDescriptionMax).optional(),
+  "sortOrder": zod.number().optional()
+})
+
+export const UpdateRoleResponse = zod.object({
+  "id": zod.string(),
+  "label": zod.string(),
+  "description": zod.string(),
+  "sortOrder": zod.number(),
+  "memberCount": zod.number()
 })
 
 

@@ -976,6 +976,145 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /admin/invitations:
+    get:
+      operationId: listInvitations
+      tags: [admin]
+      summary: List invitations (PM only)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Invitation"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    post:
+      operationId: createInvitation
+      tags: [admin]
+      summary: Create and send an invitation (PM only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InvitationInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Invitation"
+        "409":
+          description: User already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/invitations/{id}:
+    delete:
+      operationId: revokeInvitation
+      tags: [admin]
+      summary: Revoke a pending invitation (PM only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "204":
+          description: No content
+
+  /admin/invitations/{id}/resend:
+    post:
+      operationId: resendInvitation
+      tags: [admin]
+      summary: Resend an invitation email (PM only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Invitation"
+
+  /admin/audit-log:
+    get:
+      operationId: listAdminAuditLog
+      tags: [admin]
+      summary: List recent admin audit log entries (PM only)
+      parameters:
+        - name: action
+          in: query
+          required: false
+          schema: { type: string }
+        - name: actor
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminAuditLogEntry"
+
+  /admin/roles:
+    get:
+      operationId: listAdminRoles
+      tags: [admin]
+      summary: List role definitions with member counts (PM only)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AdminRole"
+
+  /admin/roles/{id}:
+    patch:
+      operationId: updateRole
+      tags: [admin]
+      summary: Update a role definition (description/label/sortOrder, PM only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoleUpdateInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminRole"
+
   /storage/uploads/request-url:
     post:
       operationId: requestUploadUrl
@@ -1057,7 +1196,7 @@ components:
 
     Member:
       type: object
-      required: [id, email, displayName, roles, joinedAt, hasCv]
+      required: [id, email, displayName, roles, joinedAt, lastActivityAt, hasCv]
       properties:
         id:
           type: string
@@ -1072,6 +1211,9 @@ components:
         joinedAt:
           type: string
           format: date-time
+        lastActivityAt:
+          type: string
+          format: date-time
         hasCv:
           type: boolean
         cv:
@@ -1082,7 +1224,7 @@ components:
     MemberMe:
       type: object
       required:
-        [id, email, displayName, roles, joinedAt, hasCv, emailNotificationsOptOut]
+        [id, email, displayName, roles, joinedAt, hasCv, emailNotificationsOptOut, isAdmin]
       properties:
         id:
           type: string
@@ -1105,6 +1247,9 @@ components:
             - type: "null"
         emailNotificationsOptOut:
           type: boolean
+        isAdmin:
+          type: boolean
+          description: True only for the hard-coded admin principals (Camila, Kevin).
 
     NotificationPrefsInput:
       type: object
@@ -1142,6 +1287,9 @@ components:
           type: array
           items:
             type: string
+        clearCv:
+          type: boolean
+          description: When true, remove the member's CV (PM-only admin action).
 
     RoleCoverage:
       type: object
@@ -1641,6 +1789,106 @@ components:
         status:
           type: string
           enum: [open, in_analysis]
+
+    Invitation:
+      type: object
+      required: [id, email, suggestedRoles, status, createdAt]
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        invitedBy:
+          type: ["string", "null"]
+        suggestedRoles:
+          type: array
+          items:
+            type: string
+        status:
+          type: string
+          enum: [pending, accepted, expired, revoked]
+        expiresAt:
+          type: ["string", "null"]
+          format: date-time
+        createdAt:
+          type: string
+          format: date-time
+        acceptedAt:
+          type: ["string", "null"]
+          format: date-time
+        acceptedUserId:
+          type: ["string", "null"]
+        revokedAt:
+          type: ["string", "null"]
+          format: date-time
+        lastSentAt:
+          type: ["string", "null"]
+          format: date-time
+
+    InvitationInput:
+      type: object
+      required: [email]
+      properties:
+        email:
+          type: string
+          format: email
+          minLength: 3
+        suggestedRoles:
+          type: array
+          items:
+            type: string
+
+    AdminAuditLogEntry:
+      type: object
+      required: [id, at, action, payload]
+      properties:
+        id:
+          type: string
+        at:
+          type: string
+          format: date-time
+        actorId:
+          type: ["string", "null"]
+        actorEmail:
+          type: ["string", "null"]
+        action:
+          type: string
+        targetType:
+          type: ["string", "null"]
+        targetId:
+          type: ["string", "null"]
+        payload:
+          type: object
+          additionalProperties: true
+
+    AdminRole:
+      type: object
+      required: [id, label, description, sortOrder, memberCount]
+      properties:
+        id:
+          type: string
+        label:
+          type: string
+        description:
+          type: string
+        sortOrder:
+          type: integer
+        memberCount:
+          type: integer
+
+    RoleUpdateInput:
+      type: object
+      properties:
+        label:
+          type: string
+          minLength: 1
+          maxLength: 120
+        description:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        sortOrder:
+          type: integer
 
     UploadRequest:
       type: object

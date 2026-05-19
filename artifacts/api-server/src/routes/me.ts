@@ -20,6 +20,7 @@ import {
   UpdateMyNotificationPrefsResponse,
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
+import { isAdminEmail } from "../middlewares/requireAdmin";
 import { notifyAsync } from "../lib/notifications";
 
 const router: IRouter = Router();
@@ -51,6 +52,7 @@ async function buildMe(userId: string) {
     joinedAt: user.createdAt,
     hasCv: !!cv,
     emailNotificationsOptOut: user.emailNotificationsOptOut,
+    isAdmin: isAdminEmail(user.email),
     cv: cv
       ? {
           fileName: cv.fileName,

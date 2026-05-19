@@ -16,7 +16,9 @@ import {
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
 import { requirePM } from "../middlewares/requirePM";
+import { requireAdmin } from "../middlewares/requireAdmin";
 import { notifyAsync } from "../lib/notifications";
+import { logAdminAction } from "../lib/audit";
 
 const router: IRouter = Router();
 
@@ -54,6 +56,7 @@ router.get(
         displayName: u.displayName,
         roles: rolesByUser.get(u.id) ?? [],
         joinedAt: u.createdAt,
+        lastActivityAt: u.lastActivityAt,
         hasCv: !!cv,
         cv: cv
           ? {
@@ -141,7 +144,7 @@ router.get(
 router.patch(
   "/team/members/:userId",
   requireAuth,
-  requirePM,
+  requireAdmin,
   async (req, res): Promise<void> => {
     const parsed = AdminUpdateMemberBody.safeParse(req.body);
     if (!parsed.success) {
@@ -190,6 +193,25 @@ router.patch(
             .onConflictDoNothing();
         }
       }
+      if (parsed.data.clearCv === true) {
+        await tx
+          .delete(userCvsTable)
+          .where(eq(userCvsTable.userId, userId));
+      }
+    });
+
+    void logAdminAction({
+      actorId: req.userId ?? null,
+      actorEmail: req.userEmail ?? null,
+      action: "member.update",
+      targetType: "user",
+      targetId: userId,
+      payload: {
+        displayName: parsed.data.displayName,
+        roles: parsed.data.roles,
+        previousRoles,
+        clearCv: parsed.data.clearCv === true ? true : undefined,
+      },
     });
 
     if (parsed.data.roles !== undefined) {
@@ -240,6 +262,7 @@ router.patch(
         displayName: user!.displayName,
         roles: roleRows.map((r) => r.roleId),
         joinedAt: user!.createdAt,
+        lastActivityAt: user!.lastActivityAt,
         hasCv: !!cv,
         cv: cv
           ? {

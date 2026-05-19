@@ -13,6 +13,7 @@ export interface Member {
   displayName: string;
   roles: string[];
   joinedAt: Date;
+  lastActivityAt: Date;
   hasCv: boolean;
   cv?: Cv | null;
 }

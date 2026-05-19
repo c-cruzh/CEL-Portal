@@ -44,6 +44,7 @@ export interface Member {
   displayName: string;
   roles: string[];
   joinedAt: string;
+  lastActivityAt: string;
   hasCv: boolean;
   cv?: Cv | null;
 }
@@ -57,6 +58,8 @@ export interface MemberMe {
   hasCv: boolean;
   cv?: Cv | null;
   emailNotificationsOptOut: boolean;
+  /** True only for the hard-coded admin principals (Camila, Kevin). */
+  isAdmin: boolean;
 }
 
 export interface NotificationPrefsInput {
@@ -82,6 +85,8 @@ export interface MemberAdminInput {
      */
   displayName?: string;
   roles?: string[];
+  /** When true, remove the member's CV (PM-only admin action). */
+  clearCv?: boolean;
 }
 
 export interface RoleCoverage {
@@ -482,6 +487,81 @@ export interface DecisionReopenInput {
   status?: DecisionReopenInputStatus;
 }
 
+export type InvitationStatus = typeof InvitationStatus[keyof typeof InvitationStatus];
+
+
+export const InvitationStatus = {
+  pending: 'pending',
+  accepted: 'accepted',
+  expired: 'expired',
+  revoked: 'revoked',
+} as const;
+
+export interface Invitation {
+  id: string;
+  email: string;
+  /** @nullable */
+  invitedBy?: string | null;
+  suggestedRoles: string[];
+  status: InvitationStatus;
+  /** @nullable */
+  expiresAt?: string | null;
+  createdAt: string;
+  /** @nullable */
+  acceptedAt?: string | null;
+  /** @nullable */
+  acceptedUserId?: string | null;
+  /** @nullable */
+  revokedAt?: string | null;
+  /** @nullable */
+  lastSentAt?: string | null;
+}
+
+export interface InvitationInput {
+  /** @minLength 3 */
+  email: string;
+  suggestedRoles?: string[];
+}
+
+export type AdminAuditLogEntryPayload = { [key: string]: unknown };
+
+export interface AdminAuditLogEntry {
+  id: string;
+  at: string;
+  /** @nullable */
+  actorId?: string | null;
+  /** @nullable */
+  actorEmail?: string | null;
+  action: string;
+  /** @nullable */
+  targetType?: string | null;
+  /** @nullable */
+  targetId?: string | null;
+  payload: AdminAuditLogEntryPayload;
+}
+
+export interface AdminRole {
+  id: string;
+  label: string;
+  description: string;
+  sortOrder: number;
+  memberCount: number;
+}
+
+export interface RoleUpdateInput {
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  label?: string;
+  /**
+     * @minLength 1
+     * @maxLength 2000
+     */
+  description?: string;
+  sortOrder?: number;
+}
+
 export interface UploadRequest {
   name: string;
   size: number;
@@ -519,4 +599,9 @@ export const ListDecisionsStatus = {
   resolved: 'resolved',
   cancelled: 'cancelled',
 } as const;
+
+export type ListAdminAuditLogParams = {
+action?: string;
+actor?: string;
+};
 

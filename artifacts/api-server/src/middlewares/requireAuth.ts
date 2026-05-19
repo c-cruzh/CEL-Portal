@@ -1,8 +1,9 @@
 import { type Request, type Response, type NextFunction } from "express";
 import { getAuth, clerkClient } from "@clerk/express";
 import { eq } from "drizzle-orm";
-import { db, usersTable, userRolesTable } from "@workspace/db";
+import { db, usersTable, userRolesTable, invitationsTable } from "@workspace/db";
 import { notifyAsync } from "../lib/notifications";
+import { logAdminActionAsync } from "../lib/audit";
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -20,6 +21,32 @@ const AUTO_PM_EMAILS = new Set<string>([
   "camila@c2labs.ai",
   "kevin@c2labs.ai",
 ]);
+
+// Multi-role bootstrap for known C2Labs leads. Camila wears multiple hats on
+// this pilot; Kevin is currently PM-only. Idempotent — applied on first login.
+const AUTO_MULTI_ROLES: Record<string, string[]> = {
+  "camila@c2labs.ai": ["pm_lead", "ml_engineer", "data_engineer"],
+  "kevin@c2labs.ai": ["pm_lead"],
+};
+
+// Throttle "last activity" writes per user to once per minute to avoid
+// hammering the database with one UPDATE per authenticated request.
+const LAST_ACTIVITY_TTL_MS = 60_000;
+const lastActivityCache = new Map<string, number>();
+async function touchLastActivity(userId: string): Promise<void> {
+  const now = Date.now();
+  const last = lastActivityCache.get(userId);
+  if (last && now - last < LAST_ACTIVITY_TTL_MS) return;
+  lastActivityCache.set(userId, now);
+  try {
+    await db
+      .update(usersTable)
+      .set({ lastActivityAt: new Date(now) })
+      .where(eq(usersTable.id, userId));
+  } catch {
+    lastActivityCache.delete(userId);
+  }
+}
 
 function getAllowedDomains(): string[] {
   const raw = process.env.ALLOWED_EMAIL_DOMAINS;
@@ -116,13 +143,79 @@ export async function requireAuth(
         .returning({ id: usersTable.id });
 
       if (inserted.length > 0) {
-        // Auto-asignar rol pm_lead a los líderes conocidos de C2Labs
+        const emailLower = email!.toLowerCase();
+        // Auto-asignar roles conocidos para los líderes de C2Labs
         // (Camila y Kevin) en su primer login. Idempotente.
-        if (AUTO_PM_EMAILS.has(email!.toLowerCase())) {
+        const bootstrapRoles = AUTO_MULTI_ROLES[emailLower];
+        if (bootstrapRoles && bootstrapRoles.length > 0) {
+          for (const roleId of bootstrapRoles) {
+            await db
+              .insert(userRolesTable)
+              .values({ userId: clerkUserId, roleId })
+              .onConflictDoNothing();
+          }
+        } else if (AUTO_PM_EMAILS.has(emailLower)) {
           await db
             .insert(userRolesTable)
             .values({ userId: clerkUserId, roleId: "pm_lead" })
             .onConflictDoNothing();
+        }
+
+        // Auto-accept a pending invitation for this email, if any, and apply
+        // the suggested roles so the new member arrives pre-configured.
+        const [pendingInv] = await db
+          .select()
+          .from(invitationsTable)
+          .where(eq(invitationsTable.email, emailLower))
+          .limit(1);
+        if (pendingInv && pendingInv.status === "pending") {
+          const now = new Date();
+          const isExpired =
+            pendingInv.expiresAt !== null &&
+            pendingInv.expiresAt.getTime() < now.getTime();
+          if (isExpired) {
+            await db
+              .update(invitationsTable)
+              .set({ status: "expired" })
+              .where(eq(invitationsTable.id, pendingInv.id));
+            logAdminActionAsync({
+              actorId: clerkUserId,
+              actorEmail: emailLower,
+              action: "invitation.expired",
+              targetType: "invitation",
+              targetId: pendingInv.id,
+              payload: {
+                email: emailLower,
+                expiresAt: pendingInv.expiresAt,
+              },
+            });
+          } else {
+            await db
+              .update(invitationsTable)
+              .set({
+                status: "accepted",
+                acceptedAt: now,
+                acceptedUserId: clerkUserId,
+              })
+              .where(eq(invitationsTable.id, pendingInv.id));
+            for (const roleId of pendingInv.suggestedRoles ?? []) {
+              await db
+                .insert(userRolesTable)
+                .values({ userId: clerkUserId, roleId })
+                .onConflictDoNothing();
+            }
+            logAdminActionAsync({
+              actorId: clerkUserId,
+              actorEmail: emailLower,
+              action: "invitation.accepted",
+              targetType: "invitation",
+              targetId: pendingInv.id,
+              payload: {
+                email: emailLower,
+                suggestedRoles: pendingInv.suggestedRoles ?? [],
+              },
+            });
+          }
         }
 
         notifyAsync({
@@ -146,6 +239,7 @@ export async function requireAuth(
 
     req.userId = clerkUserId;
     req.userEmail = email;
+    void touchLastActivity(clerkUserId);
     next();
   } catch (err) {
     req.log.error({ err }, "Failed to load/provision user");

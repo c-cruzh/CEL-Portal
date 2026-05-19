@@ -6,13 +6,16 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface MemberAdminInput {
+export interface RoleUpdateInput {
   /**
      * @minLength 1
      * @maxLength 120
      */
-  displayName?: string;
-  roles?: string[];
-  /** When true, remove the member's CV (PM-only admin action). */
-  clearCv?: boolean;
+  label?: string;
+  /**
+     * @minLength 1
+     * @maxLength 2000
+     */
+  description?: string;
+  sortOrder?: number;
 }

@@ -8,6 +8,7 @@ import {
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
 import { requirePM } from "../middlewares/requirePM";
+import { logAdminActionAsync } from "../lib/audit";
 
 const router: IRouter = Router();
 
@@ -60,6 +61,14 @@ router.patch(
       })
       .where(eq(projectConfigTable.id, 1))
       .returning();
+    logAdminActionAsync({
+      actorId: req.userId ?? null,
+      actorEmail: req.userEmail ?? null,
+      action: "project_config.update",
+      targetType: "project_config",
+      targetId: "1",
+      payload: { startDate: startDateStr },
+    });
     res.json(
       UpdateProjectConfigResponse.parse({
         startDate: updated!.startDate ?? null,

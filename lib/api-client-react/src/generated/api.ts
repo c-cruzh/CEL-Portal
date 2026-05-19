@@ -20,6 +20,8 @@ import type {
 } from '@tanstack/react-query';
 
 import type {
+  AdminAuditLogEntry,
+  AdminRole,
   CalendarFeedUrl,
   Cv,
   CvInput,
@@ -37,11 +39,14 @@ import type {
   DocumentUpdate,
   ErrorResponse,
   HealthStatus,
+  Invitation,
+  InvitationInput,
   KanbanCard,
   KanbanCardCreate,
   KanbanCardMove,
   KanbanCardUpdate,
   KanbanColumn,
+  ListAdminAuditLogParams,
   ListDecisionsParams,
   ListDocumentsParams,
   Member,
@@ -56,6 +61,7 @@ import type {
   ProjectConfig,
   ProjectConfigUpdate,
   RoleDefinition,
+  RoleUpdateInput,
   RolesInput,
   TeamSummary,
   TestNotificationResult,
@@ -2291,7 +2297,7 @@ export const getExportCalendarIcsUrl = () => {
 }
 
 /**
- * @summary Download the project calendar as a one-shot .ics file
+ * @summary Download an iCalendar (.ics) file with all project milestones (one-shot, authenticated)
  */
 export const exportCalendarIcs = async ( options?: RequestInit): Promise<string> => {
 
@@ -2315,7 +2321,7 @@ export const getExportCalendarIcsQueryKey = () => {
     }
 
 
-export const getExportCalendarIcsQueryOptions = <TData = Awaited<ReturnType<typeof exportCalendarIcs>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof exportCalendarIcs>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+export const getExportCalendarIcsQueryOptions = <TData = Awaited<ReturnType<typeof exportCalendarIcs>>, TError = ErrorType<ErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof exportCalendarIcs>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 ) => {
 
 const {query: queryOptions, request: requestOptions} = options ?? {};
@@ -2334,14 +2340,14 @@ const {query: queryOptions, request: requestOptions} = options ?? {};
 }
 
 export type ExportCalendarIcsQueryResult = NonNullable<Awaited<ReturnType<typeof exportCalendarIcs>>>
-export type ExportCalendarIcsQueryError = ErrorType<unknown>
+export type ExportCalendarIcsQueryError = ErrorType<ErrorResponse>
 
 
 /**
- * @summary Download the project calendar as a one-shot .ics file
+ * @summary Download an iCalendar (.ics) file with all project milestones (one-shot, authenticated)
  */
 
-export function useExportCalendarIcs<TData = Awaited<ReturnType<typeof exportCalendarIcs>>, TError = ErrorType<unknown>>(
+export function useExportCalendarIcs<TData = Awaited<ReturnType<typeof exportCalendarIcs>>, TError = ErrorType<ErrorResponse>>(
   options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof exportCalendarIcs>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
@@ -3474,6 +3480,527 @@ export const useReopenDecision = <TError = ErrorType<ErrorResponse>,
         TContext
       > => {
       return useMutation(getReopenDecisionMutationOptions(options));
+    }
+
+export const getListInvitationsUrl = () => {
+
+
+
+
+  return `/api/admin/invitations`
+}
+
+/**
+ * @summary List invitations (PM only)
+ */
+export const listInvitations = async ( options?: RequestInit): Promise<Invitation[]> => {
+
+  return customFetch<Invitation[]>(getListInvitationsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListInvitationsQueryKey = () => {
+    return [
+    `/api/admin/invitations`
+    ] as const;
+    }
+
+
+export const getListInvitationsQueryOptions = <TData = Awaited<ReturnType<typeof listInvitations>>, TError = ErrorType<ErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listInvitations>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListInvitationsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listInvitations>>> = ({ signal }) => listInvitations({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listInvitations>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListInvitationsQueryResult = NonNullable<Awaited<ReturnType<typeof listInvitations>>>
+export type ListInvitationsQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary List invitations (PM only)
+ */
+
+export function useListInvitations<TData = Awaited<ReturnType<typeof listInvitations>>, TError = ErrorType<ErrorResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listInvitations>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListInvitationsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateInvitationUrl = () => {
+
+
+
+
+  return `/api/admin/invitations`
+}
+
+/**
+ * @summary Create and send an invitation (PM only)
+ */
+export const createInvitation = async (invitationInput: InvitationInput, options?: RequestInit): Promise<Invitation> => {
+
+  return customFetch<Invitation>(getCreateInvitationUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      invitationInput,)
+  }
+);}
+
+
+
+
+export const getCreateInvitationMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createInvitation>>, TError,{data: BodyType<InvitationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createInvitation>>, TError,{data: BodyType<InvitationInput>}, TContext> => {
+
+const mutationKey = ['createInvitation'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createInvitation>>, {data: BodyType<InvitationInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createInvitation(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateInvitationMutationResult = NonNullable<Awaited<ReturnType<typeof createInvitation>>>
+    export type CreateInvitationMutationBody = BodyType<InvitationInput>
+    export type CreateInvitationMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Create and send an invitation (PM only)
+ */
+export const useCreateInvitation = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createInvitation>>, TError,{data: BodyType<InvitationInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createInvitation>>,
+        TError,
+        {data: BodyType<InvitationInput>},
+        TContext
+      > => {
+      return useMutation(getCreateInvitationMutationOptions(options));
+    }
+
+export const getRevokeInvitationUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/invitations/${id}`
+}
+
+/**
+ * @summary Revoke a pending invitation (PM only)
+ */
+export const revokeInvitation = async (id: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getRevokeInvitationUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getRevokeInvitationMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeInvitation>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof revokeInvitation>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['revokeInvitation'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof revokeInvitation>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  revokeInvitation(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RevokeInvitationMutationResult = NonNullable<Awaited<ReturnType<typeof revokeInvitation>>>
+
+    export type RevokeInvitationMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Revoke a pending invitation (PM only)
+ */
+export const useRevokeInvitation = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof revokeInvitation>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof revokeInvitation>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getRevokeInvitationMutationOptions(options));
+    }
+
+export const getResendInvitationUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/invitations/${id}/resend`
+}
+
+/**
+ * @summary Resend an invitation email (PM only)
+ */
+export const resendInvitation = async (id: string, options?: RequestInit): Promise<Invitation> => {
+
+  return customFetch<Invitation>(getResendInvitationUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getResendInvitationMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resendInvitation>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof resendInvitation>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['resendInvitation'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof resendInvitation>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  resendInvitation(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ResendInvitationMutationResult = NonNullable<Awaited<ReturnType<typeof resendInvitation>>>
+
+    export type ResendInvitationMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Resend an invitation email (PM only)
+ */
+export const useResendInvitation = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof resendInvitation>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof resendInvitation>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getResendInvitationMutationOptions(options));
+    }
+
+export const getListAdminAuditLogUrl = (params?: ListAdminAuditLogParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/admin/audit-log?${stringifiedParams}` : `/api/admin/audit-log`
+}
+
+/**
+ * @summary List recent admin audit log entries (PM only)
+ */
+export const listAdminAuditLog = async (params?: ListAdminAuditLogParams, options?: RequestInit): Promise<AdminAuditLogEntry[]> => {
+
+  return customFetch<AdminAuditLogEntry[]>(getListAdminAuditLogUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAdminAuditLogQueryKey = (params?: ListAdminAuditLogParams,) => {
+    return [
+    `/api/admin/audit-log`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getListAdminAuditLogQueryOptions = <TData = Awaited<ReturnType<typeof listAdminAuditLog>>, TError = ErrorType<unknown>>(params?: ListAdminAuditLogParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminAuditLog>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAdminAuditLogQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAdminAuditLog>>> = ({ signal }) => listAdminAuditLog(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAdminAuditLog>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAdminAuditLogQueryResult = NonNullable<Awaited<ReturnType<typeof listAdminAuditLog>>>
+export type ListAdminAuditLogQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List recent admin audit log entries (PM only)
+ */
+
+export function useListAdminAuditLog<TData = Awaited<ReturnType<typeof listAdminAuditLog>>, TError = ErrorType<unknown>>(
+ params?: ListAdminAuditLogParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminAuditLog>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAdminAuditLogQueryOptions(params,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getListAdminRolesUrl = () => {
+
+
+
+
+  return `/api/admin/roles`
+}
+
+/**
+ * @summary List role definitions with member counts (PM only)
+ */
+export const listAdminRoles = async ( options?: RequestInit): Promise<AdminRole[]> => {
+
+  return customFetch<AdminRole[]>(getListAdminRolesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAdminRolesQueryKey = () => {
+    return [
+    `/api/admin/roles`
+    ] as const;
+    }
+
+
+export const getListAdminRolesQueryOptions = <TData = Awaited<ReturnType<typeof listAdminRoles>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminRoles>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAdminRolesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAdminRoles>>> = ({ signal }) => listAdminRoles({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAdminRoles>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAdminRolesQueryResult = NonNullable<Awaited<ReturnType<typeof listAdminRoles>>>
+export type ListAdminRolesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List role definitions with member counts (PM only)
+ */
+
+export function useListAdminRoles<TData = Awaited<ReturnType<typeof listAdminRoles>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAdminRoles>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAdminRolesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUpdateRoleUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/roles/${id}`
+}
+
+/**
+ * @summary Update a role definition (description/label/sortOrder, PM only)
+ */
+export const updateRole = async (id: string,
+    roleUpdateInput: RoleUpdateInput, options?: RequestInit): Promise<AdminRole> => {
+
+  return customFetch<AdminRole>(getUpdateRoleUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      roleUpdateInput,)
+  }
+);}
+
+
+
+
+export const getUpdateRoleMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateRole>>, TError,{id: string;data: BodyType<RoleUpdateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateRole>>, TError,{id: string;data: BodyType<RoleUpdateInput>}, TContext> => {
+
+const mutationKey = ['updateRole'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateRole>>, {id: string;data: BodyType<RoleUpdateInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateRole(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateRoleMutationResult = NonNullable<Awaited<ReturnType<typeof updateRole>>>
+    export type UpdateRoleMutationBody = BodyType<RoleUpdateInput>
+    export type UpdateRoleMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update a role definition (description/label/sortOrder, PM only)
+ */
+export const useUpdateRole = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateRole>>, TError,{id: string;data: BodyType<RoleUpdateInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateRole>>,
+        TError,
+        {id: string;data: BodyType<RoleUpdateInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateRoleMutationOptions(options));
     }
 
 export const getRequestUploadUrlUrl = () => {

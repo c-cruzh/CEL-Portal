@@ -9,18 +9,19 @@ import {
   ListNotificationLogResponse,
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
-import { requirePM } from "../middlewares/requirePM";
+import { requireAdmin } from "../middlewares/requireAdmin";
 import {
   sendTestNotification,
   listRecentNotificationLog,
 } from "../lib/notifications";
+import { logAdminActionAsync } from "../lib/audit";
 
 const router: IRouter = Router();
 
 router.get(
   "/admin/notification-recipients",
   requireAuth,
-  requirePM,
+  requireAdmin,
   async (_req, res): Promise<void> => {
     const rows = await db
       .select()
@@ -41,7 +42,7 @@ router.get(
 router.post(
   "/admin/notification-recipients",
   requireAuth,
-  requirePM,
+  requireAdmin,
   async (req, res): Promise<void> => {
     const parsed = AddNotificationRecipientBody.safeParse(req.body);
     if (!parsed.success) {
@@ -63,6 +64,16 @@ router.post(
           .where(eq(notificationRecipientsTable.email, email))
           .limit(1);
 
+    if (row) {
+      logAdminActionAsync({
+        actorId: req.userId ?? null,
+        actorEmail: req.userEmail ?? null,
+        action: "notification_recipient.add",
+        targetType: "notification_recipient",
+        targetId: email,
+        payload: { email },
+      });
+    }
     res.status(row ? 201 : 200).json(
       AddNotificationRecipientResponse.parse({
         email: final!.email,
@@ -76,7 +87,7 @@ router.post(
 router.delete(
   "/admin/notification-recipients/:email",
   requireAuth,
-  requirePM,
+  requireAdmin,
   async (req, res): Promise<void> => {
     const raw = req.params.email;
     const emailRaw = Array.isArray(raw) ? raw[0] : raw;
@@ -88,6 +99,14 @@ router.delete(
     await db
       .delete(notificationRecipientsTable)
       .where(eq(notificationRecipientsTable.email, email));
+    logAdminActionAsync({
+      actorId: req.userId ?? null,
+      actorEmail: req.userEmail ?? null,
+      action: "notification_recipient.remove",
+      targetType: "notification_recipient",
+      targetId: email,
+      payload: { email },
+    });
     res.sendStatus(204);
   },
 );
@@ -95,7 +114,7 @@ router.delete(
 router.post(
   "/admin/notification-recipients/test",
   requireAuth,
-  requirePM,
+  requireAdmin,
   async (req, res): Promise<void> => {
     let displayName = req.userEmail ?? "PM";
     if (req.userId) {
@@ -114,6 +133,17 @@ router.post(
       },
     });
 
+    logAdminActionAsync({
+      actorId: req.userId ?? null,
+      actorEmail: req.userEmail ?? null,
+      action: "notification.test",
+      targetType: "notification",
+      payload: {
+        status: result.status,
+        recipientCount: result.recipientCount,
+      },
+    });
+
     res.json(TestNotificationRecipientsResponse.parse(result));
   },
 );
@@ -121,7 +151,7 @@ router.post(
 router.get(
   "/admin/notification-log",
   requireAuth,
-  requirePM,
+  requireAdmin,
   async (_req, res): Promise<void> => {
     const entries = await listRecentNotificationLog(20);
     res.json(ListNotificationLogResponse.parse(entries));

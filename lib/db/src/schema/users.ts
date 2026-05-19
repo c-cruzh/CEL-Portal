@@ -14,6 +14,9 @@ export const usersTable = pgTable("users", {
     .notNull()
     .defaultNow()
     .$onUpdate(() => new Date()),
+  lastActivityAt: timestamp("last_activity_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });
 
 export type User = typeof usersTable.$inferSelect;

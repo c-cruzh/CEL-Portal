@@ -16,4 +16,6 @@ export interface MemberMe {
   hasCv: boolean;
   cv?: Cv | null;
   emailNotificationsOptOut: boolean;
+  /** True only for the hard-coded admin principals (Camila, Kevin). */
+  isAdmin: boolean;
 }

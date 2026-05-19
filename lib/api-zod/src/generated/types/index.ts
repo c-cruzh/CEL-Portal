@@ -6,6 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
+export * from './adminAuditLogEntry';
+export * from './adminAuditLogEntryPayload';
+export * from './adminRole';
 export * from './calendarFeedUrl';
 export * from './cv';
 export * from './cvInput';
@@ -26,12 +29,16 @@ export * from './documentInput';
 export * from './documentUpdate';
 export * from './errorResponse';
 export * from './healthStatus';
+export * from './invitation';
+export * from './invitationInput';
+export * from './invitationStatus';
 export * from './kanbanCard';
 export * from './kanbanCardCreate';
 export * from './kanbanCardMove';
 export * from './kanbanCardUpdate';
 export * from './kanbanColumn';
 export * from './kanbanPriority';
+export * from './listAdminAuditLogParams';
 export * from './listDecisionsParams';
 export * from './listDecisionsStatus';
 export * from './listDocumentsParams';
@@ -53,6 +60,7 @@ export * from './projectConfigUpdate';
 export * from './roleCoverage';
 export * from './roleDefinition';
 export * from './rolesInput';
+export * from './roleUpdateInput';
 export * from './teamSummary';
 export * from './testNotificationResult';
 export * from './testNotificationResultStatus';
