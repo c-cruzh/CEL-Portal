@@ -1,25 +1,34 @@
-import { useGetProjectConfig, useUpdateProjectConfig, getGetProjectConfigQueryKey } from "@workspace/api-client-react";
+import { useGetProjectConfig, useUpdateProjectConfig, getGetProjectConfigQueryKey, useGetTeamSummary } from "@workspace/api-client-react";
 import type { ProjectConfig } from "@workspace/api-client-react";
-import { PHASES, type Phase } from "@/lib/projectContent";
+import { PHASES } from "@/lib/projectContent";
 import { GANTT_PHASES, GANTT_TOTAL_MONTHS } from "@/lib/ganttContent";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { addMonths, format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { PhaseInvolvementCard } from "@/components/PhaseInvolvementCard";
+import { PHASE_INVOLVEMENT } from "@/lib/phaseInvolvement";
 
 const MONTH_COL_WIDTH = 56;
 const LABEL_WIDTH = 320;
 
 export default function Cronograma() {
   const { data: config, isLoading } = useGetProjectConfig();
-  const [selectedPhase, setSelectedPhase] = useState<string | null>(null);
+  const { data: teamSummary } = useGetTeamSummary();
 
   const startDate = config?.startDate ? parseISO(config.startDate) : null;
+
+  const roleAssignees = useMemo(() => {
+    const map = new Map<string, string[]>();
+    for (const c of teamSummary?.coverage ?? []) {
+      map.set(c.roleId, c.assignees ?? []);
+    }
+    return map;
+  }, [teamSummary]);
 
   useEffect(() => {
     if (isLoading) return;
@@ -44,8 +53,6 @@ export default function Cronograma() {
         <Skeleton className="h-96 w-full" />
       </div>
     );
-
-  const phaseData = selectedPhase ? PHASES.find((p) => p.id === selectedPhase) ?? null : null;
 
   return (
     <div className="space-y-6 animate-in fade-in duration-500">
@@ -88,39 +95,26 @@ export default function Cronograma() {
         ))}
       </div>
 
+      {/* Iterates ALL PHASES, including CONT (contingencia), so the buffer block
+          is visible in Cronograma with the same drilldown affordance. */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-        {PHASES.map((phase) => (
-          <Card
-            key={phase.id}
-            id={`fase-${phase.id.toLowerCase()}`}
-            className="border-border hover-elevate cursor-pointer transition-all scroll-mt-24"
-            onClick={() => setSelectedPhase(phase.id)}
-          >
-            <CardHeader className="pb-2">
-              <div className="flex items-center gap-2">
-                <span
-                  className="inline-block h-3 w-3 rounded-sm shrink-0"
-                  style={{ backgroundColor: phase.colorVar }}
-                  aria-hidden="true"
-                />
-                <CardTitle className="text-base leading-tight">{phase.label}</CardTitle>
-              </div>
-              <CardDescription>
-                Semanas {phase.startWeek}–{phase.startWeek + phase.durationWeeks - 1} · {phase.durationWeeks} sem
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="pt-0">
-              <p className="text-sm text-muted-foreground leading-relaxed">{phase.objective}</p>
-            </CardContent>
-          </Card>
-        ))}
+        {PHASES.map((phase) => {
+          const involvement = PHASE_INVOLVEMENT.find((p) => p.phaseId === phase.id);
+          return (
+            <div
+              key={phase.id}
+              id={`fase-${phase.id.toLowerCase()}`}
+              className="scroll-mt-24 rounded-lg transition-all"
+            >
+              <PhaseInvolvementCard
+                phase={phase}
+                involvement={involvement}
+                roleAssignees={roleAssignees}
+              />
+            </div>
+          );
+        })}
       </div>
-
-      <Sheet open={!!selectedPhase} onOpenChange={(open) => !open && setSelectedPhase(null)}>
-        <SheetContent className="w-full sm:max-w-lg overflow-y-auto">
-          {phaseData && <PhaseDetail phase={phaseData} />}
-        </SheetContent>
-      </Sheet>
     </div>
   );
 }
@@ -233,58 +227,6 @@ function MonthlyGantt({ startDate }: { startDate: Date | null }) {
         </div>
       </div>
     </Card>
-  );
-}
-
-function PhaseDetail({ phase }: { phase: Phase }) {
-  return (
-    <>
-      <SheetHeader className="mb-6">
-        <div className="flex items-center gap-2">
-          <span
-            className="inline-block h-3 w-3 rounded-sm shrink-0"
-            style={{ backgroundColor: phase.colorVar }}
-            aria-hidden="true"
-          />
-          <SheetTitle className="text-xl">{phase.label}</SheetTitle>
-        </div>
-        <SheetDescription>
-          Semanas {phase.startWeek} a {phase.startWeek + phase.durationWeeks - 1} ({phase.durationWeeks} semanas)
-        </SheetDescription>
-      </SheetHeader>
-      <div className="space-y-6">
-        <section>
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Objetivo</h3>
-          <p className="text-sm text-foreground leading-relaxed">{phase.objective}</p>
-        </section>
-        <section>
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Descripción</h3>
-          <p className="text-sm text-foreground leading-relaxed">{phase.narrative}</p>
-        </section>
-        <section>
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Actividades</h3>
-          <ul className="space-y-2">
-            {phase.activities.map((a, i) => (
-              <li key={i} className="flex items-start gap-2 text-sm">
-                <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary/70 shrink-0" />
-                <span className="text-foreground leading-relaxed">{a}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-        <section>
-          <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">Entregables</h3>
-          <ul className="space-y-2">
-            {phase.deliverables.map((d, i) => (
-              <li key={i} className="flex items-start gap-2 text-sm">
-                <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-foreground/40 shrink-0" />
-                <span className="text-foreground leading-relaxed">{d}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      </div>
-    </>
   );
 }
 
