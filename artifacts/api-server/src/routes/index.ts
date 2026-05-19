@@ -6,6 +6,7 @@ import teamRouter from "./team";
 import projectRouter from "./project";
 import notificationRecipientsRouter from "./notificationRecipients";
 import kanbanRouter from "./kanban";
+import milestonesRouter from "./milestones";
 
 const router: IRouter = Router();
 
@@ -16,5 +17,6 @@ router.use(teamRouter);
 router.use(projectRouter);
 router.use(notificationRecipientsRouter);
 router.use(kanbanRouter);
+router.use(milestonesRouter);
 
 export default router;

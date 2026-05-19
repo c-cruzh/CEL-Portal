@@ -1,5 +1,13 @@
-import { db, pool, rolesTable, projectConfigTable, kanbanColumnsTable } from "./index";
+import {
+  db,
+  pool,
+  rolesTable,
+  projectConfigTable,
+  kanbanColumnsTable,
+  milestonesTable,
+} from "./index";
 import { sql } from "drizzle-orm";
+import { PHASES_FOR_SEED } from "@workspace/project-domain";
 
 const KANBAN_COLUMNS: Array<{ key: string; label: string; sortOrder: number }> = [
   { key: "backlog", label: "Backlog", sortOrder: 1 },
@@ -28,6 +36,136 @@ const ROLES: Array<{
   { id: "docs_training", label: "Documentación / Capacitación", description: "POE, informes y talleres de transferencia.", sortOrder: 11 },
   { id: "stakeholder_cel", label: "Stakeholder CEL", description: "Revisión, retroalimentación y sesiones de avance.", sortOrder: 12 },
 ];
+
+type SeedMilestone = {
+  seedKey: string;
+  title: string;
+  description: string | null;
+  kind: string;
+  weekOffset: number;
+  phaseId: string | null;
+  ownersRoles: string[];
+};
+
+function buildSeedMilestones(): SeedMilestone[] {
+  const items: SeedMilestone[] = [];
+
+  // Kickoff
+  items.push({
+    seedKey: "kickoff",
+    title: "Kickoff del piloto",
+    description: "Reunión inicial con todo el equipo. Alineamiento, RACI y objetivos del piloto.",
+    kind: "phase_milestone",
+    weekOffset: 1,
+    phaseId: "F0",
+    ownersRoles: ["pm_lead", "pm_cel"],
+  });
+
+  // Phase start/end + deliverables + presentation per phase, derived from the
+  // shared PHASES definition so the seed never drifts from the Cronograma UI.
+  for (const p of PHASES_FOR_SEED) {
+    const endWeek = p.startWeek + p.durationWeeks - 1;
+
+    items.push({
+      seedKey: `phase_start_${p.id}`,
+      title: `Inicio ${p.label}`,
+      description: `Comienzo formal de ${p.label}.`,
+      kind: "phase_milestone",
+      weekOffset: p.startWeek,
+      phaseId: p.id,
+      ownersRoles: p.ownersRoles,
+    });
+
+    p.deliverables.forEach((d, i) => {
+      items.push({
+        seedKey: `deliverable_${p.id}_${i + 1}`,
+        title: d,
+        description: `Entregable principal de ${p.label}.`,
+        kind: "deliverable",
+        weekOffset: endWeek,
+        phaseId: p.id,
+        ownersRoles: p.ownersRoles,
+      });
+    });
+
+    items.push({
+      seedKey: `phase_review_${p.id}`,
+      title: `Presentación de cierre — ${p.label}`,
+      description: "Revisión formal de entregables contra criterios de aceptación.",
+      kind: "presentation",
+      weekOffset: endWeek,
+      phaseId: p.id,
+      ownersRoles: ["pm_lead", "pm_cel", "stakeholder_cel"],
+    });
+  }
+
+  // 28 weekly sync sessions
+  for (let week = 1; week <= 28; week++) {
+    items.push({
+      seedKey: `weekly_${week}`,
+      title: `Sesión semanal de avance — Semana ${week}`,
+      description: "Sync semanal del equipo: avances, bloqueadores y próximos pasos.",
+      kind: "weekly_session",
+      weekOffset: week,
+      phaseId: null,
+      ownersRoles: ["pm_lead", "pm_cel"],
+    });
+  }
+
+  // Capacitación durante Fase 4
+  items.push({
+    seedKey: "workshop_handoff",
+    title: "Taller de capacitación y handoff",
+    description: "Transferencia de conocimiento al equipo operativo de CEL.",
+    kind: "workshop",
+    weekOffset: 27,
+    phaseId: "F4",
+    ownersRoles: ["docs_training", "hydrology_lead_cel"],
+  });
+
+  return items;
+}
+
+async function seedMilestones(): Promise<number> {
+  const items = buildSeedMilestones();
+  const validKeys = items.map((i) => i.seedKey);
+
+  // Remove system milestones whose seed key is no longer in our generated set.
+  await db.execute(
+    sql`DELETE FROM milestones WHERE source = 'system' AND (seed_key IS NULL OR seed_key NOT IN (${sql.join(
+      validKeys.map((k) => sql`${k}`),
+      sql`, `,
+    )}))`,
+  );
+
+  for (const m of items) {
+    await db
+      .insert(milestonesTable)
+      .values({
+        title: m.title,
+        description: m.description,
+        kind: m.kind,
+        weekOffset: m.weekOffset,
+        phaseId: m.phaseId,
+        ownersRoles: m.ownersRoles,
+        source: "system",
+        seedKey: m.seedKey,
+      })
+      .onConflictDoUpdate({
+        target: milestonesTable.seedKey,
+        set: {
+          title: m.title,
+          description: m.description,
+          kind: m.kind,
+          weekOffset: m.weekOffset,
+          phaseId: m.phaseId,
+          ownersRoles: m.ownersRoles,
+        },
+      });
+  }
+
+  return items.length;
+}
 
 async function main(): Promise<void> {
   const validIds = ROLES.map((r) => r.id);
@@ -63,9 +201,13 @@ async function main(): Promise<void> {
       });
   }
 
+  const milestoneCount = await seedMilestones();
+
   const count = await db.execute(sql`SELECT COUNT(*)::int AS n FROM roles`);
   // eslint-disable-next-line no-console
-  console.log(`Seed complete. Roles: ${(count.rows[0] as { n: number }).n}`);
+  console.log(
+    `Seed complete. Roles: ${(count.rows[0] as { n: number }).n}. System milestones: ${milestoneCount}.`,
+  );
 }
 
 main()

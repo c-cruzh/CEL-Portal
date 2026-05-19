@@ -294,6 +294,49 @@ export const ListKanbanColumnsResponse = zod.array(ListKanbanColumnsResponseItem
 
 
 /**
+ * @summary List all project milestones (read for all authenticated users)
+ */
+
+
+
+export const ListMilestonesResponseItem = zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "kind": zod.enum(['phase_milestone', 'deliverable', 'weekly_session', 'presentation', 'workshop', 'decision']),
+  "weekOffset": zod.number().min(1),
+  "phaseId": zod.string().nullish(),
+  "ownersRoles": zod.array(zod.string()),
+  "source": zod.enum(['system', 'custom']),
+  "createdBy": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+export const ListMilestonesResponse = zod.array(ListMilestonesResponseItem)
+
+
+/**
+ * @summary Create a custom milestone (PM only)
+ */
+export const createMilestoneBodyTitleMax = 200;
+
+export const createMilestoneBodyDescriptionMax = 2000;
+
+export const createMilestoneBodyWeekOffsetMax = 60;
+
+
+
+export const CreateMilestoneBody = zod.object({
+  "title": zod.string().min(1).max(createMilestoneBodyTitleMax),
+  "description": zod.string().max(createMilestoneBodyDescriptionMax).nullish(),
+  "kind": zod.enum(['phase_milestone', 'deliverable', 'weekly_session', 'presentation', 'workshop', 'decision']),
+  "weekOffset": zod.number().min(1).max(createMilestoneBodyWeekOffsetMax),
+  "phaseId": zod.string().nullish(),
+  "ownersRoles": zod.array(zod.string()).optional()
+})
+
+
+/**
  * @summary List all Kanban cards
  */
 export const ListKanbanCardsResponseItem = zod.object({
@@ -376,6 +419,56 @@ export const UpdateKanbanCardResponse = zod.object({
  * @summary Delete a Kanban card (creator or PM only)
  */
 export const DeleteKanbanCardParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+
+/**
+ * @summary Update a custom milestone (PM only). System milestones cannot be updated.
+ */
+export const UpdateMilestoneParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const updateMilestoneBodyTitleMax = 200;
+
+export const updateMilestoneBodyDescriptionMax = 2000;
+
+export const updateMilestoneBodyWeekOffsetMax = 60;
+
+
+
+export const UpdateMilestoneBody = zod.object({
+  "title": zod.string().min(1).max(updateMilestoneBodyTitleMax),
+  "description": zod.string().max(updateMilestoneBodyDescriptionMax).nullish(),
+  "kind": zod.enum(['phase_milestone', 'deliverable', 'weekly_session', 'presentation', 'workshop', 'decision']),
+  "weekOffset": zod.number().min(1).max(updateMilestoneBodyWeekOffsetMax),
+  "phaseId": zod.string().nullish(),
+  "ownersRoles": zod.array(zod.string()).optional()
+})
+
+
+
+
+export const UpdateMilestoneResponse = zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "description": zod.string().nullish(),
+  "kind": zod.enum(['phase_milestone', 'deliverable', 'weekly_session', 'presentation', 'workshop', 'decision']),
+  "weekOffset": zod.number().min(1),
+  "phaseId": zod.string().nullish(),
+  "ownersRoles": zod.array(zod.string()),
+  "source": zod.enum(['system', 'custom']),
+  "createdBy": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Delete a custom milestone (PM only). System milestones cannot be deleted.
+ */
+export const DeleteMilestoneParams = zod.object({
   "id": zod.coerce.string()
 })
 

@@ -6,3 +6,4 @@ export * from "./projectConfig";
 export * from "./notificationRecipients";
 export * from "./notificationLog";
 export * from "./kanban";
+export * from "./milestones";

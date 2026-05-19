@@ -32,6 +32,8 @@ import type {
   KanbanColumn,
   Member,
   MemberMe,
+  Milestone,
+  MilestoneInput,
   NotificationLogEntry,
   NotificationPrefsInput,
   NotificationRecipient,
@@ -1541,6 +1543,154 @@ export function useListKanbanColumns<TData = Awaited<ReturnType<typeof listKanba
 
 
 
+export const getListMilestonesUrl = () => {
+
+
+
+
+  return `/api/milestones`
+}
+
+/**
+ * @summary List all project milestones (read for all authenticated users)
+ */
+export const listMilestones = async ( options?: RequestInit): Promise<Milestone[]> => {
+
+  return customFetch<Milestone[]>(getListMilestonesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListMilestonesQueryKey = () => {
+    return [
+    `/api/milestones`
+    ] as const;
+    }
+
+
+export const getListMilestonesQueryOptions = <TData = Awaited<ReturnType<typeof listMilestones>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMilestones>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListMilestonesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listMilestones>>> = ({ signal }) => listMilestones({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listMilestones>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListMilestonesQueryResult = NonNullable<Awaited<ReturnType<typeof listMilestones>>>
+export type ListMilestonesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List all project milestones (read for all authenticated users)
+ */
+
+export function useListMilestones<TData = Awaited<ReturnType<typeof listMilestones>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listMilestones>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListMilestonesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getCreateMilestoneUrl = () => {
+
+
+
+
+  return `/api/milestones`
+}
+
+/**
+ * @summary Create a custom milestone (PM only)
+ */
+export const createMilestone = async (milestoneInput: MilestoneInput, options?: RequestInit): Promise<Milestone> => {
+
+  return customFetch<Milestone>(getCreateMilestoneUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      milestoneInput,)
+  }
+);}
+
+
+
+
+export const getCreateMilestoneMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createMilestone>>, TError,{data: BodyType<MilestoneInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createMilestone>>, TError,{data: BodyType<MilestoneInput>}, TContext> => {
+
+const mutationKey = ['createMilestone'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createMilestone>>, {data: BodyType<MilestoneInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createMilestone(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateMilestoneMutationResult = NonNullable<Awaited<ReturnType<typeof createMilestone>>>
+    export type CreateMilestoneMutationBody = BodyType<MilestoneInput>
+    export type CreateMilestoneMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Create a custom milestone (PM only)
+ */
+export const useCreateMilestone = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createMilestone>>, TError,{data: BodyType<MilestoneInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createMilestone>>,
+        TError,
+        {data: BodyType<MilestoneInput>},
+        TContext
+      > => {
+      return useMutation(getCreateMilestoneMutationOptions(options));
+    }
+
 export const getListKanbanCardsUrl = () => {
 
 
@@ -1829,6 +1979,148 @@ export const useDeleteKanbanCard = <TError = ErrorType<ErrorResponse>,
         TContext
       > => {
       return useMutation(getDeleteKanbanCardMutationOptions(options));
+    }
+
+export const getUpdateMilestoneUrl = (id: string,) => {
+
+
+
+
+  return `/api/milestones/${id}`
+}
+
+/**
+ * @summary Update a custom milestone (PM only). System milestones cannot be updated.
+ */
+export const updateMilestone = async (id: string,
+    milestoneInput: MilestoneInput, options?: RequestInit): Promise<Milestone> => {
+
+  return customFetch<Milestone>(getUpdateMilestoneUrl(id),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      milestoneInput,)
+  }
+);}
+
+
+
+
+export const getUpdateMilestoneMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMilestone>>, TError,{id: string;data: BodyType<MilestoneInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateMilestone>>, TError,{id: string;data: BodyType<MilestoneInput>}, TContext> => {
+
+const mutationKey = ['updateMilestone'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateMilestone>>, {id: string;data: BodyType<MilestoneInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  updateMilestone(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateMilestoneMutationResult = NonNullable<Awaited<ReturnType<typeof updateMilestone>>>
+    export type UpdateMilestoneMutationBody = BodyType<MilestoneInput>
+    export type UpdateMilestoneMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Update a custom milestone (PM only). System milestones cannot be updated.
+ */
+export const useUpdateMilestone = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMilestone>>, TError,{id: string;data: BodyType<MilestoneInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateMilestone>>,
+        TError,
+        {id: string;data: BodyType<MilestoneInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateMilestoneMutationOptions(options));
+    }
+
+export const getDeleteMilestoneUrl = (id: string,) => {
+
+
+
+
+  return `/api/milestones/${id}`
+}
+
+/**
+ * @summary Delete a custom milestone (PM only). System milestones cannot be deleted.
+ */
+export const deleteMilestone = async (id: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeleteMilestoneUrl(id),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeleteMilestoneMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteMilestone>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deleteMilestone>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['deleteMilestone'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deleteMilestone>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  deleteMilestone(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeleteMilestoneMutationResult = NonNullable<Awaited<ReturnType<typeof deleteMilestone>>>
+
+    export type DeleteMilestoneMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Delete a custom milestone (PM only). System milestones cannot be deleted.
+ */
+export const useDeleteMilestone = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deleteMilestone>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deleteMilestone>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getDeleteMilestoneMutationOptions(options));
     }
 
 export const getMoveKanbanCardUrl = (id: string,) => {

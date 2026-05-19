@@ -185,6 +185,44 @@ export interface KanbanCard {
   updatedAt: string;
 }
 
+export type MilestoneKind = typeof MilestoneKind[keyof typeof MilestoneKind];
+
+
+export const MilestoneKind = {
+  phase_milestone: 'phase_milestone',
+  deliverable: 'deliverable',
+  weekly_session: 'weekly_session',
+  presentation: 'presentation',
+  workshop: 'workshop',
+  decision: 'decision',
+} as const;
+
+export type MilestoneSource = typeof MilestoneSource[keyof typeof MilestoneSource];
+
+
+export const MilestoneSource = {
+  system: 'system',
+  custom: 'custom',
+} as const;
+
+export interface Milestone {
+  id: string;
+  title: string;
+  /** @nullable */
+  description?: string | null;
+  kind: MilestoneKind;
+  /** @minimum 1 */
+  weekOffset: number;
+  /** @nullable */
+  phaseId?: string | null;
+  ownersRoles: string[];
+  source: MilestoneSource;
+  /** @nullable */
+  createdBy?: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
 export interface KanbanCardCreate {
   /**
      * @minLength 1
@@ -201,6 +239,40 @@ export interface KanbanCardCreate {
   priority?: KanbanPriority;
   /** @nullable */
   dueDate?: string | null;
+}
+
+export type MilestoneInputKind = typeof MilestoneInputKind[keyof typeof MilestoneInputKind];
+
+
+export const MilestoneInputKind = {
+  phase_milestone: 'phase_milestone',
+  deliverable: 'deliverable',
+  weekly_session: 'weekly_session',
+  presentation: 'presentation',
+  workshop: 'workshop',
+  decision: 'decision',
+} as const;
+
+export interface MilestoneInput {
+  /**
+     * @minLength 1
+     * @maxLength 200
+     */
+  title: string;
+  /**
+     * @maxLength 2000
+     * @nullable
+     */
+  description?: string | null;
+  kind: MilestoneInputKind;
+  /**
+     * @minimum 1
+     * @maximum 60
+     */
+  weekOffset: number;
+  /** @nullable */
+  phaseId?: string | null;
+  ownersRoles?: string[];
 }
 
 export interface KanbanCardUpdate {

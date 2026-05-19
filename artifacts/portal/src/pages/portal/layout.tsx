@@ -29,6 +29,7 @@ export default function PortalLayout({ children }: { children: ReactNode }) {
             <nav className="flex items-center space-x-1 ml-4 border-l border-border pl-6">
               <NavItem href="/portal/equipo" label="Equipo" />
               <NavItem href="/portal/cronograma" label="Cronograma" />
+              <NavItem href="/portal/calendario" label="Calendario" />
               <NavItem href="/portal/metodologia" label="Metodología" />
               <NavItem href="/portal/desarrollo-tecnico" label="Desarrollo Técnico" />
               <NavItem href="/portal/kanban" label="Kanban" />

@@ -24,6 +24,8 @@ tags:
     description: PM-only administrative configuration
   - name: kanban
     description: Operational Kanban board
+  - name: milestones
+    description: Project milestones / calendar (relative to T0)
 paths:
   /healthz:
     get:
@@ -359,6 +361,44 @@ paths:
                 items:
                   $ref: "#/components/schemas/KanbanColumn"
 
+  /milestones:
+    get:
+      operationId: listMilestones
+      tags: [milestones]
+      summary: List all project milestones (read for all authenticated users)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Milestone"
+    post:
+      operationId: createMilestone
+      tags: [milestones]
+      summary: Create a custom milestone (PM only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MilestoneInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Milestone"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /kanban/cards:
     get:
       operationId: listKanbanCards
@@ -425,6 +465,62 @@ paths:
       operationId: deleteKanbanCard
       tags: [kanban]
       summary: Delete a Kanban card (creator or PM only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No content
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /milestones/{id}:
+    patch:
+      operationId: updateMilestone
+      tags: [milestones]
+      summary: Update a custom milestone (PM only). System milestones cannot be updated.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MilestoneInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Milestone"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    delete:
+      operationId: deleteMilestone
+      tags: [milestones]
+      summary: Delete a custom milestone (PM only). System milestones cannot be deleted.
       parameters:
         - name: id
           in: path
@@ -785,6 +881,40 @@ components:
           type: string
           format: date-time
 
+    Milestone:
+      type: object
+      required: [id, title, kind, weekOffset, ownersRoles, source, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: ["string", "null"]
+        kind:
+          type: string
+          enum: [phase_milestone, deliverable, weekly_session, presentation, workshop, decision]
+        weekOffset:
+          type: integer
+          minimum: 1
+        phaseId:
+          type: ["string", "null"]
+        ownersRoles:
+          type: array
+          items:
+            type: string
+        source:
+          type: string
+          enum: [system, custom]
+        createdBy:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
     KanbanCardCreate:
       type: object
       required: [title, columnKey]
@@ -810,6 +940,31 @@ components:
         dueDate:
           type: ["string", "null"]
           format: date
+
+    MilestoneInput:
+      type: object
+      required: [title, kind, weekOffset]
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: ["string", "null"]
+          maxLength: 2000
+        kind:
+          type: string
+          enum: [phase_milestone, deliverable, weekly_session, presentation, workshop, decision]
+        weekOffset:
+          type: integer
+          minimum: 1
+          maximum: 60
+        phaseId:
+          type: ["string", "null"]
+        ownersRoles:
+          type: array
+          items:
+            type: string
 
     KanbanCardUpdate:
       type: object

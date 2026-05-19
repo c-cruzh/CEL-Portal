@@ -12,6 +12,7 @@ import Home from "@/pages/home";
 import PortalLayout from "@/pages/portal/layout";
 import Equipo from "@/pages/portal/equipo";
 import Cronograma from "@/pages/portal/cronograma";
+import Calendario from "@/pages/portal/calendario";
 import Metodologia from "@/pages/portal/metodologia";
 import Desarrollo from "@/pages/portal/desarrollo";
 import Configuracion from "@/pages/portal/configuracion";
@@ -279,6 +280,7 @@ function PortalRoutes() {
         <Route path="/portal" component={() => <Redirect to="/portal/equipo" />} />
         <Route path="/portal/equipo" component={Equipo} />
         <Route path="/portal/cronograma" component={Cronograma} />
+        <Route path="/portal/calendario" component={Calendario} />
         <Route path="/portal/metodologia" component={Metodologia} />
         <Route path="/portal/desarrollo-tecnico" component={Desarrollo} />
         <Route path="/portal/kanban" component={Kanban} />
