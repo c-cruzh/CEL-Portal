@@ -1,6 +1,41 @@
 export const METODOLOGIA_INTRO =
   "Una estrategia de pronóstico hidrológico aumentada por IA que combina datos hidrometeorológicos históricos, la experiencia de dominio de los hidrólogos de CEL y aprendizaje automático moderno para producir pronósticos operativos de caudales del Río Lempa. El enfoque prioriza el modelado híbrido (datos + hidrología), la validación continua contra el baseline operativo y un despliegue progresivo a través de un portal interno de uso institucional.";
 
+export type HighLevelPhase = {
+  id: string;
+  number: string;
+  title: string;
+  purpose: string;
+  icon: "data" | "model" | "ops";
+};
+
+export const METODOLOGIA_HIGH_LEVEL: HighLevelPhase[] = [
+  {
+    id: "datos-dominio",
+    number: "1",
+    title: "Datos + Dominio",
+    purpose:
+      "Series hidrometeorológicas y experiencia operativa de CEL, validadas en conjunto.",
+    icon: "data",
+  },
+  {
+    id: "modelado-hibrido",
+    number: "2",
+    title: "Modelado Híbrido",
+    purpose:
+      "Aprendizaje automático moderno contrastado contra el baseline operativo actual.",
+    icon: "model",
+  },
+  {
+    id: "despliegue-progresivo",
+    number: "3",
+    title: "Despliegue Progresivo",
+    purpose:
+      "Portal interno y operación supervisada por hidrología antes de cualquier escalamiento.",
+    icon: "ops",
+  },
+];
+
 export const METODOLOGIA_PILARES = [
   {
     id: "datos-dominio",
@@ -55,7 +90,17 @@ export const INFRA_AI_SILO = {
   ],
 };
 
-export const INFRA_FASES_OPERATIVAS = [
+export type InfraFaseOperativa = {
+  id: string;
+  titulo: string;
+  resumen: string;
+  componentes: string[];
+  rolCEL: string;
+  needsHumanReview?: boolean;
+  reviewNote?: string;
+};
+
+export const INFRA_FASES_OPERATIVAS: InfraFaseOperativa[] = [
   {
     id: "F1",
     titulo: "Fase 1 — Infraestructura de datos",
@@ -72,7 +117,10 @@ export const INFRA_FASES_OPERATIVAS = [
   },
   {
     id: "F2",
-    titulo: "Fase 2 — Infraestructura de entrenamiento",
+    titulo: "Fase 2 — Infraestructura de modelado",
+    needsHumanReview: true,
+    reviewNote:
+      "El doc original no separa explícitamente el versionado de experimentos/MLOps entre F2 y F3. Aquí lo asignamos a F2 (modelado) por estar ligado a entrenamiento.",
     resumen:
       "El entrenamiento del modelo LSTM se ejecuta sobre la GPU NVIDIA RTX 4090 (24 GB VRAM) del nodo ML/Compute, aprovechando el paralelismo para manejar grandes volúmenes de datos en menos tiempo.",
     componentes: [
@@ -86,7 +134,7 @@ export const INFRA_FASES_OPERATIVAS = [
   },
   {
     id: "F3",
-    titulo: "Fase 3 — Infraestructura operativa",
+    titulo: "Fase 3 — Infraestructura de servicio",
     resumen:
       "Se construye la canalización en tiempo real y la web app sobre la misma infraestructura on-premise, de manera que CEL conserve soberanía total sobre datos, modelos y pronósticos.",
     componentes: [
@@ -350,6 +398,176 @@ export const RUTA_RESUMEN = [
     semanas: "29–30",
     duracion: "2 semanas",
     entregables: ["Buffer planificado para retrasos, retrabajos o validación adicional."],
+  },
+];
+
+export type RutaDetalle = {
+  id: string;
+  nombre: string;
+  semanas: string;
+  duracion: string;
+  proposito: string;
+  tareas: string[];
+  colaboracionCEL: string[];
+  entregables: string[];
+  cronogramaPhaseId: string | null;
+  needsHumanReview?: boolean;
+  reviewNote?: string;
+};
+
+export const RUTA_DETALLE: RutaDetalle[] = [
+  {
+    id: "F0",
+    nombre: "Configuración de infraestructura y entorno",
+    semanas: "1–4",
+    duracion: "4 semanas",
+    proposito:
+      "Construir el silo de IA on-premise y dejarlo certificado para que las fases siguientes operen sobre una base estable y segura.",
+    tareas: [
+      "Comisionamiento HW del silo de IA (ML/Compute, Data/ETL, Backup NAS).",
+      "Red y seguridad: VLANs, firewalls, políticas de acceso y VPN para acceso remoto.",
+      "Instalación del stack: Ubuntu Server LTS, PostgreSQL/PostGIS, MongoDB, Mage y entornos Python.",
+      "Validación y benchmark: GPU, E/S NVMe/SSD y conectividad entre nodos y fuentes externas.",
+    ],
+    colaboracionCEL: [
+      "Administrador de Sistemas / DevOps de CEL lidera la implementación física con guía remota de la consultora.",
+      "Equipo de seguridad de CEL configura y valida la VPN y las políticas de acceso al silo.",
+      "Equipo de TI de CEL gestiona adquisición, racking y conexión eléctrica/red de los nodos.",
+    ],
+    entregables: [
+      "Certificación de Entorno Operacional del silo de IA.",
+      "VPN y acceso remoto seguro funcional para el equipo distribuido.",
+      "Entorno Mage + Git/GitLab listo para el desarrollo de pipelines.",
+    ],
+    cronogramaPhaseId: "F0",
+  },
+  {
+    id: "F1",
+    nombre: "Adquisición y preprocesamiento de datos",
+    semanas: "5–9",
+    duracion: "5 semanas",
+    proposito:
+      "Replicar fielmente la metodología base con datos curados y establecer un nuevo baseline interpretado conjuntamente con CEL.",
+    tareas: [
+      "Integración hidrológica: ingesta de aforos, depuración y rellenado de lagunas históricas.",
+      "Canal meteorológico: descarga y procesamiento de ERA5, GPM/IMERG y CHIRPS; cálculo de precipitación, temperatura y ET.",
+      "Procesamiento geoespacial: MDE (SRTM), HydroATLAS y cobertura de suelos para delimitar cuenca y subcuencas.",
+      "QC y documentación del dataset; pipelines de Mage conectados en solo lectura a PostgreSQL/MongoDB de CEL.",
+    ],
+    colaboracionCEL: [
+      "Hidrología de CEL valida la información hidrológica descargada (aforos, lagunas) para asegurar fidelidad de la replicación.",
+      "Operación de CEL revisa los productos ERA5/GPM/CHIRPS y el cálculo de ET contra su experiencia operativa.",
+      "SIG / teledetección de CEL evalúa el MDE y valida las compilaciones de HydroATLAS y cobertura de suelos.",
+    ],
+    entregables: [
+      "Dataset hidrometeorológico curado, versionado y reproducible.",
+      "Pipelines ETL en Mage en producción, conectados a las fuentes de CEL.",
+      "Catálogo de features y reporte exploratorio por subcuenca.",
+    ],
+    cronogramaPhaseId: "F1",
+  },
+  {
+    id: "F2",
+    nombre: "Configuración y entrenamiento del modelo",
+    semanas: "10–18",
+    duracion: "9 semanas",
+    proposito:
+      "Entrenar y validar el modelo LSTM de pronóstico a 7 días, calibrado con el conocimiento operativo de los hidrólogos de CEL.",
+    tareas: [
+      "Implementación del LSTM con NeuralHydrology/PyTorch sobre la GPU RTX 4090 del silo.",
+      "Selección y justificación de variables de entrada según el contexto del Río Lempa.",
+      "Optimización bayesiana de hiperparámetros (longitud de secuencia, unidades ocultas, tasa de aprendizaje).",
+      "Validación cruzada con origen rodante (rolling-origin) y comparación contra el baseline operativo.",
+      "Informe de desempeño y bitácora de calibración con hidrología.",
+    ],
+    colaboracionCEL: [
+      "Hidrología de CEL valida los patrones aprendidos y aporta detección temprana de sesgos.",
+      "Líder técnico de CEL participa en el ajuste de hiperparámetros aportando conocimiento del sistema.",
+      "Equipo operativo evalúa la coherencia y confiabilidad de los pronósticos a 7 días.",
+    ],
+    entregables: [
+      "Modelo LSTM versionado y reproducible, entrenado sobre el silo de IA.",
+      "Reporte de validación cruzada y comparativa cuantitativa vs. baseline.",
+      "Bitácora de calibración con hidrología.",
+    ],
+    cronogramaPhaseId: "F2",
+  },
+  {
+    id: "F3",
+    nombre: "Operacionalización y automatización",
+    semanas: "19–23",
+    duracion: "5 semanas",
+    proposito:
+      "Construir la web app operativa y automatizar las canalizaciones en tiempo real para la operación continua del modelo en CEL.",
+    tareas: [
+      "Canalización diaria automatizada de pronósticos sobre el silo de IA.",
+      "Tableros web (React + GIS) integrados al portal interno de CEL.",
+      "Generación de mapas estáticos y capas cartográficas operativas.",
+      "Sistema de alertas tempranas (correo/SMS) configurable por umbral y punto de control.",
+      "Integración con sistemas y APIs internas; pruebas E2E con escenarios de degradación de datos.",
+    ],
+    colaboracionCEL: [
+      "CEL identifica puntos de interés, estaciones de aforo y umbrales críticos para la toma de decisiones.",
+      "Hidrólogos y operadores especifican cómo visualizar pronósticos, alertas y métricas prioritarias.",
+      "Equipo de UX/operación de CEL define disposición, navegación y requerimientos de interacción del dashboard.",
+      "DevOps de CEL asegura despliegue, monitoreo y backup del sistema automatizado.",
+    ],
+    entregables: [
+      "Web app operativa integrada al portal de CEL.",
+      "Pipelines de ingesta y pronóstico automatizados en producción.",
+      "Sistema de alertas tempranas configurado y probado.",
+      "Reporte de pruebas integradas E2E.",
+    ],
+    cronogramaPhaseId: "F3",
+  },
+  {
+    id: "F4",
+    nombre: "Validación del piloto y transferencia",
+    semanas: "24–28",
+    duracion: "5 semanas",
+    needsHumanReview: true,
+    reviewNote:
+      "El doc original no distingue claramente entre 'pruebas fuera de muestra' como tarea de QA del modelo (cercana a F2) o como tarea de validación operativa (F4). Aquí se asigna a F4 siguiendo la matriz RACI del cronograma.",
+    proposito:
+      "Validar rigurosamente el piloto en operación supervisada y empoderar a CEL para operar y mantener la solución de forma autónoma.",
+    tareas: [
+      "Pruebas fuera de muestra con datos no usados en entrenamiento ni validación inicial.",
+      "Elaboración del Informe Piloto, POE y documentación técnica (API, BD, web app).",
+      "Sesiones de capacitación personalizadas para el equipo de CEL.",
+      "Sesiones de retroalimentación sobre usabilidad y confianza en los pronósticos.",
+      "Recomendaciones formales sobre escalamiento, ajuste o repetición del piloto.",
+    ],
+    colaboracionCEL: [
+      "CEL identifica y facilita acceso a datasets históricos relevantes para pruebas fuera de muestra.",
+      "Equipo de CEL revisa el POE y el Informe Piloto para asegurar que reflejen sus procesos operativos.",
+      "Miembros clave participan activamente en las sesiones de capacitación y retroalimentación.",
+      "CEL identifica al personal que asumirá el mantenimiento técnico futuro del sistema.",
+    ],
+    entregables: [
+      "Reporte de operación supervisada del piloto.",
+      "Informe Piloto, POE y documentación técnica completa.",
+      "Capacitación impartida al equipo de CEL.",
+      "Recomendaciones formales de escalamiento.",
+    ],
+    cronogramaPhaseId: "F4",
+  },
+  {
+    id: "CONT",
+    nombre: "Contingencia",
+    semanas: "29–30",
+    duracion: "2 semanas",
+    proposito:
+      "Buffer planificado para absorber retrasos puntuales, retrabajos o validación adicional sin comprometer la fecha de cierre.",
+    tareas: [
+      "Reserva para reproceso de datos o reentrenamiento parcial si el desempeño lo requiere.",
+      "Ventana adicional para sesiones de validación o capacitación remanentes con CEL.",
+      "Espacio para ajustes finos al POE y a la documentación a partir del uso real del sistema.",
+    ],
+    colaboracionCEL: [
+      "Disponibilidad puntual de hidrología y DevOps de CEL para cerrar pendientes detectados en fases previas.",
+    ],
+    entregables: ["Cierre formal de pendientes y handover final."],
+    cronogramaPhaseId: null,
   },
 ];
 

@@ -1,4 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { Link } from "wouter";
+import { motion, useReducedMotion } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -15,17 +17,27 @@ import {
   Sparkles,
   Users,
   Check,
+  Database,
+  BrainCircuit,
+  Activity,
+  ArrowRight,
+  HardDrive,
+  Calendar as CalendarIcon,
+  Handshake,
+  PackageCheck,
+  AlertCircle,
 } from "lucide-react";
 import { ROLES } from "@/lib/projectContent";
 import {
   METODOLOGIA_INTRO,
-  METODOLOGIA_PILARES,
+  METODOLOGIA_HIGH_LEVEL,
   INFRA_AI_SILO,
   INFRA_FASES_OPERATIVAS,
   METODOLOGIA_PHASES,
-  RUTA_RESUMEN,
+  RUTA_DETALLE,
   SEGUIMIENTO,
   type MetodologiaPhase,
+  type HighLevelPhase,
 } from "@/lib/metodologiaContent";
 
 type Chapter = {
@@ -61,14 +73,11 @@ const CHAPTERS: Chapter[] = [
     shortLabel: "Infraestructura (F0–F3)",
     icon: ServerCog,
     toc: [
-      { id: "infra-intro", label: "Contexto" },
-      { id: "infra-objetivo", label: "Objetivo de Fase 0" },
-      { id: "infra-actividades", label: "Actividades clave (F0)" },
-      { id: "infra-cel", label: "Participación de CEL (F0)" },
-      { id: "infra-entregable", label: "Entregable principal (F0)" },
+      { id: "infra-overview", label: "Infraestructura del piloto" },
+      { id: "infra-fisica", label: "Infra física / cómputo" },
       { id: "infra-f1", label: "F1 — Infraestructura de datos" },
-      { id: "infra-f2", label: "F2 — Infraestructura de entrenamiento" },
-      { id: "infra-f3", label: "F3 — Infraestructura operativa" },
+      { id: "infra-f2", label: "F2 — Infraestructura de modelado" },
+      { id: "infra-f3", label: "F3 — Infraestructura de servicio" },
     ],
     render: () => <InfraestructuraChapter />,
   },
@@ -79,7 +88,10 @@ const CHAPTERS: Chapter[] = [
     title: "Ruta de implementación y entregables",
     shortLabel: "Ruta y entregables",
     icon: Route,
-    toc: [{ id: "ruta-tabla", label: "Resumen por fase" }],
+    toc: [
+      { id: "ruta-intro", label: "Vista complementaria al Cronograma" },
+      ...RUTA_DETALLE.map((r) => ({ id: `ruta-${r.id.toLowerCase()}`, label: `${r.id} · ${r.nombre}` })),
+    ],
     render: () => <RutaChapter />,
   },
   ...METODOLOGIA_PHASES.map<Chapter>((phase) => ({
@@ -343,146 +355,438 @@ function ResumenChapter() {
         <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
           Pilares de la metodología
         </h3>
-        <div className="grid gap-4 md:grid-cols-3">
-          {METODOLOGIA_PILARES.map((p) => (
-            <Card key={p.id} className="border-border h-full">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-base">{p.title}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground leading-relaxed">{p.body}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <HighLevelTimeline phases={METODOLOGIA_HIGH_LEVEL} />
       </section>
     </>
+  );
+}
+
+const HIGH_LEVEL_ICON: Record<HighLevelPhase["icon"], typeof Database> = {
+  data: Database,
+  model: BrainCircuit,
+  ops: Activity,
+};
+
+function HighLevelTimeline({ phases }: { phases: HighLevelPhase[] }) {
+  const reduce = useReducedMotion();
+  const enter = reduce
+    ? { initial: false, animate: { opacity: 1, y: 0 } }
+    : {
+        initial: { opacity: 0, y: 12 },
+        whileInView: { opacity: 1, y: 0 },
+        viewport: { once: true, margin: "-40px" },
+      };
+
+  return (
+    <div
+      className="relative grid gap-4 md:grid-cols-3 md:gap-2"
+      role="list"
+      aria-label="Pilares de la metodología"
+    >
+      <div
+        aria-hidden
+        className="hidden md:block absolute left-0 right-0 top-7 h-px bg-gradient-to-r from-transparent via-primary/30 to-transparent"
+      />
+      {phases.map((p, i) => {
+        const Icon = HIGH_LEVEL_ICON[p.icon];
+        return (
+          <motion.div
+            key={p.id}
+            role="listitem"
+            {...enter}
+            transition={
+              reduce
+                ? { duration: 0 }
+                : { duration: 0.5, delay: i * 0.18, ease: "easeOut" }
+            }
+            className="relative"
+          >
+            <Card className="relative h-full border-border bg-card overflow-hidden">
+              <CardContent className="p-5">
+                <div className="flex items-start gap-3">
+                  <motion.div
+                    initial={false}
+                    animate={
+                      reduce
+                        ? { scale: 1 }
+                        : { scale: [1, 1.06, 1] }
+                    }
+                    transition={
+                      reduce
+                        ? { duration: 0 }
+                        : {
+                            duration: 2.4,
+                            repeat: Infinity,
+                            ease: "easeInOut",
+                            delay: i * 0.4,
+                          }
+                    }
+                    className="shrink-0 h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center ring-4 ring-background"
+                  >
+                    <Icon className="h-5 w-5" />
+                  </motion.div>
+                  <div className="min-w-0">
+                    <div className="text-[10px] font-semibold uppercase tracking-wider text-primary mb-0.5">
+                      Fase {p.number}
+                    </div>
+                    <h4 className="text-sm font-semibold text-foreground leading-snug">
+                      {p.title}
+                    </h4>
+                  </div>
+                </div>
+                <p className="text-sm text-muted-foreground leading-relaxed mt-3">
+                  {p.purpose}
+                </p>
+              </CardContent>
+            </Card>
+            {i < phases.length - 1 && (
+              <motion.div
+                aria-hidden
+                {...enter}
+                transition={
+                  reduce
+                    ? { duration: 0 }
+                    : { duration: 0.4, delay: i * 0.18 + 0.25 }
+                }
+                className="hidden md:flex absolute -right-3 top-1/2 -translate-y-1/2 z-10 h-6 w-6 items-center justify-center rounded-full bg-background border border-primary/30 text-primary"
+              >
+                <ArrowRight className="h-3 w-3" />
+              </motion.div>
+            )}
+          </motion.div>
+        );
+      })}
+    </div>
+  );
+}
+
+const INFRA_SUB_LABELS: Record<string, { eyebrow: string; icon: typeof HardDrive }> = {
+  fisica: { eyebrow: "Infra física / cómputo", icon: HardDrive },
+  F1: { eyebrow: "F1 · Infraestructura de datos", icon: Database },
+  F2: { eyebrow: "F2 · Infraestructura de modelado", icon: BrainCircuit },
+  F3: { eyebrow: "F3 · Infraestructura de servicio", icon: Activity },
+};
+
+function InfraSubsectionHeader({
+  eyebrow,
+  Icon,
+  needsHumanReview,
+}: {
+  eyebrow: string;
+  Icon: typeof HardDrive;
+  needsHumanReview?: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-2 mb-3 flex-wrap">
+      <div className="h-7 w-7 rounded-md bg-primary/10 text-primary flex items-center justify-center">
+        <Icon className="h-4 w-4" />
+      </div>
+      <div className="text-xs font-semibold uppercase tracking-wider text-primary">
+        {eyebrow}
+      </div>
+      {needsHumanReview && <NeedsReviewBadge />}
+    </div>
+  );
+}
+
+function NeedsReviewBadge({ note }: { note?: string } = {}) {
+  return (
+    <span
+      title={note}
+      className="inline-flex items-center gap-1 rounded-full bg-amber-100 dark:bg-amber-900/30 text-amber-900 dark:text-amber-200 border border-amber-300/60 dark:border-amber-700/50 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider"
+    >
+      <AlertCircle className="h-3 w-3" />
+      Por validar (Kevin)
+    </span>
   );
 }
 
 function InfraestructuraChapter() {
   return (
     <>
-      <section id="infra-intro" className="scroll-mt-24">
-        <p className="text-base text-foreground leading-relaxed">{INFRA_AI_SILO.intro}</p>
-      </section>
-
-      <section id="infra-objetivo" className="scroll-mt-24">
+      <section id="infra-overview" className="scroll-mt-24">
         <Card className="bg-primary/5 border-primary/20">
           <CardHeader className="pb-2">
-            <CardTitle className="text-base">Objetivo de la fase</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-foreground leading-relaxed">{INFRA_AI_SILO.objective}</p>
-          </CardContent>
-        </Card>
-      </section>
-
-      <section id="infra-actividades" className="scroll-mt-24">
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-          Actividades clave
-        </h3>
-        <div className="grid gap-4 md:grid-cols-2">
-          {INFRA_AI_SILO.actividades.map((a, i) => (
-            <Card key={a.id} className="border-border h-full">
-              <CardHeader className="pb-2">
-                <div className="flex items-start gap-3">
-                  <span className="shrink-0 h-7 w-7 rounded-full bg-primary text-primary-foreground text-xs font-semibold flex items-center justify-center">
-                    {i + 1}
-                  </span>
-                  <CardTitle className="text-base leading-snug">{a.title}</CardTitle>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground leading-relaxed">{a.body}</p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </section>
-
-      <section id="infra-cel" className="scroll-mt-24">
-        <Card className="border-border">
-          <CardHeader className="pb-2">
-            <div className="flex items-center gap-2">
-              <Users className="h-4 w-4 text-primary" />
-              <CardTitle className="text-base">Participación esperada de CEL</CardTitle>
+            <div className="text-[10px] font-semibold uppercase tracking-wider text-primary mb-1">
+              Categoría
             </div>
+            <CardTitle className="text-base">Infraestructura del piloto</CardTitle>
             <CardDescription>
-              Roles del equipo CEL con responsabilidad directa en la Fase 0.
+              Cuatro capas que se construyen secuencialmente sobre el mismo silo on-premise: la
+              base física, la capa de datos (F1), la capa de modelado (F2) y la capa de servicio
+              al usuario (F3).
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <ul className="space-y-2">
-              {INFRA_AI_SILO.rolesCEL.map((r, i) => (
-                <li key={i} className="flex items-start gap-2 text-sm">
-                  <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
-                  <span className="text-foreground leading-relaxed">{r}</span>
-                </li>
-              ))}
-            </ul>
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+              {[
+                { id: "fisica", label: "Infra física / cómputo" },
+                { id: "F1", label: "F1 · Datos" },
+                { id: "F2", label: "F2 · Modelado" },
+                { id: "F3", label: "F3 · Servicio" },
+              ].map((s) => {
+                const Icon = INFRA_SUB_LABELS[s.id].icon;
+                return (
+                  <a
+                    key={s.id}
+                    href={`#infra-${s.id === "fisica" ? "fisica" : s.id.toLowerCase()}`}
+                    className="flex items-center gap-2 rounded-md border border-primary/20 bg-background/60 px-3 py-2 text-xs font-medium text-foreground hover:bg-primary/5 transition-colors"
+                  >
+                    <Icon className="h-3.5 w-3.5 text-primary shrink-0" />
+                    <span className="leading-snug">{s.label}</span>
+                  </a>
+                );
+              })}
+            </div>
           </CardContent>
         </Card>
       </section>
 
-      <section id="infra-entregable" className="scroll-mt-24">
+      <section id="infra-fisica" className="scroll-mt-24">
+        <InfraSubsectionHeader
+          eyebrow={INFRA_SUB_LABELS.fisica.eyebrow}
+          Icon={INFRA_SUB_LABELS.fisica.icon}
+        />
         <Card className="border-border">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Entregable principal</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-foreground leading-relaxed">{INFRA_AI_SILO.entregable}</p>
+          <CardContent className="p-5 space-y-5">
+            <p className="text-sm text-foreground leading-relaxed">{INFRA_AI_SILO.intro}</p>
+
+            <div className="rounded-md bg-primary/5 border border-primary/20 p-3">
+              <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">
+                Objetivo
+              </p>
+              <p className="text-sm text-foreground leading-relaxed">
+                {INFRA_AI_SILO.objective}
+              </p>
+            </div>
+
+            <div>
+              <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                Actividades clave
+              </h4>
+              <ul className="space-y-3">
+                {INFRA_AI_SILO.actividades.map((a, i) => (
+                  <li key={a.id} className="flex items-start gap-3 text-sm">
+                    <span className="shrink-0 h-6 w-6 rounded-full bg-primary/10 text-primary text-xs font-semibold flex items-center justify-center mt-0.5">
+                      {i + 1}
+                    </span>
+                    <div>
+                      <p className="font-medium text-foreground leading-snug">{a.title}</p>
+                      <p className="text-muted-foreground leading-relaxed mt-0.5">{a.body}</p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            </div>
+
+            <div className="rounded-md bg-primary/[0.04] border border-primary/15 p-3">
+              <div className="flex items-start gap-2">
+                <Users className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-1.5">
+                    Participación esperada de CEL
+                  </p>
+                  <ul className="space-y-1.5">
+                    {INFRA_AI_SILO.rolesCEL.map((r, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm">
+                        <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+                        <span className="text-foreground leading-relaxed">{r}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1.5">
+                Entregable principal
+              </h4>
+              <p className="text-sm text-foreground leading-relaxed">{INFRA_AI_SILO.entregable}</p>
+            </div>
           </CardContent>
         </Card>
       </section>
 
-      <div className="pt-2">
-        <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-1">
-          Continuidad en las fases siguientes
-        </h3>
-        <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-          Sobre el silo certificado en la Fase 0 se montan progresivamente las capas de datos
-          (Fase 1), entrenamiento (Fase 2) y operación (Fase 3) del piloto.
-        </p>
-      </div>
+      {INFRA_FASES_OPERATIVAS.map((f) => {
+        const meta = INFRA_SUB_LABELS[f.id];
+        return (
+          <section
+            key={f.id}
+            id={`infra-${f.id.toLowerCase()}`}
+            className="scroll-mt-24"
+          >
+            <InfraSubsectionHeader
+              eyebrow={meta.eyebrow}
+              Icon={meta.icon}
+              needsHumanReview={f.needsHumanReview}
+            />
+            <Card className="border-border">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">{f.titulo}</CardTitle>
+                <CardDescription>{f.resumen}</CardDescription>
+                {f.needsHumanReview && f.reviewNote && (
+                  <p className="text-[11px] text-amber-800 dark:text-amber-300 leading-relaxed mt-2">
+                    <span className="font-semibold">Nota:</span> {f.reviewNote}
+                  </p>
+                )}
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div>
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
+                    Componentes
+                  </h4>
+                  <ul className="space-y-2">
+                    {f.componentes.map((c, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm">
+                        <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+                        <span className="text-foreground leading-relaxed">{c}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="rounded-md bg-primary/[0.04] border border-primary/15 p-3">
+                  <div className="flex items-start gap-2">
+                    <Users className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">
+                        Rol del equipo de CEL
+                      </p>
+                      <p className="text-sm text-foreground leading-relaxed">{f.rolCEL}</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </section>
+        );
+      })}
+    </>
+  );
+}
 
-      {INFRA_FASES_OPERATIVAS.map((f) => (
+function RutaChapter() {
+  return (
+    <>
+      <section id="ruta-intro" className="scroll-mt-24">
+        <Card className="bg-primary/5 border-primary/20">
+          <CardContent className="p-5">
+            <div className="flex items-start gap-3">
+              <CalendarIcon className="h-5 w-5 text-primary mt-0.5 shrink-0" />
+              <div>
+                <p className="text-sm font-semibold text-foreground mb-1">
+                  Vista complementaria al Cronograma
+                </p>
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  Aquí se ve <span className="text-foreground font-medium">qué se entrega</span> y{" "}
+                  <span className="text-foreground font-medium">con quién se colabora</span> en
+                  cada fase, con el detalle de tareas del documento original. Para ver{" "}
+                  <span className="text-foreground font-medium">cuándo</span> ocurren las fases en
+                  el calendario, consulta la pestaña Cronograma. Cinco fases + dos semanas de
+                  contingencia, 30 semanas en total.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+
+      {RUTA_DETALLE.map((r) => (
         <section
-          key={f.id}
-          id={`infra-${f.id.toLowerCase()}`}
+          key={r.id}
+          id={`ruta-${r.id.toLowerCase()}`}
           className="scroll-mt-24"
         >
           <Card className="border-border">
-            <CardHeader className="pb-2">
-              <div className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">
-                {f.id}
+            <CardHeader className="pb-3">
+              <div className="flex flex-wrap items-center gap-2 mb-1">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-primary">
+                  {r.id}
+                </span>
+                <span className="text-[11px] text-muted-foreground">·</span>
+                <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+                  <CalendarIcon className="h-3 w-3" />
+                  Semanas {r.semanas} ({r.duracion})
+                </span>
               </div>
-              <CardTitle className="text-base">{f.titulo}</CardTitle>
-              <CardDescription>{f.resumen}</CardDescription>
+              <div className="flex items-start gap-2 flex-wrap">
+                <CardTitle className="text-base">{r.nombre}</CardTitle>
+                {r.needsHumanReview && <NeedsReviewBadge note={r.reviewNote} />}
+              </div>
+              <CardDescription className="leading-relaxed">{r.proposito}</CardDescription>
+              {r.needsHumanReview && r.reviewNote && (
+                <p className="text-[11px] text-amber-800 dark:text-amber-300 leading-relaxed mt-1">
+                  <span className="font-semibold">Nota:</span> {r.reviewNote}
+                </p>
+              )}
+              {r.cronogramaPhaseId && (
+                <div className="pt-2">
+                  <Link
+                    href={`/portal/cronograma#fase-${r.cronogramaPhaseId.toLowerCase()}`}
+                    className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+                  >
+                    Ver en Cronograma
+                    <ArrowRight className="h-3 w-3" />
+                  </Link>
+                </div>
+              )}
             </CardHeader>
             <CardContent className="space-y-4">
               <div>
-                <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-2">
-                  Componentes
-                </h4>
+                <div className="flex items-center gap-2 mb-2">
+                  <ListChecks className="h-4 w-4 text-primary" />
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Tareas
+                  </h4>
+                </div>
                 <ul className="space-y-2">
-                  {f.componentes.map((c, i) => (
+                  {r.tareas.map((t, i) => (
                     <li key={i} className="flex items-start gap-2 text-sm">
                       <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
-                      <span className="text-foreground leading-relaxed">{c}</span>
+                      <span className="text-foreground leading-relaxed">{t}</span>
                     </li>
                   ))}
                 </ul>
               </div>
-              <div className="rounded-md bg-primary/[0.04] border border-primary/15 p-3">
-                <div className="flex items-start gap-2">
-                  <Users className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                  <div>
-                    <p className="text-xs font-semibold uppercase tracking-wider text-primary mb-1">
-                      Rol del equipo de CEL
+
+              {r.colaboracionCEL.length > 0 && (
+                <div className="rounded-md bg-primary/[0.04] border border-primary/15 p-3">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Handshake className="h-4 w-4 text-primary" />
+                    <p className="text-xs font-semibold uppercase tracking-wider text-primary">
+                      Colaboración con CEL
                     </p>
-                    <p className="text-sm text-foreground leading-relaxed">{f.rolCEL}</p>
                   </div>
+                  <ul className="space-y-1.5">
+                    {r.colaboracionCEL.map((c, i) => (
+                      <li key={i} className="flex items-start gap-2 text-sm">
+                        <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary shrink-0" />
+                        <span className="text-foreground leading-relaxed">{c}</span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              <div>
+                <div className="flex items-center gap-2 mb-2">
+                  <PackageCheck className="h-4 w-4 text-emerald-700 dark:text-emerald-300" />
+                  <h4 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                    Entregables
+                  </h4>
+                </div>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {r.entregables.map((e, i) => (
+                    <div
+                      key={i}
+                      className="flex items-start gap-2 rounded-md border border-border bg-card p-3"
+                    >
+                      <span className="shrink-0 h-5 w-5 rounded bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-200 flex items-center justify-center mt-0.5">
+                        <Check className="h-3 w-3" strokeWidth={3} />
+                      </span>
+                      <span className="text-sm text-foreground leading-relaxed">{e}</span>
+                    </div>
+                  ))}
                 </div>
               </div>
             </CardContent>
@@ -490,52 +794,6 @@ function InfraestructuraChapter() {
         </section>
       ))}
     </>
-  );
-}
-
-function RutaChapter() {
-  return (
-    <section id="ruta-tabla" className="scroll-mt-24">
-      <p className="text-sm text-muted-foreground leading-relaxed mb-4">
-        Resumen de la ruta de implementación: cinco fases más una contingencia explícita de dos
-        semanas, totalizando 30 semanas planificadas. Las fechas absolutas dependen de la fecha T0
-        configurada en la pestaña Cronograma.
-      </p>
-      <Card className="border-border overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-muted/40 text-muted-foreground">
-              <tr>
-                <th className="text-left font-medium px-4 py-3 w-16">Fase</th>
-                <th className="text-left font-medium px-4 py-3">Nombre</th>
-                <th className="text-left font-medium px-4 py-3 w-28">Semanas</th>
-                <th className="text-left font-medium px-4 py-3 w-28">Duración</th>
-                <th className="text-left font-medium px-4 py-3">Entregables principales</th>
-              </tr>
-            </thead>
-            <tbody>
-              {RUTA_RESUMEN.map((r) => (
-                <tr key={r.id} className="border-t border-border align-top">
-                  <td className="px-4 py-3 font-semibold text-foreground">{r.id}</td>
-                  <td className="px-4 py-3 text-foreground">{r.nombre}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{r.semanas}</td>
-                  <td className="px-4 py-3 text-muted-foreground">{r.duracion}</td>
-                  <td className="px-4 py-3 text-muted-foreground">
-                    <ul className="space-y-1">
-                      {r.entregables.map((e, i) => (
-                        <li key={i} className="leading-snug">
-                          · {e}
-                        </li>
-                      ))}
-                    </ul>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Card>
-    </section>
   );
 }
 

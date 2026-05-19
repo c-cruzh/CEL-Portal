@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Skeleton } from "@/components/ui/skeleton";
 import { addMonths, format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useQueryClient } from "@tanstack/react-query";
@@ -20,6 +20,22 @@ export default function Cronograma() {
   const [selectedPhase, setSelectedPhase] = useState<string | null>(null);
 
   const startDate = config?.startDate ? parseISO(config.startDate) : null;
+
+  useEffect(() => {
+    if (isLoading) return;
+    const hash = window.location.hash.replace(/^#/, "");
+    if (!hash) return;
+    const el = document.getElementById(hash);
+    if (el) {
+      requestAnimationFrame(() => {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+        el.classList.add("ring-2", "ring-primary/50", "ring-offset-2");
+        window.setTimeout(() => {
+          el.classList.remove("ring-2", "ring-primary/50", "ring-offset-2");
+        }, 2000);
+      });
+    }
+  }, [isLoading]);
 
   if (isLoading)
     return (
@@ -76,7 +92,8 @@ export default function Cronograma() {
         {PHASES.map((phase) => (
           <Card
             key={phase.id}
-            className="border-border hover-elevate cursor-pointer transition-all"
+            id={`fase-${phase.id.toLowerCase()}`}
+            className="border-border hover-elevate cursor-pointer transition-all scroll-mt-24"
             onClick={() => setSelectedPhase(phase.id)}
           >
             <CardHeader className="pb-2">
