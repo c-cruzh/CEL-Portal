@@ -36,6 +36,7 @@ export * from './listDecisionsParams';
 export * from './listDecisionsStatus';
 export * from './listDocumentsParams';
 export * from './member';
+export * from './memberAdminInput';
 export * from './memberMe';
 export * from './milestone';
 export * from './milestoneInput';

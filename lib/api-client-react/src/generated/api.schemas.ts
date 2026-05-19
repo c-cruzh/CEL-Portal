@@ -75,6 +75,15 @@ export interface RolesInput {
   roles: string[];
 }
 
+export interface MemberAdminInput {
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  displayName?: string;
+  roles?: string[];
+}
+
 export interface RoleCoverage {
   roleId: string;
   label: string;

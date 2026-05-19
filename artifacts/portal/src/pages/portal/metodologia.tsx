@@ -14,6 +14,7 @@ import {
   Radio,
   Sparkles,
   Users,
+  Check,
 } from "lucide-react";
 import { ROLES } from "@/lib/projectContent";
 import {
@@ -628,8 +629,8 @@ function PhaseChapter({ phase }: { phase: MetodologiaPhase }) {
               key={i}
               className="flex items-start gap-3 p-4 rounded-md border border-border bg-card"
             >
-              <span className="shrink-0 h-5 w-5 rounded bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-200 text-[10px] font-bold flex items-center justify-center mt-0.5">
-                ✓
+              <span className="shrink-0 h-5 w-5 rounded bg-emerald-100 dark:bg-emerald-900/30 text-emerald-800 dark:text-emerald-200 flex items-center justify-center mt-0.5">
+                <Check className="h-3 w-3" strokeWidth={3} />
               </span>
               <span className="text-sm text-foreground leading-relaxed">{e}</span>
             </div>

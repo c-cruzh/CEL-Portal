@@ -191,6 +191,34 @@ paths:
                 items:
                   $ref: "#/components/schemas/Member"
 
+  /team/members/{userId}:
+    patch:
+      operationId: adminUpdateMember
+      tags: [team]
+      summary: Update another member's display name and/or roles (PM only)
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MemberAdminInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Member"
+        "403":
+          description: Forbidden (not a PM)
+        "404":
+          description: Member not found
+
   /team/roles:
     get:
       operationId: listAvailableRoles
@@ -565,6 +593,19 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/KanbanCard"
+
+  /calendar/export.ics:
+    get:
+      operationId: exportCalendarIcs
+      tags: [milestones]
+      summary: Download the project calendar as a one-shot .ics file
+      responses:
+        "200":
+          description: iCalendar file
+          content:
+            text/calendar:
+              schema:
+                type: string
 
   /calendar/feed-url:
     get:
@@ -1079,6 +1120,18 @@ components:
       type: object
       required: [roles]
       properties:
+        roles:
+          type: array
+          items:
+            type: string
+
+    MemberAdminInput:
+      type: object
+      properties:
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 120
         roles:
           type: array
           items:

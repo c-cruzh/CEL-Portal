@@ -1,4 +1,4 @@
-import { useListAvailableRoles, useGetTeamSummary, useListTeamMembers, useGetMe, useUpdateMyDisplayName, useSetMyRoles, useSetMyCv, getGetMeQueryKey, getListTeamMembersQueryKey, getGetTeamSummaryQueryKey, useRequestUploadUrl, useUpdateMyNotificationPrefs } from "@workspace/api-client-react";
+import { useListAvailableRoles, useGetTeamSummary, useListTeamMembers, useGetMe, useUpdateMyDisplayName, useSetMyRoles, useSetMyCv, getGetMeQueryKey, getListTeamMembersQueryKey, getGetTeamSummaryQueryKey, useRequestUploadUrl, useUpdateMyNotificationPrefs, useAdminUpdateMember } from "@workspace/api-client-react";
 import { ROLES } from "@/lib/projectContent";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -7,17 +7,21 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useState, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 
+const PM_ROLE_IDS = new Set(["pm_lead", "pm_cel"]);
+
 export default function Equipo() {
   const { data: me, isLoading: isLoadingMe } = useGetMe();
   const { data: members, isLoading: isLoadingMembers } = useListTeamMembers();
   const { data: summary, isLoading: isLoadingSummary } = useGetTeamSummary();
+
+  const isPM = !!me?.roles?.some((r) => PM_ROLE_IDS.has(r));
 
   if (isLoadingMe || isLoadingMembers || isLoadingSummary) {
     return <EquipoSkeleton />;
@@ -67,7 +71,7 @@ export default function Equipo() {
           <h2 className="text-xl font-semibold tracking-tight">Directorio</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {members?.map(member => (
-              <MemberCard key={member.id} member={member} />
+              <MemberCard key={member.id} member={member} canEdit={isPM && member.id !== me?.id} />
             ))}
             {members?.length === 0 && (
               <div className="col-span-2 p-8 text-center text-muted-foreground border border-dashed rounded-xl">
@@ -110,7 +114,7 @@ export default function Equipo() {
 
 import type { Member, MemberMe } from "@workspace/api-client-react";
 
-function MemberCard({ member }: { member: Member }) {
+function MemberCard({ member, canEdit }: { member: Member; canEdit?: boolean }) {
   const getInitials = (name: string) => name ? name.substring(0, 2).toUpperCase() : "?";
   
   return (
@@ -121,8 +125,13 @@ function MemberCard({ member }: { member: Member }) {
             <AvatarFallback className="bg-primary/10 text-primary">{getInitials(member.displayName || member.email)}</AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0">
-            <p className="font-semibold text-sm truncate">{member.displayName || "Usuario sin nombre"}</p>
-            <p className="text-xs text-muted-foreground truncate">{member.email}</p>
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <p className="font-semibold text-sm truncate">{member.displayName || "Usuario sin nombre"}</p>
+                <p className="text-xs text-muted-foreground truncate">{member.email}</p>
+              </div>
+              {canEdit && <AdminEditMemberDialog member={member} />}
+            </div>
             <div className="mt-3 flex flex-wrap gap-1.5">
               {member.roles?.map((roleId: string) => {
                 const roleDef = ROLES.find(r => r.id === roleId);
@@ -150,6 +159,100 @@ function MemberCard({ member }: { member: Member }) {
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function AdminEditMemberDialog({ member }: { member: Member }) {
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState(member.displayName || "");
+  const [selectedRoles, setSelectedRoles] = useState<string[]>(member.roles || []);
+  const adminUpdate = useAdminUpdateMember();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const toggleRole = (roleId: string) => {
+    setSelectedRoles(prev =>
+      prev.includes(roleId) ? prev.filter(r => r !== roleId) : [...prev, roleId]
+    );
+  };
+
+  const handleSave = async () => {
+    try {
+      await adminUpdate.mutateAsync({
+        userId: member.id,
+        data: { displayName: name, roles: selectedRoles },
+      });
+      queryClient.invalidateQueries({ queryKey: getListTeamMembersQueryKey() });
+      queryClient.invalidateQueries({ queryKey: getGetTeamSummaryQueryKey() });
+      toast({ title: "Miembro actualizado", description: `Se guardaron los cambios de ${name}.` });
+      setOpen(false);
+    } catch (err) {
+      toast({
+        title: "No se pudo guardar",
+        description: err instanceof Error ? err.message : "Intenta de nuevo en un momento.",
+        variant: "destructive",
+      });
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => {
+      setOpen(o);
+      if (o) {
+        setName(member.displayName || "");
+        setSelectedRoles(member.roles || []);
+      }
+    }}>
+      <DialogTrigger asChild>
+        <Button size="sm" variant="outline" className="h-7 text-xs px-2 shrink-0">Editar</Button>
+      </DialogTrigger>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>Editar miembro</DialogTitle>
+          <DialogDescription>
+            Como PM puedes ajustar el nombre y los roles asignados de cualquier miembro del equipo.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="space-y-6 py-4">
+          <div className="space-y-2">
+            <Label>Correo</Label>
+            <Input value={member.email} disabled />
+          </div>
+          <div className="space-y-2">
+            <Label>Nombre a mostrar</Label>
+            <Input value={name} onChange={e => setName(e.target.value)} />
+          </div>
+          <div className="space-y-3">
+            <Label>Roles asignados</Label>
+            <p className="text-sm text-muted-foreground">
+              Un rol puede ser asumido por más de una persona; basta con marcarlo aquí también.
+            </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              {ROLES.map(role => (
+                <div key={role.id} className="flex items-start space-x-3 p-3 border rounded-lg hover:bg-muted/30 transition-colors">
+                  <Checkbox
+                    id={`admin-role-${member.id}-${role.id}`}
+                    checked={selectedRoles.includes(role.id)}
+                    onCheckedChange={() => toggleRole(role.id)}
+                    className="mt-0.5"
+                  />
+                  <div className="space-y-1">
+                    <Label htmlFor={`admin-role-${member.id}-${role.id}`} className="font-medium cursor-pointer">{role.label}</Label>
+                    <p className="text-xs text-muted-foreground leading-snug">{role.description}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="flex justify-end gap-3 pt-4 border-t">
+          <Button variant="outline" onClick={() => setOpen(false)}>Cancelar</Button>
+          <Button onClick={handleSave} disabled={adminUpdate.isPending}>
+            {adminUpdate.isPending ? "Guardando..." : "Guardar cambios"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 

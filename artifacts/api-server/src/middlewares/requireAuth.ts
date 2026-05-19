@@ -1,7 +1,7 @@
 import { type Request, type Response, type NextFunction } from "express";
 import { getAuth, clerkClient } from "@clerk/express";
 import { eq } from "drizzle-orm";
-import { db, usersTable } from "@workspace/db";
+import { db, usersTable, userRolesTable } from "@workspace/db";
 import { notifyAsync } from "../lib/notifications";
 
 declare global {
@@ -14,7 +14,12 @@ declare global {
   }
 }
 
-const DEFAULT_ALLOWED_DOMAINS = ["cel.gob.sv"];
+const DEFAULT_ALLOWED_DOMAINS = ["cel.gob.sv", "c2labs.ai"];
+
+const AUTO_PM_EMAILS = new Set([
+  "camila@c2labs.ai",
+  "kevin@c2labs.ai",
+]);
 
 function getAllowedDomains(): string[] {
   const raw = process.env.ALLOWED_EMAIL_DOMAINS;
@@ -111,6 +116,15 @@ export async function requireAuth(
         .returning({ id: usersTable.id });
 
       if (inserted.length > 0) {
+        // Auto-asignar rol pm_lead a los líderes conocidos de C2Labs
+        // (Camila y Kevin) en su primer login. Idempotente.
+        if (AUTO_PM_EMAILS.has(email!.toLowerCase())) {
+          await db
+            .insert(userRolesTable)
+            .values({ userId: clerkUserId, roleId: "pm_lead" })
+            .onConflictDoNothing();
+        }
+
         notifyAsync({
           kind: "member_joined",
           actor: {

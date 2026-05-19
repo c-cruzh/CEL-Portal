@@ -169,6 +169,39 @@ export const ListTeamMembersResponse = zod.array(ListTeamMembersResponseItem)
 
 
 /**
+ * @summary Update another member's display name and/or roles (PM only)
+ */
+export const AdminUpdateMemberParams = zod.object({
+  "userId": zod.coerce.string()
+})
+
+export const adminUpdateMemberBodyDisplayNameMax = 120;
+
+
+
+export const AdminUpdateMemberBody = zod.object({
+  "displayName": zod.string().min(1).max(adminUpdateMemberBodyDisplayNameMax).optional(),
+  "roles": zod.array(zod.string()).optional()
+})
+
+export const AdminUpdateMemberResponse = zod.object({
+  "id": zod.string(),
+  "email": zod.string(),
+  "displayName": zod.string(),
+  "roles": zod.array(zod.string()),
+  "joinedAt": zod.coerce.date(),
+  "hasCv": zod.boolean(),
+  "cv": zod.union([zod.object({
+  "fileName": zod.string(),
+  "contentType": zod.string(),
+  "objectPath": zod.string(),
+  "sizeBytes": zod.number(),
+  "uploadedAt": zod.coerce.date()
+}),zod.null()]).optional()
+})
+
+
+/**
  * @summary List of all role definitions available in the project
  */
 export const ListAvailableRolesResponseItem = zod.object({

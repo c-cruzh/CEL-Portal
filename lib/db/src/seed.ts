@@ -33,7 +33,7 @@ const ROLES: Array<{
   description: string;
   sortOrder: number;
 }> = [
-  { id: "pm_lead", label: "PM / Líder de Proyecto (Camila Cruz)", description: "Liderazgo general del piloto, planificación y coordinación con CEL.", sortOrder: 1 },
+  { id: "pm_lead", label: "PM / Líder de Proyecto (C2Labs)", description: "Liderazgo general del piloto, planificación y coordinación con CEL. Puede ser asumido por más de una persona.", sortOrder: 1 },
   { id: "pm_cel", label: "PM / Contraparte CEL", description: "Contraparte de gestión por parte de CEL: agenda, accesos y stakeholders internos.", sortOrder: 2 },
   { id: "hydrology_lead_cel", label: "Líder Hidrología (CEL)", description: "Validación de patrones, ground-truth y evaluación de pronósticos.", sortOrder: 3 },
   { id: "geospatial_expert_cel", label: "Experto Geoespacial (CEL)", description: "MDE, HydroATLAS, cobertura de suelos y delimitación de cuencas.", sortOrder: 4 },

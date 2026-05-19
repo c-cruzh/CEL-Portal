@@ -7,6 +7,7 @@ import {
   UpdateProjectConfigResponse,
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
+import { requirePM } from "../middlewares/requirePM";
 
 const router: IRouter = Router();
 
@@ -41,6 +42,7 @@ router.get(
 router.patch(
   "/project/config",
   requireAuth,
+  requirePM,
   async (req, res): Promise<void> => {
     const parsed = UpdateProjectConfigBody.safeParse(req.body);
     if (!parsed.success) {

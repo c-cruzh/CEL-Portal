@@ -45,6 +45,7 @@ import type {
   ListDecisionsParams,
   ListDocumentsParams,
   Member,
+  MemberAdminInput,
   MemberMe,
   Milestone,
   MilestoneInput,
@@ -812,6 +813,78 @@ export function useListTeamMembers<TData = Awaited<ReturnType<typeof listTeamMem
 
 
 
+
+export const getAdminUpdateMemberUrl = (userId: string,) => {
+
+
+
+
+  return `/api/team/members/${userId}`
+}
+
+/**
+ * @summary Update another member's display name and/or roles (PM only)
+ */
+export const adminUpdateMember = async (userId: string,
+    memberAdminInput: MemberAdminInput, options?: RequestInit): Promise<Member> => {
+
+  return customFetch<Member>(getAdminUpdateMemberUrl(userId),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      memberAdminInput,)
+  }
+);}
+
+
+
+
+export const getAdminUpdateMemberMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdateMember>>, TError,{userId: string;data: BodyType<MemberAdminInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof adminUpdateMember>>, TError,{userId: string;data: BodyType<MemberAdminInput>}, TContext> => {
+
+const mutationKey = ['adminUpdateMember'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof adminUpdateMember>>, {userId: string;data: BodyType<MemberAdminInput>}> = (props) => {
+          const {userId,data} = props ?? {};
+
+          return  adminUpdateMember(userId,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AdminUpdateMemberMutationResult = NonNullable<Awaited<ReturnType<typeof adminUpdateMember>>>
+    export type AdminUpdateMemberMutationBody = BodyType<MemberAdminInput>
+    export type AdminUpdateMemberMutationError = ErrorType<void>
+
+    /**
+ * @summary Update another member's display name and/or roles (PM only)
+ */
+export const useAdminUpdateMember = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof adminUpdateMember>>, TError,{userId: string;data: BodyType<MemberAdminInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof adminUpdateMember>>,
+        TError,
+        {userId: string;data: BodyType<MemberAdminInput>},
+        TContext
+      > => {
+      return useMutation(getAdminUpdateMemberMutationOptions(options));
+    }
 
 export const getListAvailableRolesUrl = () => {
 
@@ -2208,6 +2281,83 @@ export const useMoveKanbanCard = <TError = ErrorType<unknown>,
       > => {
       return useMutation(getMoveKanbanCardMutationOptions(options));
     }
+
+export const getExportCalendarIcsUrl = () => {
+
+
+
+
+  return `/api/calendar/export.ics`
+}
+
+/**
+ * @summary Download the project calendar as a one-shot .ics file
+ */
+export const exportCalendarIcs = async ( options?: RequestInit): Promise<string> => {
+
+  return customFetch<string>(getExportCalendarIcsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getExportCalendarIcsQueryKey = () => {
+    return [
+    `/api/calendar/export.ics`
+    ] as const;
+    }
+
+
+export const getExportCalendarIcsQueryOptions = <TData = Awaited<ReturnType<typeof exportCalendarIcs>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof exportCalendarIcs>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getExportCalendarIcsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof exportCalendarIcs>>> = ({ signal }) => exportCalendarIcs({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof exportCalendarIcs>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ExportCalendarIcsQueryResult = NonNullable<Awaited<ReturnType<typeof exportCalendarIcs>>>
+export type ExportCalendarIcsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Download the project calendar as a one-shot .ics file
+ */
+
+export function useExportCalendarIcs<TData = Awaited<ReturnType<typeof exportCalendarIcs>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof exportCalendarIcs>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getExportCalendarIcsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
 
 export const getGetCalendarFeedUrlUrl = () => {
 

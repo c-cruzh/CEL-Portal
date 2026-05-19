@@ -27,6 +27,7 @@ import { Textarea } from "@/components/ui/textarea";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogTrigger,
@@ -572,6 +573,9 @@ function EditDocumentDialog({
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Editar documento</DialogTitle>
+          <DialogDescription>
+            Actualiza el nombre, la descripción, la carpeta o la fase asociada.
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-2 text-left">
           <div className="space-y-2">
@@ -704,6 +708,9 @@ function NewFolderDialog() {
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Crear nueva carpeta</DialogTitle>
+          <DialogDescription>
+            Agrega una nueva carpeta al repositorio de documentos del piloto.
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-2">
           <div className="space-y-2">
@@ -861,6 +868,9 @@ function UploadDialog({ folders }: { folders: DocumentFolder[] }) {
       <DialogContent className="max-w-lg">
         <DialogHeader>
           <DialogTitle>Subir documento al repositorio</DialogTitle>
+          <DialogDescription>
+            Selecciona el archivo, la carpeta y los metadatos para compartirlo con el equipo.
+          </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-2">
           <div className="space-y-2">

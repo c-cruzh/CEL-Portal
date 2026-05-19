@@ -11,8 +11,12 @@ import {
   ListTeamMembersResponse,
   ListAvailableRolesResponse,
   GetTeamSummaryResponse,
+  AdminUpdateMemberBody,
+  AdminUpdateMemberResponse,
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
+import { requirePM } from "../middlewares/requirePM";
+import { notifyAsync } from "../lib/notifications";
 
 const router: IRouter = Router();
 
@@ -129,6 +133,123 @@ router.get(
         rolesFilled,
         totalRoles: roles.length,
         coverage,
+      }),
+    );
+  },
+);
+
+router.patch(
+  "/team/members/:userId",
+  requireAuth,
+  requirePM,
+  async (req, res): Promise<void> => {
+    const parsed = AdminUpdateMemberBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    const userIdRaw = req.params.userId;
+    const userId = Array.isArray(userIdRaw) ? userIdRaw[0] : userIdRaw;
+    if (!userId) {
+      res.status(400).json({ error: "Missing userId" });
+      return;
+    }
+
+    const [target] = await db
+      .select()
+      .from(usersTable)
+      .where(eq(usersTable.id, userId))
+      .limit(1);
+    if (!target) {
+      res.status(404).json({ error: "Member not found" });
+      return;
+    }
+
+    const previousRoleRows = await db
+      .select({ roleId: userRolesTable.roleId })
+      .from(userRolesTable)
+      .where(eq(userRolesTable.userId, userId));
+    const previousRoles = previousRoleRows.map((r) => r.roleId).sort();
+
+    await db.transaction(async (tx) => {
+      if (parsed.data.displayName !== undefined) {
+        await tx
+          .update(usersTable)
+          .set({ displayName: parsed.data.displayName.trim() })
+          .where(eq(usersTable.id, userId));
+      }
+      if (parsed.data.roles !== undefined) {
+        const desired = Array.from(new Set(parsed.data.roles));
+        await tx
+          .delete(userRolesTable)
+          .where(eq(userRolesTable.userId, userId));
+        if (desired.length > 0) {
+          await tx
+            .insert(userRolesTable)
+            .values(desired.map((roleId) => ({ userId, roleId })))
+            .onConflictDoNothing();
+        }
+      }
+    });
+
+    if (parsed.data.roles !== undefined) {
+      const newRoles = [...new Set(parsed.data.roles)].sort();
+      const changed =
+        previousRoles.length !== newRoles.length ||
+        previousRoles.some((r, i) => r !== newRoles[i]);
+      if (changed) {
+        const [updated] = await db
+          .select({
+            id: usersTable.id,
+            email: usersTable.email,
+            displayName: usersTable.displayName,
+          })
+          .from(usersTable)
+          .where(eq(usersTable.id, userId))
+          .limit(1);
+        if (updated) {
+          notifyAsync({
+            kind: "roles_changed",
+            actor: updated,
+            previousRoles,
+            newRoles,
+          });
+        }
+      }
+    }
+
+    const [user] = await db
+      .select()
+      .from(usersTable)
+      .where(eq(usersTable.id, userId))
+      .limit(1);
+    const roleRows = await db
+      .select({ roleId: userRolesTable.roleId })
+      .from(userRolesTable)
+      .where(eq(userRolesTable.userId, userId));
+    const [cv] = await db
+      .select()
+      .from(userCvsTable)
+      .where(eq(userCvsTable.userId, userId))
+      .limit(1);
+
+    res.json(
+      AdminUpdateMemberResponse.parse({
+        id: user!.id,
+        email: user!.email,
+        displayName: user!.displayName,
+        roles: roleRows.map((r) => r.roleId),
+        joinedAt: user!.createdAt,
+        hasCv: !!cv,
+        cv: cv
+          ? {
+              fileName: cv.fileName,
+              contentType: cv.contentType,
+              objectPath: cv.objectPath,
+              sizeBytes: cv.sizeBytes,
+              uploadedAt: cv.uploadedAt,
+            }
+          : null,
       }),
     );
   },
