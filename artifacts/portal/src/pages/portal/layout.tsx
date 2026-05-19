@@ -25,6 +25,7 @@ export default function PortalLayout({ children }: { children: ReactNode }) {
               <NavItem href="/portal/equipo" label="Equipo" />
               <NavItem href="/portal/cronograma" label="Cronograma" />
               <NavItem href="/portal/metodologia" label="Metodología" />
+              <NavItem href="/portal/desarrollo-tecnico" label="Desarrollo Técnico" />
             </nav>
           </div>
 

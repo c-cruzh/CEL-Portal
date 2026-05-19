@@ -1,0 +1,369 @@
+export interface DevSection {
+  id: string;
+  label: string;
+  shortLabel: string;
+}
+
+export const DEV_SECTIONS: DevSection[] = [
+  { id: "flujo", label: "1. Flujo del sistema", shortLabel: "Flujo" },
+  { id: "datos", label: "2. Datos de entrada", shortLabel: "Datos" },
+  { id: "etl", label: "3. Pipelines ETL (Mage)", shortLabel: "ETL" },
+  { id: "modelos", label: "4. Modelos de predicción", shortLabel: "Modelos" },
+  { id: "validacion", label: "5. Validación y métricas", shortLabel: "Validación" },
+  { id: "decisiones", label: "6. Decisiones técnicas", shortLabel: "Decisiones" },
+  { id: "operacion", label: "7. Operación diaria", shortLabel: "Operación" },
+  { id: "visualizacion", label: "8. Visualización y alertas", shortLabel: "Visualización" },
+  { id: "raci", label: "9. Matriz RACI", shortLabel: "RACI" },
+  { id: "infraestructura", label: "10. Infraestructura local (BOM)", shortLabel: "Infraestructura" },
+  { id: "anexo-lempa", label: "Anexo: Río Lempa", shortLabel: "Anexo Lempa" },
+];
+
+export const FLUJO_INTRO =
+  "El sistema de pronóstico hidrológico basado en IA seguirá un flujo de procesamiento de extremo a extremo, desde la recopilación de datos hasta la generación de alertas tempranas de inundación. Se compone de cuatro subsistemas principales —inspirados en Google Flood Hub (Nevo et al., 2022)— integrados en la plataforma de CEL, precedidos por una Fase 0 de habilitación de infraestructura.";
+
+export const FLUJO_STAGES = [
+  {
+    id: "fase0",
+    tag: "Fase 0",
+    title: "Configuración de infraestructura y entorno",
+    body:
+      "Etapa inicial dedicada a la construcción y comisionamiento de la infraestructura de servidores on-premise dedicada, garantizando un entorno de alto rendimiento, seguro y escalable. Incluye la instalación de hardware y la configuración del stack de software, y es requisito indispensable para iniciar la ingesta de datos.",
+  },
+  {
+    id: "etapa1",
+    tag: "Etapa 1",
+    title: "Adquisición y validación de datos (Data Ingestion)",
+    body:
+      "Recopilación automática de datos meteorológicos, hidrológicos y geoespaciales de múltiples fuentes, con controles de calidad y transformaciones. Los datos crudos son ingeridos mediante procesos ETL orquestados con Mage (pipelines en Python), reemplazando a Pentaho PDI para mejorar fiabilidad, versionamiento y mantenibilidad, y asegurando estandarización temporal y espacial antes del almacenamiento.",
+  },
+  {
+    id: "etapa2",
+    tag: "Etapa 2",
+    title: "Pronóstico de caudales (modelo LSTM)",
+    body:
+      "Redes neuronales recurrentes LSTM entrenadas con datos históricos pronostican caudales/niveles futuros en puntos clave del río (estaciones de aforo o gauges virtuales). Procesa series de precipitaciones pronosticadas y observadas, caudales recientes y otros atributos, con un horizonte de hasta 7 días. Este enfoque supera a los modelos lineales tradicionales en la predicción de crecientes repentinas.",
+  },
+  {
+    id: "etapa3",
+    tag: "Etapa 3",
+    title: "Modelado de inundación",
+    body:
+      "Traduce las predicciones de caudal en áreas inundadas mediante dos enfoques complementarios: (a) modelo de umbral, que asocia un caudal proyectado con la extensión esperada usando mapas predefinidos y elevaciones críticas; y (b) modelo de inundación por manifold (ML avanzado) que estima extensión y profundidad directamente desde las predicciones hidrológicas.",
+  },
+  {
+    id: "etapa4",
+    tag: "Etapa 4",
+    title: "Alertas y visualización",
+    body:
+      "Los resultados se integran en un tablero web interactivo (Node.js/React) que muestra mapas de inundación previstos sobre una interfaz geográfica y curvas de caudal vs umbrales en puntos de control. Si un pronóstico excede niveles críticos, el sistema activa alertas automáticas —correo, SMS u otros canales— dirigidas a los responsables y comunidades pertinentes.",
+  },
+];
+
+export const FLUJO_OUTRO =
+  "El flujo integral va “de datos a decisión”: captura datos brutos multisectoriales, los convierte mediante IA en pronósticos de caudal confiables, traduce esos pronósticos en zonas de inundación probables y comunica oportunamente las alertas a quienes las necesitan.";
+
+export const DATOS_INTRO =
+  "El sistema aprovechará fuentes heterogéneas —meteorológicas, hidrológicas, geoespaciales y de características de cuenca— para alimentar los modelos de pronóstico. Todas las fuentes son abiertas o de acceso público.";
+
+export const DATOS_CATEGORIES = [
+  {
+    id: "meteo",
+    title: "Datos meteorológicos",
+    sources: ["ECMWF (pronósticos hasta 7 días)", "ERA5 / ERA5-Land (reanálisis 1980-presente)", "NASA GPM / IMERG (precipitación satelital)", "CHIRPS (precipitación Mesoamérica)"],
+    body:
+      "Pronósticos numéricos del modelo global ECMWF para horizontes de hasta 7 días, reanálisis ERA5 para series climáticas de largo plazo y estimaciones satelitales GPM/IMERG con pocas horas de retraso. CHIRPS complementa zonas con escasa cobertura de estaciones. La combinación de múltiples productos reduce la incertidumbre de los pronósticos.",
+  },
+  {
+    id: "hidro",
+    title: "Datos hidrológicos",
+    sources: ["Estaciones hidrométricas CEL", "Autoridades hidro-meteorológicas (SV, GT, HN)", "GRDC (Global Runoff Data Centre)", "Gauges virtuales en sitios sin sensores"],
+    body:
+      "Caudales observados en el Lempa y tributarios para entrenar y calibrar el modelo. Registros históricos locales y datos abiertos GRDC para contrastar y extender. El sistema generará gauges virtuales en ubicaciones sin estación física (p. ej. desembocadura en el Bajo Lempa), heredando conocimiento de la red hidrográfica y patrones de lluvia. En operación se incorporarán observaciones en tiempo real para asimilación de datos.",
+  },
+  {
+    id: "geo",
+    title: "Datos geoespaciales",
+    sources: ["MDE SRTM ~30 m / LiDAR local", "Sentinel-1 SAR (mapas históricos de inundación)", "CORINE Land Cover / cobertura nacional"],
+    body:
+      "MDE de alta resolución para delinear zonas que quedarían bajo agua para un nivel dado (insumo clave del modelo de umbral). Sentinel-1 detecta agua superficial aún bajo nubes, permitiendo derivar extensiones de inundaciones pasadas para calibrar y validar el modelo. Capas de uso del suelo para entender la interacción agua-terreno.",
+  },
+  {
+    id: "cuenca",
+    title: "Características de la cuenca",
+    sources: ["HydroATLAS / HydroSheds", "Atributos: área de drenaje, pendiente, suelo, vegetación", "Sub-cuencas (alta GT, media con embalses, baja SV)"],
+    body:
+      "Atributos fisiográficos e hidrológicos del Lempa: área de drenaje, elevación media, pendiente, tipo de suelo, parámetros climáticos medios y cobertura vegetal. Estos rasgos estáticos se incorporan como features del LSTM para regionalizar el modelo y transferir aprendizaje desde cuencas similares hacia segmentos del Lempa con pocos datos locales.",
+  },
+];
+
+export const ETL_INTRO =
+  "Para convertir los datos brutos en insumos listos para modelar, se implementará una canalización moderna basada en Python orquestada por Mage. Esta decisión reemplaza Pentaho PDI para mejorar fiabilidad, observabilidad y versionamiento del código. El nuevo Nodo de Datos & ETL actúa como cliente dentro de la red CEL, consultando en solo-lectura PostgreSQL y MongoDB existentes; todo el procesamiento se ejecuta en el hardware dedicado del silo de IA.";
+
+export const ETL_STAGES = [
+  {
+    title: "Extracción automática",
+    items: [
+      "Conexión programada a APIs meteorológicas (GRIB/NetCDF de ECMWF)",
+      "Descarga de imágenes satelitales (GPM, Sentinel-1) con requests",
+      "Conectores psycopg2 (PostgreSQL CEL) y pymongo (MongoDB CEL)",
+      "Carga inicial en área de staging dentro del silo de IA",
+    ],
+  },
+  {
+    title: "Transformación y limpieza",
+    items: [
+      "Conversión de unidades, zonas horarias y re-muestreo temporal (Pandas)",
+      "Gap-filling: interpolación lineal, media estacional",
+      "Geoespacial: precipitación media areal por subcuenca (rasterio, geopandas)",
+      "Clasificación de agua en Sentinel-1 (umbral de backscatter) → polígonos vectoriales",
+      "Ingeniería de features: día del año, evapotranspiración potencial",
+    ],
+  },
+  {
+    title: "Carga en bases de datos",
+    items: [
+      "MongoDB: datos operativos en tiempo real (lluvia reciente, caudales, predicciones diarias)",
+      "PostgreSQL + PostGIS: históricos depurados, geometrías de cuenca, mapas de inundación",
+    ],
+  },
+  {
+    title: "QA / QC continuo",
+    items: [
+      "Aserciones por script: caudal no negativo, lluvia dentro de rango",
+      "Logs y notificaciones de error en la interfaz de Mage",
+      "Solo datos confiables alimentan los modelos",
+    ],
+  },
+];
+
+export const MODEL_LSTM = {
+  title: "4.1 Modelo LSTM para predicción de caudales",
+  body:
+    "Red neuronal recurrente LSTM elegida por su eficacia capturando dependencias temporales largas en series precipitación-escorrentía. Multivariable: ingiere precipitaciones diarias sobre la cuenca, caudal/nivel actual (autoregresión), indicadores temporales y atributos estáticos de la cuenca (área de drenaje, pendiente, uso del suelo). Salida: caudales pronosticados para los próximos 7 días.",
+  bullets: [
+    "Arquitectura: capas LSTM (hiperparámetro) + densas; esquema sequence-to-sequence (N días → 7 días)",
+    "Framework: NeuralHydrology (Kratzert et al.) sobre PyTorch",
+    "Cómputo: NVIDIA RTX 4090 (24 GB VRAM) del silo de IA",
+    "Pérdida: MSE con métricas hidrológicas (NSE) en validación",
+    "Hiperparámetros: búsqueda Bayesiana con Optuna (unidades ocultas, ventana temporal, learning rate, regularización)",
+    "Integración de embalses: nivel del embalse como input adicional o segmentación arriba/abajo de la presa",
+  ],
+};
+
+export const MODEL_FLOOD = {
+  title: "4.2 Modelo de inundación",
+  body: "Dos enfoques complementarios para traducir caudales pronosticados en áreas inundadas:",
+  approaches: [
+    {
+      name: "Modelo de umbral (Thresholding)",
+      body:
+        "Método basado en reglas fijas que relaciona un nivel de río con una extensión predefinida. Se generan mapas de inundación por nivel umbral usando el MDE (ej. 5 m en estación X). Calibrados con expertos y SAR históricos. Ligero, interpretable y suficiente como baseline operacional. Soporta múltiples umbrales (alerta verde, amarilla, roja) con mapas incrementales.",
+    },
+    {
+      name: "Modelo manifold (ML avanzado)",
+      body:
+        "Aprende un espacio latente de configuraciones de inundación y mapea condiciones hidrológicas (caudal pico, volumen excedente, estado del suelo, pendiente, ancho de valle) a mapas de extensión y profundidad. Entrenado con verdades terreno de Sentinel-1 + transfer learning desde simulaciones HEC-RAS 2D. Modelo tipo autoencoder/CNN. Mucho más rápido que un modelo físico en tiempo real y con precisión similar.",
+    },
+  ],
+  integration:
+    "El LSTM entrega un hidrograma pronosticado en puntos de control; el sistema extrae caudal pico y timing, los pasa al modelo de umbral o al manifold ML, y opcionalmente alimenta la duración esperada de caudales altos para inundaciones prolongadas. Arquitectura modular para facilitar ajustes.",
+};
+
+export const VALIDATION_ROLLING = {
+  title: "Validación con origen rodante (LSTM)",
+  body:
+    "Dado que los datos temporales no son independientes, se divide la serie histórica en segmentos cronológicos: entrenar hasta el año X y validar pronosticando X+1; ampliar la ventana y repetir. Genera varios folds secuenciales que prueban el modelo en periodos no usados en el ajuste. Se reservará un conjunto out-of-sample (últimos 1-2 años o un evento extremo) para prueba ciega final.",
+};
+
+export const VALIDATION_METRICS = [
+  { metric: "NSE (Nash-Sutcliffe)", desc: "Eficiencia del pronóstico respecto a la media observada (1 = perfecto). Estándar en hidrología." },
+  { metric: "RMSE / MAE", desc: "Error cuadrático medio y absoluto medio en m³/s." },
+  { metric: "R²", desc: "Correlación entre predicho y observado." },
+  { metric: "Skill score vs persistencia", desc: "Comparación contra la línea base trivial (caudal igual al de ayer)." },
+  { metric: "POD / FAR", desc: "Probabilidad de detección y tasa de falsas alarmas para eventos de creciente." },
+  { metric: "Índice de Jaccard (IoU)", desc: "Para inundación: coincidencia espacial entre polígono pronosticado y observado." },
+  { metric: "Omisión / comisión", desc: "Área inundada real no predicha vs área predicha que no se inundó." },
+  { metric: "Distribución de profundidades", desc: "Comparación de profundidades estimadas vs mediciones puntuales." },
+];
+
+export const VALIDATION_GOALS = [
+  "NSE ≥ 0.8 en pronóstico a 3 días",
+  "NSE ≥ 0.7 en pronóstico a 7 días",
+  "POD ~ 100% para inundaciones mayores",
+  "FAR < 20%",
+  "Validación indirecta cruzada con Sentinel-1 GMM (Google method)",
+];
+
+export const DECISIONES_TECNICAS = [
+  {
+    title: "Lenguajes y entorno",
+    body: "Python para LSTM, modelo de inundación y orquestación (NumPy, Pandas, GeoPandas, PyTorch, NeuralHydrology). Node.js/React para dashboard. Mage para orquestación, GitLab para versionamiento.",
+  },
+  {
+    title: "Bases de datos y almacenamiento",
+    body: "MongoDB (tiempo real) + PostgreSQL/PostGIS (históricos + geoespacial) en el Nodo de Datos & ETL dedicado. Respaldos en NAS dedicado. No afecta rendimiento de DBs productivas de CEL.",
+  },
+  {
+    title: "Datos meteorológicos (externos, APIs abiertas)",
+    body: "Servicios gratuitos Copernicus/ECMWF y NASA POWER/IMERG. Conexión a internet estable con redundancia y reintentos en scripts.",
+  },
+  {
+    title: "Mapas base",
+    body: "Mapbox o solución open source (OpenStreetMap) según requerimientos visuales y políticas de TI de CEL.",
+  },
+  {
+    title: "Notificaciones",
+    body: "SMTP de CEL para correos; gateway Twilio para SMS críticos (costo insignificante por bajo volumen).",
+  },
+  {
+    title: "Procesamiento satelital (opcional)",
+    body: "Google Earth Engine solo como apoyo en fase de desarrollo, sin integrarse en producción para mantener independencia de la nube.",
+  },
+  {
+    title: "Seguridad y disponibilidad",
+    body: "App y DBs en el silo de IA tras firewalls CEL. Redundancia por hardware (PSU, RAID) + respaldos en NAS. Sin replicación en la nube para el piloto.",
+  },
+];
+
+export const OPERACION_DIARIA = {
+  scheduling:
+    "Dos ciclos diarios alineados con los pronósticos meteorológicos globales (00 UTC y 12 UTC): ~6:00 a.m. y ~6:00 p.m. hora local. Aumento de frecuencia en eventos críticos. Orquestación con Mage (DAGs con dependencias y reintentos).",
+  steps: [
+    "Descarga de pronósticos meteorológicos (ECMWF) y lluvia observada (GPM 24 h)",
+    "Preprocesamiento ETL: precipitación media en cuenca, normalización según parámetros de entrenamiento",
+    "Ejecución del modelo LSTM en GPU (segundos a minutos)",
+    "Cálculo de inundación y comparación contra umbrales críticos",
+    "Actualización de DBs (MongoDB tiempo real, PostgreSQL histórico)",
+    "Notificación (email + SMS) y actualización del dashboard",
+  ],
+  monitoring:
+    "Mage ofrece interfaz visual de monitoreo en tiempo real, políticas de reintento y timeouts como código. Fallas irrecuperables notifican a administradores (email o Slack) con registro detallado.",
+  retraining:
+    "Operación semi-supervisada los primeros meses. Re-entrenamiento trimestral o semestral del LSTM con datos recientes, versionado en Git y validado contra la versión previa antes de pasar a producción.",
+};
+
+export const VISUALIZACION = {
+  intro:
+    "Dashboard web integrado al portal interno de CEL como única fuente de verdad. Audiencia mixta técnica-operativa, enfoque en claridad y síntesis.",
+  features: [
+    {
+      title: "Mapa de la cuenca con capas dinámicas",
+      body: "Mapa interactivo (Leaflet / Mapbox GL JS) con trazo del río, embalses, estaciones y zonas vulnerables. Capa semitransparente del área inundable prevista con área y profundidad máxima en hover.",
+    },
+    {
+      title: "Gráficos de series temporales",
+      body: "Hidrogramas pronosticados vs históricos a 7 días, contrastados con observados recientes y umbrales. Bandas de incertidumbre (percentiles 25-75) cuando hay pronósticos probabilísticos.",
+    },
+    {
+      title: "Tablas resumidas y cifras clave",
+      body: "Estado de alertas tipo semáforo por sitio con contadores de anticipación (“Días para posible desborde: 3”).",
+    },
+    {
+      title: "Funcionalidades interactivas",
+      body: "Selección de escenarios meteorológicos, histórico de pronósticos, capas de vulnerabilidad (población, infraestructura) superpuestas.",
+    },
+  ],
+  alerts: {
+    title: "Sistema de alertas proactivo",
+    body:
+      "Umbrales cuantitativos definidos con CEL (p. ej. Alerta Amarilla = retorno de 5 años). Cada nivel tiene su lista de destinatarios. Notificaciones claras y descriptivas que redirigen al dashboard para análisis.",
+    samples: [
+      'Email — "Alerta Roja de Inundación – Bajo Lempa. Se anticipa caudal ~3000 m³/s el miércoles 03:00, superando el umbral rojo. Revise el dashboard para análisis detallado."',
+      'SMS — "ALERTA ROJA: Pronóstico de caudal >3000 m³/s en Bajo Lempa en 3 días. Revise el dashboard. Info: [enlace]"',
+    ],
+  },
+};
+
+export const RACI_ROLES = ["Consultor", "PM CEL", "Hidrología CEL", "Geoespacial CEL", "Data Eng", "ML Eng", "Stakeholder CEL"] as const;
+
+export const RACI_TASKS: { task: string; values: string[] }[] = [
+  { task: "Configuración Mage + GitLab", values: ["C/A", "I", "R", "I", "I", "I", "I"] },
+  { task: "Desarrollo de pipelines ETL", values: ["R/C", "I", "I", "I", "R/A", "I", "I"] },
+  { task: "Validación de pipelines", values: ["A/R", "C", "I", "I", "R", "I", "I"] },
+  { task: "Diseño y entrenamiento de IA", values: ["R/A", "C/I", "I", "I", "C", "I", "C"] },
+  { task: "Visualización (dashboard)", values: ["R", "I", "I", "I", "C", "C", "—"] },
+  { task: "Cartografía y mapas SIG", values: ["C/A", "I", "I", "I", "R", "I", "—"] },
+  { task: "Validación operacional", values: ["C", "I", "I", "I", "I", "R/A", "—"] },
+  { task: "Gestión y coordinación", values: ["C", "R/A", "I", "I", "I", "I", "I"] },
+];
+
+export const RACI_LEGEND = [
+  { k: "R", v: "Responsable de ejecutar la tarea" },
+  { k: "A", v: "Aprobador final de la actividad" },
+  { k: "C", v: "Consultado para contribuir técnicamente o validar" },
+  { k: "I", v: "Informado del progreso y entregables clave" },
+];
+
+export const INFRA_PLACEHOLDER = {
+  title: "Infraestructura local para el silo de IA de CEL",
+  intro:
+    "Aquí se documentará el desglose de la arquitectura final y el Bill of Materials (BOM) definitivo de hardware y software del silo de IA on-premise.",
+  pending: [
+    "Diagrama de arquitectura final (cómputo, almacenamiento, red, energía)",
+    "BOM final de hardware (servidores, GPU, NAS, switches, UPS, racks)",
+    "BOM final de software (SO, virtualización, MongoDB, PostgreSQL/PostGIS, Mage, monitoreo)",
+    "Plan de comisionamiento y pruebas de aceptación",
+    "Plan de respaldo, recuperación y políticas de seguridad",
+  ],
+};
+
+export const LEMPA = {
+  title: "Anexo Técnico — Dinámicas Hidrológicas y Gobernanza Trinacional",
+  intro:
+    "El Río Lempa es el sistema hidrológico más relevante de El Salvador y uno de los más complejos de Centroamérica. Su cuenca transfronteriza abarca 18,246 km² distribuidos entre Guatemala (12.6% / 2,295 km²), Honduras (31.2% / 5,696 km²) y El Salvador (56.2% / 10,255 km²). El 49% del territorio salvadoreño está cubierto por esta cuenca y alberga al ~77.5% de la población, incluida San Salvador.",
+  geo: {
+    title: "Características geográficas e hidrológicas",
+    items: [
+      {
+        h: "Origen y trayecto",
+        b: "Nace en la Sierra Madre de Guatemala a más de 2,800 m s.n.m. (Río Olopa). Recorre 30.4 km en Guatemala, 31.4 km en Honduras y 360 km en El Salvador (desde Chalatenango) hasta el Pacífico. Total: 422 km. Caudal promedio: 362 m³/s en el puente Cuscatlán.",
+      },
+      {
+        h: "Zonas hidrológicas",
+        b: "Zona Alta (>1,500 m): andosoles volcánicos con infiltración 80-120 mm/hr pero saturación rápida. Zona Media (500-1,500 m): transmisión hidrológica, onda de crecida hasta 7 días desde Guatemala. Zona Baja (<500 m): planicies costeras (Bajo Lempa) con retención hasta 72 h, amortiguador natural.",
+      },
+      {
+        h: "Puntos críticos",
+        b: "La Garganta de Cuscatlán (300 m de ancho) convierte hasta el 90% de la energía cinética aguas arriba en flujo turbulento durante crecidas máximas, amplificando el potencial destructivo.",
+      },
+    ],
+  },
+  climate: {
+    title: "Riesgos e impactos del cambio climático",
+    items: [
+      { h: "Temperatura 2070-2099", b: "+1.9 °C (B1) a +3.4 °C (A2)." },
+      { h: "Precipitación 2070-2099", b: "-5.0% (B1) a -10.4% (A2)." },
+      { h: "Caudal a embalses", b: "Reducción del 13% (B1) al 24% (A2)." },
+      { h: "Estacionalidad", b: "Mayores reducciones en jun-sep. Julio: -39% Cerrón Grande y -41% 15 de Septiembre bajo A2." },
+      { h: "Evento 2011", b: "Liberación de ~9,500 m³/s por más de 12 horas provocó fallo de diques en el Bajo Lempa." },
+      { h: "Sedimentos", b: "28 millones de toneladas anuales de origen volcánico. Cerrón Grande intercepta el 78% de la carga de fondo, acelerando su colmatación." },
+    ],
+  },
+  governance: {
+    title: "Gobernanza trinacional",
+    items: [
+      { h: "Plan Trifinio (1987)", b: "Principal iniciativa de gobernanza transfronteriza para la cuenca alta, derivada de los acuerdos de paz de Esquipulas. Tratado internacional pionero en Centroamérica." },
+      { h: "Desafíos", b: "Enfoque descendente con limitada participación local. Vacíos en protocolos operacionales transfronterizos, especialmente en liberaciones de agua durante extremos y en el intercambio de datos hidrometeorológicos en tiempo real." },
+      { h: "USAID Upper Lempa Watershed", b: "Implementado por Winrock International: trabaja con gobiernos, comunidades y grupos ambientales en la cuenca alta. Beneficia a ~180,000 personas en los tres países." },
+    ],
+  },
+  implications: {
+    title: "Implicaciones para el sistema de pronóstico con IA",
+    items: [
+      {
+        h: "Datos transfronterizos",
+        b: "~65-70% del caudal del Lempa se origina fuera de El Salvador. Se requiere compensar la limitada disponibilidad de datos en tiempo real fuera de jurisdicción CEL, manejar fuentes heterogéneas y de calidad variable, e integrar teledetección satelital.",
+      },
+      {
+        h: "Variabilidad espacial",
+        b: "El sistema de IA debe reconocer respuestas de escorrentía por tipo de suelo/elevación, tiempos de viaje de hasta 7 días desde Guatemala y el efecto regulador del Bajo Lempa (retención 72 h).",
+      },
+      {
+        h: "Modelado adaptativo",
+        b: "LSTM para patrones temporales complejos, ensambles para robustez, productos de teledetección (CHIRPS, ERA5, satélites) para compensar la baja densidad de estaciones, y marcos probabilísticos para cuantificar incertidumbre.",
+      },
+    ],
+  },
+  conclusion:
+    "La cuenca del Lempa combina desafíos hidrológicos, ambientales e institucionales. Un sistema de pronóstico con IA que aborde explícitamente su naturaleza transfronteriza y los retos del cambio climático puede convertirse en modelo replicable para cuencas compartidas en toda la región, y consolidar a CEL como referente en gestión hídrica inteligente.",
+};

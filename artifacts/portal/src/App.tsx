@@ -12,6 +12,7 @@ import PortalLayout from "@/pages/portal/layout";
 import Equipo from "@/pages/portal/equipo";
 import Cronograma from "@/pages/portal/cronograma";
 import Metodologia from "@/pages/portal/metodologia";
+import Desarrollo from "@/pages/portal/desarrollo";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -143,6 +144,7 @@ function PortalRoutes() {
         <Route path="/portal/equipo" component={Equipo} />
         <Route path="/portal/cronograma" component={Cronograma} />
         <Route path="/portal/metodologia" component={Metodologia} />
+        <Route path="/portal/desarrollo-tecnico" component={Desarrollo} />
         <Route component={NotFound} />
       </Switch>
     </PortalLayout>
