@@ -7,21 +7,25 @@ const ROLES: Array<{
   description: string;
   sortOrder: number;
 }> = [
-  { id: "product_owner", label: "Product Owner / Líder de Producto", description: "Define visión, prioriza el backlog y acepta entregables.", sortOrder: 1 },
-  { id: "project_manager", label: "Gerente de Proyecto", description: "Coordina cronograma, presupuesto, riesgos y stakeholders.", sortOrder: 2 },
-  { id: "tech_lead", label: "Líder Técnico / Arquitecto de Soluciones", description: "Define la arquitectura, integraciones y estándares técnicos.", sortOrder: 3 },
-  { id: "hydrology_lead", label: "Líder Hidrológico", description: "Aporta conocimiento del dominio hidrológico y valida modelos.", sortOrder: 4 },
-  { id: "data_engineer", label: "Ingeniería de Datos", description: "Construye pipelines de ingesta y curaduría de datos hidrometeorológicos.", sortOrder: 5 },
-  { id: "ml_engineer", label: "Ingeniería de ML", description: "Entrena, evalúa y despliega modelos de pronóstico.", sortOrder: 6 },
-  { id: "mlops", label: "MLOps / Plataforma", description: "Operación, monitoreo y CI/CD de modelos en producción.", sortOrder: 7 },
-  { id: "backend_engineer", label: "Ingeniería Backend", description: "APIs, integraciones y orquestación de servicios.", sortOrder: 8 },
-  { id: "frontend_engineer", label: "Ingeniería Frontend / UX", description: "Portales internos, dashboards de operación y visualización.", sortOrder: 9 },
-  { id: "qa_validation", label: "QA / Validación Operativa", description: "Pruebas, validación cruzada con hidrólogos y aceptación.", sortOrder: 10 },
-  { id: "devops_sre", label: "DevOps / SRE", description: "Infraestructura, observabilidad, seguridad y confiabilidad.", sortOrder: 11 },
-  { id: "change_management", label: "Gestión del Cambio / Capacitación", description: "Adopción, documentación y capacitación de usuarios.", sortOrder: 12 },
+  { id: "pm_lead", label: "PM / Líder de Proyecto (Camila Cruz)", description: "Liderazgo general del piloto, planificación y coordinación con CEL.", sortOrder: 1 },
+  { id: "pm_cel", label: "PM / Contraparte CEL", description: "Contraparte de gestión por parte de CEL: agenda, accesos y stakeholders internos.", sortOrder: 2 },
+  { id: "hydrology_lead_cel", label: "Líder Hidrología (CEL)", description: "Validación de patrones, ground-truth y evaluación de pronósticos.", sortOrder: 3 },
+  { id: "geospatial_expert_cel", label: "Experto Geoespacial (CEL)", description: "MDE, HydroATLAS, cobertura de suelos y delimitación de cuencas.", sortOrder: 4 },
+  { id: "meteo_expert", label: "Experto Meteorológico", description: "ERA5, GPM, CHIRPS, precipitación y evapotranspiración.", sortOrder: 5 },
+  { id: "ml_engineer", label: "ML Engineer", description: "LSTM, NeuralHydrology, hiperparámetros y validación rodante.", sortOrder: 6 },
+  { id: "data_engineer", label: "Data Engineer (ETL / Mage)", description: "Canalizaciones de datos, ingesta automática y orquestación.", sortOrder: 7 },
+  { id: "infra_devops", label: "Infraestructura / DevOps", description: "Entorno, redes, VPN, bases de datos y stack de software.", sortOrder: 8 },
+  { id: "fullstack_dev", label: "Frontend / Backend Dev", description: "Web app, dashboards operativos y alertas.", sortOrder: 9 },
+  { id: "qa_validation", label: "QA / Validación", description: "Pruebas fuera de muestra y validación del piloto.", sortOrder: 10 },
+  { id: "docs_training", label: "Documentación / Capacitación", description: "POE, informes y talleres de transferencia.", sortOrder: 11 },
+  { id: "stakeholder_cel", label: "Stakeholder CEL", description: "Revisión, retroalimentación y sesiones de avance.", sortOrder: 12 },
 ];
 
 async function main(): Promise<void> {
+  const validIds = ROLES.map((r) => r.id);
+  await db.execute(
+    sql`DELETE FROM roles WHERE id NOT IN (${sql.join(validIds.map((id) => sql`${id}`), sql`, `)})`
+  );
   for (const role of ROLES) {
     await db
       .insert(rolesTable)

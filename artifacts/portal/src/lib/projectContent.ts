@@ -1,16 +1,16 @@
 export const ROLES = [
-  { id: "product_owner", label: "Product Owner / Líder de Producto", description: "Define visión, prioriza el backlog y acepta entregables." },
-  { id: "project_manager", label: "Gerente de Proyecto", description: "Coordina cronograma, presupuesto, riesgos y stakeholders." },
-  { id: "tech_lead", label: "Líder Técnico / Arquitecto de Soluciones", description: "Define la arquitectura, integraciones y estándares técnicos." },
-  { id: "hydrology_lead", label: "Líder Hidrológico", description: "Aporta conocimiento del dominio hidrológico y valida modelos." },
-  { id: "data_engineer", label: "Ingeniería de Datos", description: "Construye pipelines de ingesta y curaduría de datos hidrometeorológicos." },
-  { id: "ml_engineer", label: "Ingeniería de ML", description: "Entrena, evalúa y despliega modelos de pronóstico." },
-  { id: "mlops", label: "MLOps / Plataforma", description: "Operación, monitoreo y CI/CD de modelos en producción." },
-  { id: "backend_engineer", label: "Ingeniería Backend", description: "APIs, integraciones y orquestación de servicios." },
-  { id: "frontend_engineer", label: "Ingeniería Frontend / UX", description: "Portales internos, dashboards de operación y visualización." },
-  { id: "qa_validation", label: "QA / Validación Operativa", description: "Pruebas, validación cruzada con hidrólogos y aceptación." },
-  { id: "devops_sre", label: "DevOps / SRE", description: "Infraestructura, observabilidad, seguridad y confiabilidad." },
-  { id: "change_management", label: "Gestión del Cambio / Capacitación", description: "Adopción, documentación y capacitación de usuarios." }
+  { id: "pm_lead", label: "PM / Líder de Proyecto (Camila Cruz)", description: "Liderazgo general del piloto, planificación y coordinación con CEL." },
+  { id: "pm_cel", label: "PM / Contraparte CEL", description: "Contraparte de gestión por parte de CEL: agenda, accesos y stakeholders internos." },
+  { id: "hydrology_lead_cel", label: "Líder Hidrología (CEL)", description: "Validación de patrones, ground-truth y evaluación de pronósticos." },
+  { id: "geospatial_expert_cel", label: "Experto Geoespacial (CEL)", description: "MDE, HydroATLAS, cobertura de suelos y delimitación de cuencas." },
+  { id: "meteo_expert", label: "Experto Meteorológico", description: "ERA5, GPM, CHIRPS, precipitación y evapotranspiración." },
+  { id: "ml_engineer", label: "ML Engineer", description: "LSTM, NeuralHydrology, hiperparámetros y validación rodante." },
+  { id: "data_engineer", label: "Data Engineer (ETL / Mage)", description: "Canalizaciones de datos, ingesta automática y orquestación." },
+  { id: "infra_devops", label: "Infraestructura / DevOps", description: "Entorno, redes, VPN, bases de datos y stack de software." },
+  { id: "fullstack_dev", label: "Frontend / Backend Dev", description: "Web app, dashboards operativos y alertas." },
+  { id: "qa_validation", label: "QA / Validación", description: "Pruebas fuera de muestra y validación del piloto." },
+  { id: "docs_training", label: "Documentación / Capacitación", description: "POE, informes y talleres de transferencia." },
+  { id: "stakeholder_cel", label: "Stakeholder CEL", description: "Revisión, retroalimentación y sesiones de avance." }
 ];
 
 export interface Phase {
