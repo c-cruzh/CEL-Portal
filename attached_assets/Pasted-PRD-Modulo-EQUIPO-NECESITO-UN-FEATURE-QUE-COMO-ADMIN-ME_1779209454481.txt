@@ -1,0 +1,60 @@
+PRD 
+
+Modulo - EQUIPO
+
+- NECESITO UN FEATURE QUE COMO ADMIN ME PERMITA ADMINISTRAR ROLES, PERFILES, ASIGNACIONES, INVITACIONES A LOS USERS. ADMINS SOLO CAMILA Y KEVIN. 
+-HAY QUE CORREGIR LA LOGICA DE LOS ROLES REQUERIDOS
+-	AQUI VALE RECALCAR QUE EN EL CASO DE LA CONSULTA PUEDE SER MAS DE UN ROL DESCRITO (RIGHT?). LA LIDER DE PROYECTO TMB ES ML ENGINEER, DATA ENGINEER POR EJEMPLO. > human validation required. KEVIN INPUT post revision. Logica de revision, validar el og y la ultima y arrive at vf.
+
+-comite logica toda 2nda iteraicon no aqui reflejada. 
+
+Modulo - CRONOGRAMA
+
+
+Con el ejemplo previo q te di, como inspo (el screenshot, ademas del v0 codebase og) tiene q tener la etapa/entregable y sus respectivas actividades drilled down. 
+En cada component de las fases, se deberian de popular los individuos y roles a los que correspondan para que sepan su involvement en una etapa en especifico. Mi doc og dsp grande dice esto con una granularidad alta. Esa logica me gustaria que estuviese embebida en esas cards/componenets por fase..
+
+Modulo - CALENDARIO
+-El t0 function todavia funciona a nivel gantt pero se quebro el link de logica q le pusiste para q se autocrearan los weeklys, y todos los seguimientos implicitos. 
+- me gustaria tmb q pudieramos batch import segun un data strcuture un batch de sesiones que tiene q estar human evaluated antes de make it here. Esa feature es importante. Yo se q podemos hacer el ical export .ics pero para data validation me sirve mas (no significa quitar ical btw).
+
+Modulo - METODOLOGIA
+-Metodlogia 3 phase, hl necesita estar mas animated o digerible not so much text, animate or visualize it somehow. Its not much text. 
+-infraestrucutra me gustaria q esa seccion se divida en las respectivas f1, f2 ,y f3 en secciones diferentes. Si bien todo es infra, una es infra fisica/computo, de ahi f1, f2, f3 son subtypes other types of infra, no need to mix. At least respect the division between types and you can leave the infra broader category as a amalgamator. 
+-this section of infra in general is very mixed up, id go back to the og file and think how i best strcuture this. 
+-ruta y entregables feels a tab redundant relativo a cronograma. Hay listas de tareas granulares, involvement adn collaboration mas granulares q siento q podrian agregar valor. En esta mejora human validation is required. 
+
+La unica seccion bien hecha es detalle por fase. It respects the og logic, so freeze, do not touch or change. 
+
+Modulo - Desarollo Tecnico
+
+El texoto por fases me parece un tanto redundante. 
+Los datos de entrada estan ok, ahi podrias expand con el data registry. Pro lo menos el scaffolding de como iran ahi metidos. 
+La etl seccion needs some love order and strcuture, go back to the og file pls and see how to best present and improve this info.
+Seccion 4 on modelos de prediccion is perfect, freeze do not change. 
+Seccion 5 is perfect too, freeze do not change. 
+Esta seccion needs love and attention and human validation. Go back to og doc and basically read in full, across multiple sections, i describe decisions to be made, or things that need to be decided or done at somepoint i need to map that out in full detail and granularity. Muchas mas decisiones abiertas dependencias con cel faltan aqui y deberia estar todo eso aqui. Esa seccion 6 esta bien trieste y pobre. 
+Esa seccion de operacion diaria 7 esta ok, ahi hay una interdependence con lo de las decisions internas por ejemplo. Aqui necesitamos varias de las cosas o inputs de la cel y su team de informatica. Seria de augmentar lo q aqui ya esta documentado. Solo hay que robustecer con lo q en realidad es responsabilidad o scope de la cel. 
+Seccion 8 esta ok. Hay mas q se tiene q documentar aqui, to improve. Go back to og file and check how to improve. 
+En ese chapter 9, todo lo del og dsp esta deprecated, hay que revamp en funcion del bill of materials final aprobado por la cel. 
+Chapter 10 is horrible, i basically want a web version of the doc. As is no changes. Go back to the doc, extract and execute in a sexy/digestible format. 
+Chapter 11, needs a hell lot of human validation and improvements. This is also a deprecated (slightly) section that needs to be reviewed and restrcitired manually and then redocument, i dont necesarilly have a problem with form as seen in chapter 11 but also dont love it and think u can do better. 
+
+Kanban
+-qa extensivo + fix bugs y logica limitada
+-aqui kevin debera venir a volcar las tareas ya identificas en las respectivas partes/etapas del piloto, todas aquellas no rpeviamente contempladas, hay que dejarlas preproyecto o definir categorias de manera en la q podamos usar el kanban sin mezclar con tareas del piloto una vez empezo con cosas q se deben definir antes. 
+-kevin necesitara una batch upload mechanism y definir esa data structure tmb. Important and required feature. 
+
+
+Calendario
+En el calendario la feature q se pegaba a la fecha t0 de cronograma para autogenerar el calendario minimo (as a starting point) ya no sirve. So pls fix. Aparte, necesito que definas tmb un batch upload feature de alguna manera. Tmb el data strcutre needs some love. Tmb la logica validemos q sirva. In general extnesive qa.
+Esta etapa requiere de alta validación humana liderada por kevin, en la cual un insumo core es el dsp (raw version of the same stuff) + un insumo q el genero de las workshops q le puede servir para curar la version final de lo q vendra a batch upload. Eso deberia quedar ahi ya implicito pero cambiable. Again solo por admins claramente. 
+
+Decisiones
+Add batch upload feature again 
+Add into the data strcuture plantear las opciones como feature existe, pero extendamos el ciclo de vida y tmb un campo para poder documentar la decision q se tomo quien la tomo y cuando. 
+
+Configuracion
+
+Pimp up to the admin portal ive been needing pls
+I dont get what the hell u have done or how to use its super counterintuive. Lets improve. 
