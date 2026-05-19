@@ -106,7 +106,7 @@ export class ObjectStorageService {
     return new Response(webStream, { headers });
   }
 
-  async getObjectEntityUploadURL(): Promise<string> {
+  async getObjectEntityUploadURL(subprefix: string = "uploads"): Promise<string> {
     const privateObjectDir = this.getPrivateObjectDir();
     if (!privateObjectDir) {
       throw new Error(
@@ -116,7 +116,8 @@ export class ObjectStorageService {
     }
 
     const objectId = randomUUID();
-    const fullPath = `${privateObjectDir}/uploads/${objectId}`;
+    const cleanPrefix = subprefix.replace(/^\/+|\/+$/g, "") || "uploads";
+    const fullPath = `${privateObjectDir}/${cleanPrefix}/${objectId}`;
 
     const { bucketName, objectName } = parseObjectPath(fullPath);
 
@@ -125,6 +126,21 @@ export class ObjectStorageService {
       objectName,
       method: "PUT",
       ttlSec: 900,
+    });
+  }
+
+  async getObjectEntityDownloadURL(
+    objectPath: string,
+    opts: { ttlSec?: number } = {},
+  ): Promise<string> {
+    const file = await this.getObjectEntityFile(objectPath);
+    const bucketName = file.bucket.name;
+    const objectName = file.name;
+    return signObjectURL({
+      bucketName,
+      objectName,
+      method: "GET",
+      ttlSec: opts.ttlSec ?? 300,
     });
   }
 

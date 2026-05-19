@@ -25,9 +25,17 @@ router.post("/storage/uploads/request-url", requireAuth, async (req: Request, re
   }
 
   try {
-    const { name, size, contentType } = parsed.data;
+    const { name, size, contentType, prefix } = parsed.data;
 
-    const uploadURL = await objectStorageService.getObjectEntityUploadURL();
+    const ALLOWED_PREFIXES = new Set(["uploads", "documents"]);
+    if (prefix !== undefined && !ALLOWED_PREFIXES.has(prefix)) {
+      res.status(400).json({ error: "Invalid upload prefix." });
+      return;
+    }
+
+    const uploadURL = await objectStorageService.getObjectEntityUploadURL(
+      prefix ?? undefined,
+    );
     const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
 
     res.json(

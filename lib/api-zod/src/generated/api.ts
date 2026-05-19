@@ -508,12 +508,129 @@ export const MoveKanbanCardResponse = zod.array(MoveKanbanCardResponseItem)
 
 
 /**
+ * @summary List document folders available in the repository
+ */
+export const ListDocumentFoldersResponseItem = zod.object({
+  "key": zod.string(),
+  "label": zod.string(),
+  "sortOrder": zod.number()
+})
+export const ListDocumentFoldersResponse = zod.array(ListDocumentFoldersResponseItem)
+
+
+/**
+ * @summary List documents (filterable)
+ */
+export const ListDocumentsQueryParams = zod.object({
+  "folder": zod.coerce.string().optional(),
+  "phaseId": zod.coerce.string().optional(),
+  "uploadedBy": zod.coerce.string().optional(),
+  "search": zod.coerce.string().optional(),
+  "includeInactive": zod.coerce.boolean().optional()
+})
+
+export const ListDocumentsResponseItem = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "folder": zod.string(),
+  "phaseId": zod.string().nullish(),
+  "version": zod.number(),
+  "mimeType": zod.string(),
+  "sizeBytes": zod.number(),
+  "uploadedBy": zod.string(),
+  "uploadedByName": zod.string(),
+  "uploadedAt": zod.coerce.date(),
+  "isActive": zod.boolean()
+})
+export const ListDocumentsResponse = zod.array(ListDocumentsResponseItem)
+
+
+/**
+ * @summary Create a document entry (after uploading file to object storage). Versions when (name, folder) match.
+ */
+
+
+
+
+export const createDocumentBodySizeBytesMin = 0;
+
+
+
+export const CreateDocumentBody = zod.object({
+  "name": zod.string().min(1),
+  "description": zod.string().nullish(),
+  "folder": zod.string().min(1),
+  "phaseId": zod.string().nullish(),
+  "objectPath": zod.string().min(1),
+  "mimeType": zod.string().min(1),
+  "sizeBytes": zod.number().min(createDocumentBodySizeBytesMin)
+})
+
+
+/**
+ * @summary Update document metadata (PM or uploader)
+ */
+export const UpdateDocumentParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+
+
+
+
+export const UpdateDocumentBody = zod.object({
+  "name": zod.string().min(1).optional(),
+  "description": zod.string().nullish(),
+  "folder": zod.string().min(1).optional(),
+  "phaseId": zod.string().nullish()
+})
+
+export const UpdateDocumentResponse = zod.object({
+  "id": zod.string(),
+  "name": zod.string(),
+  "description": zod.string().nullish(),
+  "folder": zod.string(),
+  "phaseId": zod.string().nullish(),
+  "version": zod.number(),
+  "mimeType": zod.string(),
+  "sizeBytes": zod.number(),
+  "uploadedBy": zod.string(),
+  "uploadedByName": zod.string(),
+  "uploadedAt": zod.coerce.date(),
+  "isActive": zod.boolean()
+})
+
+
+/**
+ * @summary Delete a document (PM or original uploader)
+ */
+export const DeleteDocumentParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+
+/**
+ * @summary Get a short-lived signed download URL for the document
+ */
+export const GetDocumentDownloadUrlParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const GetDocumentDownloadUrlResponse = zod.object({
+  "url": zod.string(),
+  "expiresAt": zod.coerce.date()
+})
+
+
+/**
  * @summary Request a presigned URL to upload a file to object storage
  */
 export const RequestUploadUrlBody = zod.object({
   "name": zod.string(),
   "size": zod.number(),
-  "contentType": zod.string()
+  "contentType": zod.string(),
+  "prefix": zod.string().optional().describe('Optional storage subprefix (e.g. \"documents\"). Defaults to \"uploads\".')
 })
 
 export const RequestUploadUrlResponse = zod.object({

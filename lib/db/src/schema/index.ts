@@ -7,3 +7,4 @@ export * from "./notificationRecipients";
 export * from "./notificationLog";
 export * from "./kanban";
 export * from "./milestones";
+export * from "./documents";

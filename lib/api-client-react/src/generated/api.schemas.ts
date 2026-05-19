@@ -298,14 +298,80 @@ export interface KanbanCardMove {
   position: number;
 }
 
+export interface DocumentFolder {
+  key: string;
+  label: string;
+  sortOrder: number;
+}
+
+export interface Document {
+  id: string;
+  name: string;
+  /** @nullable */
+  description?: string | null;
+  folder: string;
+  /** @nullable */
+  phaseId?: string | null;
+  version: number;
+  mimeType: string;
+  sizeBytes: number;
+  uploadedBy: string;
+  uploadedByName: string;
+  uploadedAt: string;
+  isActive: boolean;
+}
+
+export interface DocumentInput {
+  /** @minLength 1 */
+  name: string;
+  /** @nullable */
+  description?: string | null;
+  /** @minLength 1 */
+  folder: string;
+  /** @nullable */
+  phaseId?: string | null;
+  /** @minLength 1 */
+  objectPath: string;
+  /** @minLength 1 */
+  mimeType: string;
+  /** @minimum 0 */
+  sizeBytes: number;
+}
+
+export interface DocumentUpdate {
+  /** @minLength 1 */
+  name?: string;
+  /** @nullable */
+  description?: string | null;
+  /** @minLength 1 */
+  folder?: string;
+  /** @nullable */
+  phaseId?: string | null;
+}
+
+export interface DocumentDownloadUrl {
+  url: string;
+  expiresAt: string;
+}
+
 export interface UploadRequest {
   name: string;
   size: number;
   contentType: string;
+  /** Optional storage subprefix (e.g. "documents"). Defaults to "uploads". */
+  prefix?: string;
 }
 
 export interface UploadUrl {
   uploadURL: string;
   objectPath: string;
 }
+
+export type ListDocumentsParams = {
+folder?: string;
+phaseId?: string;
+uploadedBy?: string;
+search?: string;
+includeInactive?: boolean;
+};
 

@@ -5,6 +5,7 @@ import {
   projectConfigTable,
   kanbanColumnsTable,
   milestonesTable,
+  documentFoldersTable,
 } from "./index";
 import { sql } from "drizzle-orm";
 import { PHASES_FOR_SEED } from "@workspace/project-domain";
@@ -15,6 +16,15 @@ const KANBAN_COLUMNS: Array<{ key: string; label: string; sortOrder: number }> =
   { key: "in_review", label: "En revisión", sortOrder: 3 },
   { key: "blocked", label: "Bloqueado", sortOrder: 4 },
   { key: "done", label: "Hecho", sortOrder: 5 },
+];
+
+const DOCUMENT_FOLDERS: Array<{ key: string; label: string; sortOrder: number }> = [
+  { key: "metodologia", label: "Metodología", sortOrder: 1 },
+  { key: "datos", label: "Datos", sortOrder: 2 },
+  { key: "modelado", label: "Modelado", sortOrder: 3 },
+  { key: "operacion", label: "Operación", sortOrder: 4 },
+  { key: "actas", label: "Actas", sortOrder: 5 },
+  { key: "presentaciones", label: "Presentaciones", sortOrder: 6 },
 ];
 
 const ROLES: Array<{
@@ -202,6 +212,16 @@ async function main(): Promise<void> {
   }
 
   const milestoneCount = await seedMilestones();
+
+  for (const folder of DOCUMENT_FOLDERS) {
+    await db
+      .insert(documentFoldersTable)
+      .values(folder)
+      .onConflictDoUpdate({
+        target: documentFoldersTable.key,
+        set: { label: folder.label, sortOrder: folder.sortOrder },
+      });
+  }
 
   const count = await db.execute(sql`SELECT COUNT(*)::int AS n FROM roles`);
   // eslint-disable-next-line no-console

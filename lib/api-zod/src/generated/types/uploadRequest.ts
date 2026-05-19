@@ -10,4 +10,6 @@ export interface UploadRequest {
   name: string;
   size: number;
   contentType: string;
+  /** Optional storage subprefix (e.g. "documents"). Defaults to "uploads". */
+  prefix?: string;
 }

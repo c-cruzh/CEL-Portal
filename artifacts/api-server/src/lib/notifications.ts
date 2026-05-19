@@ -22,6 +22,14 @@ type NotificationEvent =
       actor: { id: string; email: string; displayName: string };
       previousRoles: string[];
       newRoles: string[];
+    }
+  | {
+      kind: "document_uploaded";
+      actor: { id: string; email: string; displayName: string };
+      documentName: string;
+      folderLabel: string;
+      version: number;
+      isNewVersion: boolean;
     };
 
 export type NotificationStatus =
@@ -45,6 +53,15 @@ function renderEmail(ev: NotificationEvent): {
       return {
         subject: `[Portal CEL] CV actualizado: ${ev.actor.displayName}`,
         text: `${who} subió o actualizó su CV.\n\nArchivo: ${ev.fileName}\n`,
+      };
+    case "document_uploaded":
+      return {
+        subject: `[Portal CEL] ${ev.isNewVersion ? "Nueva versión" : "Documento nuevo"}: ${ev.documentName}`,
+        text:
+          `${who} ${ev.isNewVersion ? "subió una nueva versión de" : "agregó"} un documento al repositorio del piloto.\n\n` +
+          `Documento: ${ev.documentName}\n` +
+          `Carpeta: ${ev.folderLabel}\n` +
+          `Versión: v${ev.version}\n`,
       };
     case "roles_changed": {
       const added = ev.newRoles.filter((r) => !ev.previousRoles.includes(r));
