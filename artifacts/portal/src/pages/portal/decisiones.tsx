@@ -4,6 +4,7 @@ import {
   useCreateDecision,
   useUpdateDecision,
   useResolveDecision,
+  useReopenDecision,
   useDeleteDecision,
   useListTeamMembers,
   useGetMe,
@@ -109,6 +110,7 @@ export default function Decisiones() {
   const createMut = useCreateDecision();
   const updateMut = useUpdateDecision();
   const resolveMut = useResolveDecision();
+  const reopenMut = useReopenDecision();
   const deleteMut = useDeleteDecision();
 
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -208,6 +210,23 @@ export default function Decisiones() {
       toast({ title: "Decisión marcada como resuelta" });
     } catch (err) {
       handleErrorToast(err, "No se pudo resolver la decisión");
+    }
+  };
+
+  const handleReopen = async (id: string) => {
+    if (
+      !window.confirm(
+        "¿Reabrir esta decisión? Se quitará la resolución registrada y la decisión volverá al tablero de pendientes.",
+      )
+    ) {
+      return;
+    }
+    try {
+      await reopenMut.mutateAsync({ id, data: { status: "open" } });
+      await invalidate();
+      toast({ title: "Decisión reabierta" });
+    } catch (err) {
+      handleErrorToast(err, "No se pudo reabrir la decisión");
     }
   };
 
@@ -337,7 +356,9 @@ export default function Decisiones() {
               isPM={isPM}
               onEdit={() => setEditing(d)}
               onResolve={() => setResolving(d)}
+              onReopen={() => handleReopen(d.id)}
               onDelete={() => handleDelete(d.id)}
+              reopenPending={reopenMut.isPending}
             />
           ))}
       </div>
@@ -385,7 +406,9 @@ function DecisionCard({
   isPM,
   onEdit,
   onResolve,
+  onReopen,
   onDelete,
+  reopenPending,
 }: {
   decision: Decision;
   members: Member[];
@@ -394,7 +417,9 @@ function DecisionCard({
   isPM: boolean;
   onEdit: () => void;
   onResolve: () => void;
+  onReopen: () => void;
   onDelete: () => void;
+  reopenPending: boolean;
 }) {
   const overdue = isDecisionOverdue(d);
   const ownerName = d.ownerUserId
@@ -404,12 +429,17 @@ function DecisionCard({
       ? ROLES.find((r) => r.id === d.ownerRole)?.label ?? d.ownerRole
       : "Sin asignar";
   const isOwnerByRole = !!d.ownerRole && meRoles.includes(d.ownerRole);
+  const hasOwnerOrPmPermission =
+    isPM ||
+    (currentUserId !== null && d.ownerUserId === currentUserId) ||
+    isOwnerByRole;
   const canResolve =
     d.status !== "resolved" &&
     d.status !== "cancelled" &&
-    (isPM ||
-      (currentUserId !== null && d.ownerUserId === currentUserId) ||
-      isOwnerByRole);
+    hasOwnerOrPmPermission;
+  const canReopen =
+    (d.status === "resolved" || d.status === "cancelled") &&
+    hasOwnerOrPmPermission;
 
   return (
     <Card className={overdue ? "border-destructive/60" : undefined}>
@@ -453,6 +483,16 @@ function DecisionCard({
             {canResolve && (
               <Button size="sm" onClick={onResolve}>
                 Resolver
+              </Button>
+            )}
+            {canReopen && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onReopen}
+                disabled={reopenPending}
+              >
+                Reabrir
               </Button>
             )}
             {(isPM ||

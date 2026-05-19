@@ -784,6 +784,37 @@ export const ResolveDecisionResponse = zod.object({
 
 
 /**
+ * @summary Reopen a resolved or cancelled decision (owner or PM only)
+ */
+export const ReopenDecisionParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const ReopenDecisionBody = zod.object({
+  "status": zod.enum(['open', 'in_analysis']).optional()
+})
+
+export const ReopenDecisionResponse = zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "context": zod.string(),
+  "optionsConsidered": zod.string(),
+  "phase": zod.string().nullish(),
+  "ownerUserId": zod.string().nullish(),
+  "ownerRole": zod.string().nullish(),
+  "requestedAt": zod.coerce.date(),
+  "dueDate": zod.coerce.date().nullish(),
+  "status": zod.enum(['open', 'in_analysis', 'resolved', 'cancelled']),
+  "resolution": zod.string().nullish(),
+  "resolvedAt": zod.coerce.date().nullish(),
+  "resolvedBy": zod.string().nullish(),
+  "createdBy": zod.string().nullish(),
+  "createdAt": zod.coerce.date(),
+  "updatedAt": zod.coerce.date()
+})
+
+
+/**
  * @summary Request a presigned URL to upload a file to object storage
  */
 export const RequestUploadUrlBody = zod.object({

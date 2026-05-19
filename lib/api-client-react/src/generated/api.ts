@@ -24,6 +24,7 @@ import type {
   CvInput,
   Decision,
   DecisionInput,
+  DecisionReopenInput,
   DecisionResolveInput,
   DecisionUpdate,
   DisplayNameInput,
@@ -3101,6 +3102,78 @@ export const useResolveDecision = <TError = ErrorType<ErrorResponse>,
         TContext
       > => {
       return useMutation(getResolveDecisionMutationOptions(options));
+    }
+
+export const getReopenDecisionUrl = (id: string,) => {
+
+
+
+
+  return `/api/decisions/${id}/reopen`
+}
+
+/**
+ * @summary Reopen a resolved or cancelled decision (owner or PM only)
+ */
+export const reopenDecision = async (id: string,
+    decisionReopenInput?: DecisionReopenInput, options?: RequestInit): Promise<Decision> => {
+
+  return customFetch<Decision>(getReopenDecisionUrl(id),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      decisionReopenInput,)
+  }
+);}
+
+
+
+
+export const getReopenDecisionMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reopenDecision>>, TError,{id: string;data?: BodyType<DecisionReopenInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof reopenDecision>>, TError,{id: string;data?: BodyType<DecisionReopenInput>}, TContext> => {
+
+const mutationKey = ['reopenDecision'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof reopenDecision>>, {id: string;data?: BodyType<DecisionReopenInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  reopenDecision(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ReopenDecisionMutationResult = NonNullable<Awaited<ReturnType<typeof reopenDecision>>>
+    export type ReopenDecisionMutationBody = BodyType<DecisionReopenInput> | undefined
+    export type ReopenDecisionMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Reopen a resolved or cancelled decision (owner or PM only)
+ */
+export const useReopenDecision = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof reopenDecision>>, TError,{id: string;data?: BodyType<DecisionReopenInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof reopenDecision>>,
+        TError,
+        {id: string;data?: BodyType<DecisionReopenInput>},
+        TContext
+      > => {
+      return useMutation(getReopenDecisionMutationOptions(options));
     }
 
 export const getRequestUploadUrlUrl = () => {

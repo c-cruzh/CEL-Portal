@@ -10,6 +10,7 @@ import {
   CreateDecisionBody,
   UpdateDecisionBody,
   ResolveDecisionBody,
+  ReopenDecisionBody,
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
 import { notifyAsync, notifyDecisionAssignedAsync } from "../lib/notifications";
@@ -309,6 +310,75 @@ router.post(
         actor,
         title: updated.title,
         resolution: updated.resolution ?? "",
+      });
+    }
+
+    res.json(serialize(updated!));
+  },
+);
+
+router.post(
+  "/decisions/:id/reopen",
+  requireAuth,
+  async (req, res): Promise<void> => {
+    const id = getIdParam(req.params.id);
+    const parsed = ReopenDecisionBody.safeParse(req.body ?? {});
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    const [existing] = await db
+      .select()
+      .from(decisionsTable)
+      .where(eq(decisionsTable.id, id))
+      .limit(1);
+    if (!existing) {
+      res.status(404).json({ error: "Decision not found" });
+      return;
+    }
+    if (existing.status !== "resolved" && existing.status !== "cancelled") {
+      res.status(400).json({
+        error: "Solo se pueden reabrir decisiones resueltas o canceladas.",
+        code: "decision_reopen_invalid_state",
+      });
+      return;
+    }
+
+    const actorRoles = await getUserRoles(req.userId!);
+    const actorIsOwner =
+      existing.ownerUserId !== null && existing.ownerUserId === req.userId;
+    const actorIsRoleOwner =
+      existing.ownerRole !== null && actorRoles.includes(existing.ownerRole);
+    const actorIsPM = actorRoles.some((r) => PM_ROLE_IDS.has(r));
+    if (!actorIsOwner && !actorIsRoleOwner && !actorIsPM) {
+      res.status(403).json({
+        error:
+          "Solo el dueño asignado o un PM puede reabrir la decisión.",
+        code: "decision_reopen_forbidden",
+      });
+      return;
+    }
+
+    const newStatus = parsed.data.status ?? "open";
+    const [updated] = await db
+      .update(decisionsTable)
+      .set({
+        status: newStatus,
+        resolution: null,
+        resolvedAt: null,
+        resolvedBy: null,
+      })
+      .where(eq(decisionsTable.id, id))
+      .returning();
+
+    const actor = await loadActor(req.userId!);
+    if (actor && updated) {
+      notifyAsync({
+        kind: "decision_reopened",
+        actor,
+        title: updated.title,
+        previousStatus: existing.status,
+        newStatus: updated.status,
       });
     }
 

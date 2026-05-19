@@ -442,6 +442,18 @@ export interface DecisionResolveInput {
   resolution: string;
 }
 
+export type DecisionReopenInputStatus = typeof DecisionReopenInputStatus[keyof typeof DecisionReopenInputStatus];
+
+
+export const DecisionReopenInputStatus = {
+  open: 'open',
+  in_analysis: 'in_analysis',
+} as const;
+
+export interface DecisionReopenInput {
+  status?: DecisionReopenInputStatus;
+}
+
 export interface UploadRequest {
   name: string;
   size: number;

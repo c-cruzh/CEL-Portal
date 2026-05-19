@@ -51,6 +51,13 @@ type NotificationEvent =
       title: string;
       previousStatus: string;
       newStatus: string;
+    }
+  | {
+      kind: "decision_reopened";
+      actor: { id: string; email: string; displayName: string };
+      title: string;
+      previousStatus: string;
+      newStatus: string;
     };
 
 type PersonalNotificationEvent =
@@ -123,6 +130,14 @@ function renderEmail(ev: NotificationEvent): {
         subject: `[Portal CEL] Decisión actualizada: ${ev.title}`,
         text:
           `${who} cambió el estado de la decisión "${ev.title}".\n\n` +
+          `Antes: ${ev.previousStatus}\n` +
+          `Ahora: ${ev.newStatus}\n`,
+      };
+    case "decision_reopened":
+      return {
+        subject: `[Portal CEL] Decisión reabierta: ${ev.title}`,
+        text:
+          `${who} reabrió la decisión "${ev.title}".\n\n` +
           `Antes: ${ev.previousStatus}\n` +
           `Ahora: ${ev.newStatus}\n`,
       };

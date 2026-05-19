@@ -10,6 +10,8 @@ export * from './cv';
 export * from './cvInput';
 export * from './decision';
 export * from './decisionInput';
+export * from './decisionReopenInput';
+export * from './decisionReopenInputStatus';
 export * from './decisionResolveInput';
 export * from './decisionStatus';
 export * from './decisionUpdate';
