@@ -16,3 +16,9 @@ export const db = drizzle(pool, { schema });
 export * from "./schema";
 export * from "./governance";
 export { ROLES } from "./seedData";
+export {
+  SEED_PLACEHOLDER_USERS,
+  buildSeedMilestones,
+  placeholderIdFor,
+} from "./seedShared";
+export type { SeedMilestone, SeedPlaceholderUser } from "./seedShared";

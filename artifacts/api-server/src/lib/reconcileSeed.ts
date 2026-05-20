@@ -1,8 +1,12 @@
 import { and, eq, sql } from "drizzle-orm";
 import {
   ROLES,
+  SEED_PLACEHOLDER_USERS,
+  buildSeedMilestones,
   db,
   documentsTable,
+  milestonesTable,
+  placeholderIdFor,
   rolesTable,
   userRolesTable,
   usersTable,
@@ -117,11 +121,114 @@ async function reassignSystemUserOwnedRows(): Promise<void> {
   logger.info("[reconcileSeed] removed legacy synthetic system user");
 }
 
+// Upsert canonical milestones by seedKey. Stale `source='system'` milestones
+// whose seedKey is no longer in the canonical set are deleted, but we
+// deliberately preserve `weekly_*` rows owned by ensureSystemWeeklies().
+async function reconcileMilestones(): Promise<number> {
+  const items = buildSeedMilestones();
+  const validKeys = items.map((i) => i.seedKey);
+
+  await db.execute(
+    sql`DELETE FROM milestones
+        WHERE source = 'system'
+          AND (seed_key IS NULL OR seed_key NOT IN (${sql.join(
+            validKeys.map((k) => sql`${k}`),
+            sql`, `,
+          )}))
+          AND (seed_key IS NULL OR seed_key NOT LIKE 'weekly_%')`,
+  );
+
+  for (const m of items) {
+    await db
+      .insert(milestonesTable)
+      .values({
+        title: m.title,
+        description: m.description,
+        kind: m.kind,
+        weekOffset: m.weekOffset,
+        phaseId: m.phaseId,
+        ownersRoles: m.ownersRoles,
+        source: "system",
+        seedKey: m.seedKey,
+      })
+      .onConflictDoUpdate({
+        target: milestonesTable.seedKey,
+        set: {
+          title: m.title,
+          description: m.description,
+          kind: m.kind,
+          weekOffset: m.weekOffset,
+          phaseId: m.phaseId,
+          ownersRoles: m.ownersRoles,
+        },
+      });
+  }
+
+  return items.length;
+}
+
+// Upsert the canonical placeholder titulares. Skips emails already owned by
+// a real (non-placeholder) user. Keeps display_name / org_position fresh.
+// Fills role titular slot only when still NULL — never steals from a real user.
+async function reconcilePlaceholderUsers(): Promise<number> {
+  let upserted = 0;
+  for (const u of SEED_PLACEHOLDER_USERS) {
+    const emailLower = u.email.toLowerCase();
+    const existing = await db.execute(
+      sql`SELECT id FROM users WHERE lower(email) = ${emailLower} LIMIT 1`,
+    );
+    const existingId = (existing.rows[0] as { id?: string } | undefined)?.id;
+    if (existingId && !existingId.startsWith("placeholder_")) {
+      continue;
+    }
+    const id = placeholderIdFor(u.email);
+    await db
+      .insert(usersTable)
+      .values({
+        id,
+        email: emailLower,
+        displayName: u.displayName,
+        orgPosition: u.orgPosition,
+        status: "active",
+        statusChangedBy: "seed-placeholder",
+      })
+      .onConflictDoNothing();
+    await db.execute(
+      sql`UPDATE users SET display_name = ${u.displayName},
+                            org_position = ${u.orgPosition},
+                            status = 'active'
+          WHERE id = ${id}`,
+    );
+    for (const roleId of u.roles) {
+      await db
+        .insert(userRolesTable)
+        .values({ userId: id, roleId })
+        .onConflictDoNothing();
+      await db.execute(
+        sql`UPDATE roles SET titular_user_id = ${id}
+            WHERE id = ${roleId} AND titular_user_id IS NULL`,
+      );
+    }
+    upserted += 1;
+  }
+  return upserted;
+}
+
 export async function reconcileSeedData(): Promise<void> {
   try {
     await upsertRoles();
     await reconcileProjectLeadSplit();
     await reassignSystemUserOwnedRows();
+    const milestoneCount = await reconcileMilestones();
+    logger.info(
+      { milestoneCount },
+      "[reconcileSeed] canonical milestones upserted",
+    );
+    const placeholderCount = await reconcilePlaceholderUsers();
+    logger.info(
+      { placeholderCount },
+      "[reconcileSeed] placeholder titulares upserted",
+    );
     logger.info("[reconcileSeed] complete");
   } catch (err) {
     logger.error({ err }, "[reconcileSeed] failed");
