@@ -5,6 +5,8 @@ import {
   notificationRecipientsTable,
   notificationLogTable,
   decisionsTable,
+  kanbanCardsTable,
+  kanbanColumnsTable,
 } from "@workspace/db";
 import { logger } from "./logger";
 
@@ -79,6 +81,14 @@ type PersonalNotificationEvent =
       decisionId: string;
       dueDate: string;
       daysUntilDue: number;
+    }
+  | {
+      kind: "kanban_due_reminder";
+      title: string;
+      cardId: string;
+      dueDate: string;
+      daysUntilDue: number;
+      columnLabel: string;
     };
 
 export type NotificationStatus =
@@ -213,6 +223,23 @@ function renderPersonalEmail(ev: PersonalNotificationEvent): {
           `Título: ${ev.title}\n` +
           `Fecha límite: ${ev.dueDate}\n\n` +
           `Entra al portal para resolverla o reagendarla.\n`,
+      };
+    }
+    case "kanban_due_reminder": {
+      const when =
+        ev.daysUntilDue < 0
+          ? `venció hace ${Math.abs(ev.daysUntilDue)} día${Math.abs(ev.daysUntilDue) === 1 ? "" : "s"}`
+          : ev.daysUntilDue === 0
+            ? "vence hoy"
+            : `vence mañana`;
+      return {
+        subject: `[Portal CEL] Recordatorio: tarjeta ${when} — ${ev.title}`,
+        text:
+          `Tienes una tarjeta del Kanban a tu cargo cuya fecha límite ${when}.\n\n` +
+          `Tarjeta: ${ev.title}\n` +
+          `Columna: ${ev.columnLabel}\n` +
+          `Fecha límite: ${ev.dueDate}\n\n` +
+          `Entra al portal para avanzarla o reagendarla.\n`,
       };
     }
   }
@@ -798,21 +825,152 @@ async function sendPersonalNotificationWithTag(
   }
 }
 
+const KANBAN_DUE_REMINDER_KIND = "kanban_due_reminder";
+const KANBAN_DONE_COLUMN_KEY = "done";
+
+export async function runKanbanDueDateReminders(
+  now: Date = new Date(),
+): Promise<{
+  evaluated: number;
+  sent: number;
+  skipped: number;
+  failed: number;
+  noProvider: number;
+}> {
+  const todayIso = toDateOnly(now);
+  const tomorrow = new Date(now.getTime() + 86_400_000);
+  const tomorrowIso = toDateOnly(tomorrow);
+
+  let evaluated = 0;
+  let sent = 0;
+  let skipped = 0;
+  let failed = 0;
+  let noProvider = 0;
+
+  try {
+    const candidates = await db
+      .select({
+        id: kanbanCardsTable.id,
+        title: kanbanCardsTable.title,
+        dueDate: kanbanCardsTable.dueDate,
+        createdBy: kanbanCardsTable.createdBy,
+        columnKey: kanbanCardsTable.columnKey,
+      })
+      .from(kanbanCardsTable)
+      .where(ne(kanbanCardsTable.columnKey, KANBAN_DONE_COLUMN_KEY));
+
+    const due = candidates.filter(
+      (c) => c.createdBy && c.dueDate && c.dueDate <= tomorrowIso,
+    );
+    evaluated = due.length;
+    if (due.length === 0)
+      return { evaluated, sent, skipped, failed, noProvider };
+
+    const startOfDay = new Date(`${todayIso}T00:00:00.000Z`);
+    const recentLogs = await db
+      .select({
+        providerMessage: notificationLogTable.providerMessage,
+        status: notificationLogTable.status,
+      })
+      .from(notificationLogTable)
+      .where(
+        and(
+          eq(notificationLogTable.eventKind, KANBAN_DUE_REMINDER_KIND),
+          gte(notificationLogTable.createdAt, startOfDay),
+        ),
+      );
+    const alreadySentIds = new Set<string>();
+    for (const log of recentLogs) {
+      if (log.status !== "sent" && log.status !== "no_provider") continue;
+      const tag = log.providerMessage ?? "";
+      const m = /kanban:([0-9a-f-]{36})/i.exec(tag);
+      if (m && m[1]) alreadySentIds.add(m[1]);
+    }
+
+    const ownerIds = Array.from(
+      new Set(due.map((c) => c.createdBy).filter(Boolean)),
+    );
+    const owners = await db
+      .select({
+        id: usersTable.id,
+        email: usersTable.email,
+        displayName: usersTable.displayName,
+        optOut: usersTable.emailNotificationsOptOut,
+      })
+      .from(usersTable)
+      .where(inArray(usersTable.id, ownerIds));
+    const ownerById = new Map(owners.map((o) => [o.id, o]));
+
+    const columnRows = await db
+      .select({
+        key: kanbanColumnsTable.key,
+        label: kanbanColumnsTable.label,
+      })
+      .from(kanbanColumnsTable);
+    const columnLabelByKey = new Map(columnRows.map((c) => [c.key, c.label]));
+
+    for (const c of due) {
+      if (alreadySentIds.has(c.id)) {
+        skipped++;
+        continue;
+      }
+      const owner = ownerById.get(c.createdBy);
+      if (!owner || owner.optOut) {
+        skipped++;
+        continue;
+      }
+      const daysUntilDue = diffDays(c.dueDate!, todayIso);
+      const status = await sendPersonalNotificationWithTag(
+        {
+          kind: "kanban_due_reminder",
+          title: c.title,
+          cardId: c.id,
+          dueDate: c.dueDate!,
+          daysUntilDue,
+          columnLabel: columnLabelByKey.get(c.columnKey) ?? c.columnKey,
+        },
+        {
+          userId: owner.id,
+          email: owner.email,
+          displayName: owner.displayName,
+        },
+        `kanban:${c.id}`,
+      );
+      if (status === "sent") sent++;
+      else if (status === "no_provider") noProvider++;
+      else if (status === "failed") failed++;
+      else skipped++;
+    }
+  } catch (err) {
+    logger.error({ err }, "Failed to run kanban due-date reminders job");
+  }
+
+  return { evaluated, sent, skipped, failed, noProvider };
+}
+
 let dueReminderTimer: NodeJS.Timeout | null = null;
 
 export function startDueDateReminderScheduler(): void {
   if (dueReminderTimer) return;
   const intervalMs = 6 * 60 * 60 * 1000; // every 6h; per-day dedup prevents duplicates
+  const runAll = async () => {
+    const decisionResult = await runDueDateReminders();
+    logger.info(
+      { result: decisionResult },
+      "Decision due-date reminders job finished",
+    );
+    const kanbanResult = await runKanbanDueDateReminders();
+    logger.info(
+      { result: kanbanResult },
+      "Kanban due-date reminders job finished",
+    );
+  };
   // Run once shortly after boot so a freshly-deployed server still sends today's reminders.
   setTimeout(() => {
-    void runDueDateReminders().then((r) => {
-      logger.info({ result: r }, "Decision due-date reminders job finished");
-    });
+    void runAll();
   }, 30_000);
   dueReminderTimer = setInterval(() => {
-    void runDueDateReminders().then((r) => {
-      logger.info({ result: r }, "Decision due-date reminders job finished");
-    });
+    void runAll();
   }, intervalMs);
 }
 
