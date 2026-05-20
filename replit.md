@@ -1,45 +1,89 @@
-# [Project name]
+# Portal CEL — Piloto
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+Portal web privado para la coordinación del piloto de pronóstico hidrológico de **CEL** (Comisión Ejecutiva Hidroeléctrica del Río Lempa), liderado por **C2 Labs**. Centraliza equipo, cronograma, metodología, desarrollo técnico, kanban, calendario, decisiones, documentos y configuración admin.
+
+Acceso restringido a correos `@cel.gob.sv` y `@c2labs.ai`. Admins (PM Portal): `camila@c2labs.ai` y `kevin@c2labs.ai`.
+
+## Documentación
+
+- `docs/README.md` — índice general
+- `docs/PRODUCT.md` — qué hace cada uno de los 9 módulos y para quién
+- `docs/ARCHITECTURE.md` — arquitectura técnica del monorepo
+- `docs/DATA_MODEL.md` — referencia del schema Postgres
+- `docs/API.md` — referencia de endpoints REST
+- `docs/ADMIN_GUIDE.md` — playbook para Camila y Kevin
+- `docs/BATCH_IMPORTS.md` — plantillas y reglas de validación CSV/JSON
+- `docs/CHANGELOG.md` — historial de cambios por tarea
 
 ## Run & Operate
 
-- `pnpm --filter @workspace/api-server run dev` — run the API server (port 5000)
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from the OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- Required env: `DATABASE_URL` — Postgres connection string
+- `pnpm --filter @workspace/api-server run dev` — API server
+- `pnpm --filter @workspace/portal run dev` — portal frontend
+- `pnpm --filter @workspace/mockup-sandbox run dev` — sandbox de mockups (canvas)
+- `pnpm run typecheck` — typecheck completo del monorepo
+- `pnpm run build` — typecheck + build de todos los packages
+- `pnpm --filter @workspace/api-spec run codegen` — regenerar hooks de API y schemas Zod desde el spec OpenAPI
+- `pnpm --filter @workspace/db run push` — aplicar cambios de schema en dev
+- `pnpm --filter @workspace/db exec tsx src/seed.ts` — re-correr el seed (idempotente)
+
+Env requerido: `DATABASE_URL`, `PUBLIC_OBJECT_SEARCH_PATHS`, `PRIVATE_OBJECT_DIR`, `DEFAULT_OBJECT_STORAGE_BUCKET_ID`. Auth se delega a Clerk vía proxy interno (no requiere claves en este repo).
 
 ## Stack
 
 - pnpm workspaces, Node.js 24, TypeScript 5.9
 - API: Express 5
-- DB: PostgreSQL + Drizzle ORM
-- Validation: Zod (`zod/v4`), `drizzle-zod`
-- API codegen: Orval (from OpenAPI spec)
-- Build: esbuild (CJS bundle)
-
-## Where things live
-
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- DB: PostgreSQL + Drizzle ORM (`drizzle-kit push` + migraciones en `lib/db/drizzle/`)
+- Validación: Zod (`zod/v4`), `drizzle-zod`
+- API codegen: Orval desde `lib/api-spec/openapi.yaml`
+- Frontend: React 18 + Vite 6, Tailwind, shadcn/ui, TanStack Query, Wouter, Framer Motion, dnd-kit
+- Auth: Clerk vía proxy mTLS (provista por Replit)
+- Storage: Replit Object Storage (CVs, documentos)
+- Email: provider configurable vía `notification_recipients` (best-effort; sin provider quedan en `notification_log`)
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- **Path-based artifacts**: cada artifact (`portal`, `api-server`, `mockup-sandbox`) tiene su propio `previewPath` y workflow. El portal consume el API server mediante `customFetch` con `import.meta.env.BASE_URL` como prefijo.
+- **OpenAPI como única fuente de verdad**: cualquier cambio de contrato pasa por `lib/api-spec/openapi.yaml` + `pnpm --filter @workspace/api-spec run codegen`. No se edita `lib/api-zod` ni `lib/api-client-react/src/generated/` a mano.
+- **Multi-rol por persona**: una persona puede tener N roles y un rol puede tener N personas. La gobernanza CEL/C2 Labs vive en `lib/db/src/governance.ts` y se overlaya sobre `users` sin crear filas falsas (los CEL aún no se autentican).
+- **Idempotencia en seed y autogen**: el seed corre seguro N veces. Los `weekly_session` ya no son seedeados; los maneja `ensureSystemWeeklies(startDate, n=28)` desde `PATCH /project/config`. `source` discrimina `system | manual | import`; los no-system nunca se borran automáticamente.
+- **Admin layer**: PM-only se define por **email allowlist** en `requireAdmin` (Camila + Kevin), no por rol. Toda mutación admin registra en `admin_audit_log` vía `logAdminAction()`.
+- **Notificaciones best-effort**: si no hay provider configurado, se registra en `notification_log` con status `noProvider` y nada se rompe.
+- **Branding**: navy PANTONE 289 C; sin emojis; todo el contenido user-facing en español.
 
-## Product
+## Where things live
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+- `artifacts/portal/src/pages/portal/` — las 9 pestañas del portal
+- `artifacts/portal/src/lib/` — contenido estático del piloto (PHASES, RACI, ETL, BOM, etc.)
+- `artifacts/api-server/src/routes/` — endpoints REST (mirror del OpenAPI spec)
+- `artifacts/api-server/src/middlewares/` — `requireAuth`, `requirePM`, `requireAdmin`
+- `artifacts/api-server/src/lib/` — notifications, weeklies helper, admin audit
+- `lib/db/src/schema/` — tablas Drizzle (source of truth de la DB)
+- `lib/db/src/seed.ts` — seed idempotente (roles, columnas Kanban, folders, admins)
+- `lib/db/src/governance.ts` — overlay de personas reales del piloto
+- `lib/db/drizzle/` — migraciones SQL versionadas
+- `lib/api-spec/openapi.yaml` — contrato API
+- `lib/api-zod/` y `lib/api-client-react/` — generados (no editar a mano)
+- `lib/project-domain/` — tipos y constantes compartidas (PHASES, etc.)
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+- Spanish only en el producto; sin emojis.
+- Navy PANTONE 289 C como acento principal.
+- Las secciones explícitamente congeladas no se tocan:
+  - Metodología → "Detalle por fase".
+  - Desarrollo Técnico → capítulos 4 (Modelos LSTM) y 5 (Validación rolling).
+- Lógica del Comité de Dirección de CEL queda fuera del MVP (2ª iteración).
+- Cualquier ambigüedad de contenido se marca con badge "Por validar (Kevin)" en lugar de inventar.
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- **Migraciones + tareas paralelas**: si dos tareas tocan el schema en paralelo, los archivos `lib/db/drizzle/000X_*.sql` colisionan. Se serializan vía `dependsOn` en project tasks.
+- **OpenAPI + codegen**: tras editar `openapi.yaml` siempre correr `pnpm --filter @workspace/api-spec run codegen` antes de typecheck.
+- **CV upload**: usa Replit Object Storage; los uploads pasan por `POST /storage/uploads/request-url` (signed URL) y se confirman con `POST /me/cv`.
+- **Weekly sessions**: nunca insertar `kind='weekly_session'` `source='system'` manualmente; lo gobierna `ensureSystemWeeklies`. Para sesiones curadas usar `source='import'` vía `/admin/milestones/batch`.
+- **isAdmin viene del servidor**: el portal jamás computa admin en cliente; se lee de `me.isAdmin` (campo required en `MemberMe`).
 
 ## Pointers
 
-- See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details
+- See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details.
+- See `docs/ARCHITECTURE.md` for the full system map.
