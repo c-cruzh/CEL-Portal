@@ -1130,7 +1130,9 @@ export const BatchImportDecisionsBody = zod.object({
   "options": zod.array(zod.object({
   "label": zod.string().min(1).max(batchImportDecisionsBodyDecisionsItemOptionsItemLabelMax),
   "body": zod.string().max(batchImportDecisionsBodyDecisionsItemOptionsItemBodyMax).nullish()
-})).optional()
+})).optional(),
+  "blocksMilestoneId": zod.string().nullish().describe('Optional UUID of the milestone this decision blocks. Mutually\nexclusive with `blocksMilestoneSeedKey` — if both are provided,\nthe UUID takes precedence.\n'),
+  "blocksMilestoneSeedKey": zod.string().nullish().describe('Optional seed_key resolved against `milestones.seed_key` to link\nthe imported decision to its milestone. If the key does not\nresolve to an existing milestone, the row is rejected.\n')
 })).min(1).max(batchImportDecisionsBodyDecisionsMax)
 })
 

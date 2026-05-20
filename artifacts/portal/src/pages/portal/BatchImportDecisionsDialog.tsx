@@ -29,14 +29,16 @@ const CSV_HEADERS = [
   "phaseId",
   "priority",
   "options",
+  "blocksMilestoneId",
+  "blocksMilestoneSeedKey",
 ];
 
 const CSV_TEMPLATE =
   CSV_HEADERS.join(",") +
   "\n" +
   [
-    'Definir esquema de tarifa para usuarios piloto,"Necesario antes del lanzamiento",pm_lead,,2026-07-15,F1,alta,Tarifa plana|Tarifa por uso',
-    "Elegir proveedor de hosting de datos,,infra_devops,,,F0,media,AWS|GCP|on-prem",
+    'Definir esquema de tarifa para usuarios piloto,"Necesario antes del lanzamiento",pm_lead,,2026-07-15,F1,alta,Tarifa plana|Tarifa por uso,,phase_review_F1',
+    "Elegir proveedor de hosting de datos,,infra_devops,,,F0,media,AWS|GCP|on-prem,,phase_review_F0",
   ].join("\n") +
   "\n";
 
@@ -177,6 +179,22 @@ function validateRow(raw: Record<string, unknown>, row: number): ParsedRow {
   const phaseId = getStr("phaseId");
   const priority = getStr("priority");
   const options = getOptions("options");
+  const blocksMilestoneId = getStr("blocksMilestoneId");
+  const blocksMilestoneSeedKey = getStr("blocksMilestoneSeedKey");
+
+  if (
+    blocksMilestoneId &&
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      blocksMilestoneId,
+    )
+  ) {
+    errors.push("'blocksMilestoneId' debe ser un UUID válido");
+  }
+  if (blocksMilestoneId && blocksMilestoneSeedKey) {
+    errors.push(
+      "Usa 'blocksMilestoneId' o 'blocksMilestoneSeedKey', no ambos",
+    );
+  }
 
   const data: DecisionBatchItem | undefined =
     errors.length === 0 && title
@@ -189,6 +207,8 @@ function validateRow(raw: Record<string, unknown>, row: number): ParsedRow {
           phaseId: phaseId ?? null,
           priority: priority ?? null,
           options: options ?? [],
+          blocksMilestoneId: blocksMilestoneId ?? null,
+          blocksMilestoneSeedKey: blocksMilestoneSeedKey ?? null,
         }
       : undefined;
 
@@ -228,6 +248,7 @@ export function BatchImportDecisionsDialog({
             phaseId: "F1",
             dueDate: "2026-07-15",
             priority: "alta",
+            blocksMilestoneSeedKey: "phase_review_F1",
             options: [
               { label: "Tarifa plana", body: "Una cuota mensual fija" },
               { label: "Tarifa por uso" },
@@ -405,7 +426,13 @@ export function BatchImportDecisionsDialog({
               />
               <p className="text-[11px] text-muted-foreground">
                 Estructura:{" "}
-                <code>{`{ decisions: [{ title, context?, ownerRole?, ownerUserId?, dueDate?, phaseId?, priority?, options?: [{label, body?}] }] }`}</code>
+                <code>{`{ decisions: [{ title, context?, ownerRole?, ownerUserId?, dueDate?, phaseId?, priority?, options?: [{label, body?}], blocksMilestoneId? | blocksMilestoneSeedKey? }] }`}</code>
+              </p>
+              <p className="text-[11px] text-muted-foreground">
+                Para enlazar a un hito usa <code>blocksMilestoneId</code>{" "}
+                (UUID) o <code>blocksMilestoneSeedKey</code> (se resuelve
+                contra <code>milestones.seed_key</code>). Si el seed_key no
+                existe, la fila se rechaza.
               </p>
             </TabsContent>
             <TabsContent value="csv" className="space-y-2 mt-3">

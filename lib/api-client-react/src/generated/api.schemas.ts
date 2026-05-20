@@ -754,6 +754,22 @@ export interface DecisionBatchItem {
   /** @nullable */
   priority?: string | null;
   options?: DecisionBatchOption[];
+  /**
+     * Optional UUID of the milestone this decision blocks. Mutually
+  exclusive with `blocksMilestoneSeedKey` — if both are provided,
+  the UUID takes precedence.
+
+     * @nullable
+     */
+  blocksMilestoneId?: string | null;
+  /**
+     * Optional seed_key resolved against `milestones.seed_key` to link
+  the imported decision to its milestone. If the key does not
+  resolve to an existing milestone, the row is rejected.
+
+     * @nullable
+     */
+  blocksMilestoneSeedKey?: string | null;
 }
 
 export interface BatchImportDecisionsInput {
@@ -946,7 +962,7 @@ export const ListDecisionsStatus = {
 } as const;
 
 export type BatchImportDecisionsBodyTwo = {
-  /** CSV file with header row. Recognised columns: title, context, ownerRole, ownerUserId, dueDate (YYYY-MM-DD), phaseId, priority, options (label1|label2 or label1;label2). */
+  /** CSV file with header row. Recognised columns: title, context, ownerRole, ownerUserId, dueDate (YYYY-MM-DD), phaseId, priority, options (label1|label2 or label1;label2), blocksMilestoneId (UUID) or blocksMilestoneSeedKey (resolved against milestones.seed_key). */
   file: Blob;
 };
 

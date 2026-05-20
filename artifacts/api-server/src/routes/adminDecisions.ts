@@ -2,7 +2,8 @@ import { Router, type IRouter, type Request } from "express";
 import multer from "multer";
 import { parse as parseCsvSync } from "csv-parse/sync";
 import { z } from "zod";
-import { db, decisionsTable } from "@workspace/db";
+import { db, decisionsTable, milestonesTable } from "@workspace/db";
+import { eq, inArray } from "drizzle-orm";
 import { requireAuth } from "../middlewares/requireAuth";
 import { requirePM } from "../middlewares/requirePM";
 import { logAdminActionAsync } from "../lib/audit";
@@ -20,6 +21,9 @@ const BatchOptionSchema = z.object({
   body: z.string().max(2000).nullish(),
 });
 
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 const BatchDecisionSchema = z.object({
   title: z.string().min(1).max(240),
   context: z.string().max(4000).nullish(),
@@ -32,6 +36,11 @@ const BatchDecisionSchema = z.object({
   phaseId: z.string().nullish(),
   priority: z.string().nullish(),
   options: z.array(BatchOptionSchema).optional(),
+  blocksMilestoneId: z
+    .string()
+    .regex(UUID_RE, "Debe ser un UUID válido")
+    .nullish(),
+  blocksMilestoneSeedKey: z.string().min(1).max(240).nullish(),
 });
 
 const BatchBodySchema = z.object({
@@ -127,7 +136,10 @@ router.post(
 
     const errors: Array<{ row: number; field: string | null; message: string }> =
       [];
-    const validated: Array<z.infer<typeof BatchDecisionSchema>> = [];
+    const validated: Array<{
+      row: number;
+      data: z.infer<typeof BatchDecisionSchema>;
+    }> = [];
     extracted.rows.forEach((raw, idx) => {
       const parsed = BatchDecisionSchema.safeParse(raw);
       if (!parsed.success) {
@@ -140,8 +152,77 @@ router.post(
         }
         return;
       }
-      validated.push(parsed.data);
+      validated.push({ row: idx + 1, data: parsed.data });
     });
+
+    // Resolve blocksMilestoneSeedKey → milestone UUID, in batch.
+    const seedKeys = Array.from(
+      new Set(
+        validated
+          .filter((v) => !v.data.blocksMilestoneId && v.data.blocksMilestoneSeedKey)
+          .map((v) => v.data.blocksMilestoneSeedKey as string),
+      ),
+    );
+    const seedKeyToId = new Map<string, string>();
+    if (seedKeys.length > 0) {
+      const rows = await db
+        .select({
+          id: milestonesTable.id,
+          seedKey: milestonesTable.seedKey,
+        })
+        .from(milestonesTable)
+        .where(inArray(milestonesTable.seedKey, seedKeys));
+      for (const r of rows) {
+        if (r.seedKey) seedKeyToId.set(r.seedKey, r.id);
+      }
+    }
+
+    // Validate UUIDs against existing milestones too, so a stale UUID doesn't
+    // silently violate the FK at insert time.
+    const uuidIds = Array.from(
+      new Set(
+        validated
+          .filter((v) => v.data.blocksMilestoneId)
+          .map((v) => v.data.blocksMilestoneId as string),
+      ),
+    );
+    const validUuids = new Set<string>();
+    if (uuidIds.length > 0) {
+      const rows = await db
+        .select({ id: milestonesTable.id })
+        .from(milestonesTable)
+        .where(inArray(milestonesTable.id, uuidIds));
+      for (const r of rows) validUuids.add(r.id);
+    }
+
+    const resolvedMilestoneByRow = new Map<number, string | null>();
+    for (const v of validated) {
+      const { blocksMilestoneId, blocksMilestoneSeedKey } = v.data;
+      if (blocksMilestoneId) {
+        if (!validUuids.has(blocksMilestoneId)) {
+          errors.push({
+            row: v.row,
+            field: "blocksMilestoneId",
+            message: `No existe un hito con id '${blocksMilestoneId}'.`,
+          });
+          continue;
+        }
+        resolvedMilestoneByRow.set(v.row, blocksMilestoneId);
+      } else if (blocksMilestoneSeedKey) {
+        const id = seedKeyToId.get(blocksMilestoneSeedKey);
+        if (!id) {
+          errors.push({
+            row: v.row,
+            field: "blocksMilestoneSeedKey",
+            message: `No existe un hito con seed_key '${blocksMilestoneSeedKey}'.`,
+          });
+          continue;
+        }
+        resolvedMilestoneByRow.set(v.row, id);
+      } else {
+        resolvedMilestoneByRow.set(v.row, null);
+      }
+    }
 
     if (errors.length > 0) {
       const rejectedRows = new Set(errors.map((e) => e.row));
@@ -157,7 +238,8 @@ router.post(
     try {
       const inserted = await db.transaction(async (tx) => {
         const rows: Array<typeof decisionsTable.$inferSelect> = [];
-        for (const d of validated) {
+        for (const v of validated) {
+          const d = v.data;
           const [row] = await tx
             .insert(decisionsTable)
             .values({
@@ -169,6 +251,7 @@ router.post(
               ownerRole: d.ownerRole ?? null,
               dueDate: d.dueDate ?? null,
               status: "open",
+              blocksMilestoneId: resolvedMilestoneByRow.get(v.row) ?? null,
               createdBy,
             })
             .returning();

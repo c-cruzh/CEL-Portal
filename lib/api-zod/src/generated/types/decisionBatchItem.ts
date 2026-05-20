@@ -32,4 +32,20 @@ export interface DecisionBatchItem {
   /** @nullable */
   priority?: string | null;
   options?: DecisionBatchOption[];
+  /**
+     * Optional UUID of the milestone this decision blocks. Mutually
+  exclusive with `blocksMilestoneSeedKey` — if both are provided,
+  the UUID takes precedence.
+
+     * @nullable
+     */
+  blocksMilestoneId?: string | null;
+  /**
+     * Optional seed_key resolved against `milestones.seed_key` to link
+  the imported decision to its milestone. If the key does not
+  resolve to an existing milestone, the row is rejected.
+
+     * @nullable
+     */
+  blocksMilestoneSeedKey?: string | null;
 }

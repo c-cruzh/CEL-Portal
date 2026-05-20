@@ -7,6 +7,6 @@
  */
 
 export type BatchImportDecisionsBodyTwo = {
-  /** CSV file with header row. Recognised columns: title, context, ownerRole, ownerUserId, dueDate (YYYY-MM-DD), phaseId, priority, options (label1|label2 or label1;label2). */
+  /** CSV file with header row. Recognised columns: title, context, ownerRole, ownerUserId, dueDate (YYYY-MM-DD), phaseId, priority, options (label1|label2 or label1;label2), blocksMilestoneId (UUID) or blocksMilestoneSeedKey (resolved against milestones.seed_key). */
   file: Blob;
 };
