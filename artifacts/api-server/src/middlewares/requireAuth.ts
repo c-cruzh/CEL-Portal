@@ -274,11 +274,32 @@ export async function requireAuth(
       });
       return;
     } else if (existing && existing.status === "pending") {
-      res.status(403).json({
-        error: APPROVAL_PENDING_MESSAGE,
-        code: "approval_pending",
-      });
-      return;
+      // Defensive bootstrap: if this pending user is one of the hard-coded
+      // admin/PM leads (e.g. they were provisioned before AUTO_APPROVED_EMAILS
+      // existed, or production has its own DB), promote them to active on
+      // the fly so the portal can never lock itself out of its own admins.
+      const emailLower = (existing.email ?? "").toLowerCase();
+      if (AUTO_APPROVED_EMAILS.has(emailLower)) {
+        await db
+          .update(usersTable)
+          .set({
+            status: "active",
+            statusChangedAt: new Date(),
+            statusChangedBy: "bootstrap",
+          })
+          .where(eq(usersTable.id, existing.id));
+        req.log.info(
+          { userId: existing.id, email: emailLower },
+          "Auto-approved bootstrap admin from pending status",
+        );
+        // Fall through to the success path below.
+      } else {
+        res.status(403).json({
+          error: APPROVAL_PENDING_MESSAGE,
+          code: "approval_pending",
+        });
+        return;
+      }
     } else if (existing && existing.status === "rejected") {
       res.status(403).json({
         error: APPROVAL_REJECTED_MESSAGE,
