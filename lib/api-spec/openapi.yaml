@@ -1764,6 +1764,8 @@ components:
         dueDate:
           type: ["string", "null"]
           format: date
+        ownerUserId:
+          type: ["string", "null"]
         createdBy:
           type: string
         createdAt:
@@ -1844,6 +1846,8 @@ components:
         dueDate:
           type: ["string", "null"]
           format: date
+        ownerUserId:
+          type: ["string", "null"]
 
     MilestoneInput:
       type: object
@@ -1995,6 +1999,8 @@ components:
         dueDate:
           type: ["string", "null"]
           format: date
+        ownerUserId:
+          type: ["string", "null"]
 
     KanbanCardBatchItem:
       type: object
@@ -2023,6 +2029,8 @@ components:
         dueDate:
           type: ["string", "null"]
           pattern: '^\d{4}-\d{2}-\d{2}$'
+        ownerUserId:
+          type: ["string", "null"]
 
     BatchImportKanbanCardsInput:
       type: object

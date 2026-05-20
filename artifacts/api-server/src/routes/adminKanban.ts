@@ -31,6 +31,7 @@ const BatchCardSchema = z.object({
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/, "Formato esperado YYYY-MM-DD")
     .nullish(),
+  ownerUserId: z.string().nullish(),
 });
 
 const BatchBodySchema = z.object({
@@ -184,6 +185,7 @@ router.post(
               priority: c.priority ?? "media",
               category: c.category ?? "piloto",
               dueDate: c.dueDate ?? null,
+              ownerUserId: c.ownerUserId ?? null,
               createdBy,
             })
             .returning();

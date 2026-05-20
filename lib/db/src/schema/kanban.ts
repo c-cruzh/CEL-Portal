@@ -9,6 +9,7 @@ import {
   check,
 } from "drizzle-orm/pg-core";
 import { sql } from "drizzle-orm";
+import { usersTable } from "./users";
 
 export const kanbanColumnsTable = pgTable("kanban_columns", {
   key: text("key").primaryKey(),
@@ -33,6 +34,9 @@ export const kanbanCardsTable = pgTable(
     priority: text("priority").notNull().default("media"),
     category: text("category").notNull().default("piloto"),
     dueDate: date("due_date"),
+    ownerUserId: text("owner_user_id").references(() => usersTable.id, {
+      onDelete: "set null",
+    }),
     createdBy: text("created_by").notNull(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()

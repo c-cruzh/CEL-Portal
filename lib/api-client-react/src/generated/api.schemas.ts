@@ -217,6 +217,8 @@ export interface KanbanCard {
   category: KanbanCategory;
   /** @nullable */
   dueDate?: string | null;
+  /** @nullable */
+  ownerUserId?: string | null;
   createdBy: string;
   createdAt: string;
   updatedAt: string;
@@ -292,6 +294,8 @@ export interface KanbanCardCreate {
   category?: KanbanCategory;
   /** @nullable */
   dueDate?: string | null;
+  /** @nullable */
+  ownerUserId?: string | null;
 }
 
 export type MilestoneInputKind = typeof MilestoneInputKind[keyof typeof MilestoneInputKind];
@@ -449,6 +453,8 @@ export interface KanbanCardUpdate {
   category?: KanbanCategory;
   /** @nullable */
   dueDate?: string | null;
+  /** @nullable */
+  ownerUserId?: string | null;
 }
 
 export interface KanbanCardBatchItem {
@@ -474,6 +480,8 @@ export interface KanbanCardBatchItem {
      * @pattern ^\d{4}-\d{2}-\d{2}$
      */
   dueDate?: string | null;
+  /** @nullable */
+  ownerUserId?: string | null;
 }
 
 export interface BatchImportKanbanCardsInput {

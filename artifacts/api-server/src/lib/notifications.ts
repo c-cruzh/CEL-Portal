@@ -921,15 +921,21 @@ export async function runKanbanDueDateReminders(
         id: kanbanCardsTable.id,
         title: kanbanCardsTable.title,
         dueDate: kanbanCardsTable.dueDate,
+        ownerUserId: kanbanCardsTable.ownerUserId,
         createdBy: kanbanCardsTable.createdBy,
         columnKey: kanbanCardsTable.columnKey,
       })
       .from(kanbanCardsTable)
       .where(ne(kanbanCardsTable.columnKey, KANBAN_DONE_COLUMN_KEY));
 
-    const due = candidates.filter(
-      (c) => c.createdBy && c.dueDate && c.dueDate <= tomorrowIso,
-    );
+    const due = candidates
+      .map((c) => ({
+        ...c,
+        recipientUserId: c.ownerUserId ?? c.createdBy,
+      }))
+      .filter(
+        (c) => c.recipientUserId && c.dueDate && c.dueDate <= tomorrowIso,
+      );
     evaluated = due.length;
     if (due.length === 0)
       return { evaluated, sent, skipped, failed, noProvider };
@@ -956,7 +962,7 @@ export async function runKanbanDueDateReminders(
     }
 
     const ownerIds = Array.from(
-      new Set(due.map((c) => c.createdBy).filter(Boolean)),
+      new Set(due.map((c) => c.recipientUserId).filter(Boolean)),
     );
     const owners = await db
       .select({
@@ -982,7 +988,7 @@ export async function runKanbanDueDateReminders(
         skipped++;
         continue;
       }
-      const owner = ownerById.get(c.createdBy);
+      const owner = ownerById.get(c.recipientUserId);
       if (!owner || owner.optOut) {
         skipped++;
         continue;

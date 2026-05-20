@@ -495,7 +495,8 @@ export const BatchImportKanbanCardsBody = zod.object({
   "phaseId": zod.string().nullish(),
   "assignedRoles": zod.array(zod.string()).optional(),
   "priority": zod.enum(['alta', 'media', 'baja']).optional(),
-  "dueDate": zod.string().regex(batchImportKanbanCardsBodyCardsItemDueDateRegExp).nullish()
+  "dueDate": zod.string().regex(batchImportKanbanCardsBodyCardsItemDueDateRegExp).nullish(),
+  "ownerUserId": zod.string().nullish()
 })).min(1).max(batchImportKanbanCardsBodyCardsMax)
 })
 
@@ -521,6 +522,7 @@ export const BatchImportKanbanCardsResponse = zod.object({
   "priority": zod.enum(['alta', 'media', 'baja']),
   "category": zod.enum(['preproyecto', 'piloto']),
   "dueDate": zod.coerce.date().nullish(),
+  "ownerUserId": zod.string().nullish(),
   "createdBy": zod.string(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
@@ -542,6 +544,7 @@ export const ListKanbanCardsResponseItem = zod.object({
   "priority": zod.enum(['alta', 'media', 'baja']),
   "category": zod.enum(['preproyecto', 'piloto']),
   "dueDate": zod.coerce.date().nullish(),
+  "ownerUserId": zod.string().nullish(),
   "createdBy": zod.string(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
@@ -567,7 +570,8 @@ export const CreateKanbanCardBody = zod.object({
   "assignedRoles": zod.array(zod.string()).optional(),
   "priority": zod.enum(['alta', 'media', 'baja']).optional(),
   "category": zod.enum(['preproyecto', 'piloto']).optional(),
-  "dueDate": zod.coerce.date().nullish()
+  "dueDate": zod.coerce.date().nullish(),
+  "ownerUserId": zod.string().nullish()
 })
 
 
@@ -591,7 +595,8 @@ export const UpdateKanbanCardBody = zod.object({
   "assignedRoles": zod.array(zod.string()).optional(),
   "priority": zod.enum(['alta', 'media', 'baja']).optional(),
   "category": zod.enum(['preproyecto', 'piloto']).optional(),
-  "dueDate": zod.coerce.date().nullish()
+  "dueDate": zod.coerce.date().nullish(),
+  "ownerUserId": zod.string().nullish()
 })
 
 export const UpdateKanbanCardResponse = zod.object({
@@ -605,6 +610,7 @@ export const UpdateKanbanCardResponse = zod.object({
   "priority": zod.enum(['alta', 'media', 'baja']),
   "category": zod.enum(['preproyecto', 'piloto']),
   "dueDate": zod.coerce.date().nullish(),
+  "ownerUserId": zod.string().nullish(),
   "createdBy": zod.string(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
@@ -714,6 +720,7 @@ export const MoveKanbanCardResponseItem = zod.object({
   "priority": zod.enum(['alta', 'media', 'baja']),
   "category": zod.enum(['preproyecto', 'piloto']),
   "dueDate": zod.coerce.date().nullish(),
+  "ownerUserId": zod.string().nullish(),
   "createdBy": zod.string(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()

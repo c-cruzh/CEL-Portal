@@ -31,4 +31,6 @@ export interface KanbanCardBatchItem {
      * @pattern ^\d{4}-\d{2}-\d{2}$
      */
   dueDate?: string | null;
+  /** @nullable */
+  ownerUserId?: string | null;
 }

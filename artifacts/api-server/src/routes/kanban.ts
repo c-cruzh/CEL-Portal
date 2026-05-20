@@ -51,6 +51,7 @@ export function serializeCard(row: typeof kanbanCardsTable.$inferSelect) {
       | "preproyecto"
       | "piloto",
     dueDate: row.dueDate ?? null,
+    ownerUserId: row.ownerUserId ?? null,
     createdBy: row.createdBy,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -132,6 +133,7 @@ router.post(
         priority: data.priority ?? "media",
         category: data.category ?? "piloto",
         dueDate: dueDateStr,
+        ownerUserId: data.ownerUserId ?? null,
         createdBy: req.userId!,
       })
       .returning();
@@ -193,6 +195,9 @@ router.patch(
       update.dueDate = data.dueDate
         ? data.dueDate.toISOString().slice(0, 10)
         : null;
+    }
+    if ("ownerUserId" in data) {
+      update.ownerUserId = data.ownerUserId ?? null;
     }
 
     const [updated] = await db

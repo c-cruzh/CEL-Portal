@@ -23,4 +23,6 @@ export interface KanbanCardUpdate {
   category?: KanbanCategory;
   /** @nullable */
   dueDate?: Date | null;
+  /** @nullable */
+  ownerUserId?: string | null;
 }

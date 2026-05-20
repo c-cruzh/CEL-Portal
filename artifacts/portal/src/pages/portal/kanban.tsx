@@ -7,9 +7,11 @@ import {
   useDeleteKanbanCard,
   useMoveKanbanCard,
   useGetMe,
+  useListTeamMembers,
   getListKanbanCardsQueryKey,
   type KanbanCard,
   type KanbanColumn,
+  type Member,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import {
@@ -94,6 +96,7 @@ export default function KanbanPage() {
   const { data: me } = useGetMe();
   const { data: columns, isLoading: loadingCols } = useListKanbanColumns();
   const { data: cards, isLoading: loadingCards } = useListKanbanCards();
+  const { data: members } = useListTeamMembers();
 
   const moveMutation = useMoveKanbanCard();
   const deleteMutation = useDeleteKanbanCard();
@@ -321,6 +324,7 @@ export default function KanbanPage() {
               cards={cardsByColumn.get(col.key) ?? []}
               currentUserId={me?.id ?? ""}
               isPM={isPM}
+              members={members ?? []}
               onEdit={(card) => {
                 setEditing(card);
                 setDialogOpen(true);
@@ -335,6 +339,7 @@ export default function KanbanPage() {
               card={activeCard}
               currentUserId={me?.id ?? ""}
               isPM={isPM}
+              members={members ?? []}
               dragging
             />
           ) : null}
@@ -349,6 +354,7 @@ export default function KanbanPage() {
         }}
         editing={editing}
         defaultColumnKey={columns?.[0]?.key ?? "backlog"}
+        members={members ?? []}
         onSaved={() => {
           void invalidateCards();
           setDialogOpen(false);
@@ -415,6 +421,7 @@ function KanbanColumnView({
   cards,
   currentUserId,
   isPM,
+  members,
   onEdit,
   onDelete,
 }: {
@@ -422,6 +429,7 @@ function KanbanColumnView({
   cards: KanbanCard[];
   currentUserId: string;
   isPM: boolean;
+  members: Member[];
   onEdit: (c: KanbanCard) => void;
   onDelete: (c: KanbanCard) => void;
 }) {
@@ -445,6 +453,7 @@ function KanbanColumnView({
             card={card}
             currentUserId={currentUserId}
             isPM={isPM}
+            members={members}
             onEdit={onEdit}
             onDelete={onDelete}
           />
@@ -463,12 +472,14 @@ function DraggableCard({
   card,
   currentUserId,
   isPM,
+  members,
   onEdit,
   onDelete,
 }: {
   card: KanbanCard;
   currentUserId: string;
   isPM: boolean;
+  members: Member[];
   onEdit: (c: KanbanCard) => void;
   onDelete: (c: KanbanCard) => void;
 }) {
@@ -487,6 +498,7 @@ function DraggableCard({
         card={card}
         currentUserId={currentUserId}
         isPM={isPM}
+        members={members}
         onEdit={onEdit}
         onDelete={onDelete}
       />
@@ -498,6 +510,7 @@ function CardItem({
   card,
   currentUserId,
   isPM,
+  members,
   onEdit,
   onDelete,
   dragging = false,
@@ -505,6 +518,7 @@ function CardItem({
   card: KanbanCard;
   currentUserId: string;
   isPM: boolean;
+  members: Member[];
   onEdit?: (c: KanbanCard) => void;
   onDelete?: (c: KanbanCard) => void;
   dragging?: boolean;
@@ -514,6 +528,12 @@ function CardItem({
   const category = ((card.category ?? "piloto") as Category);
   const catMeta = CATEGORY_META[category];
   const canDelete = isPM || card.createdBy === currentUserId;
+  const owner = card.ownerUserId
+    ? members.find((m) => m.id === card.ownerUserId)
+    : null;
+  const ownerLabel = card.ownerUserId
+    ? owner?.displayName ?? "Miembro asignado"
+    : null;
   return (
     <Card
       className={`shadow-sm ${catMeta.bandClass} ${dragging ? "shadow-lg ring-2 ring-primary" : ""}`}
@@ -539,6 +559,14 @@ function CardItem({
         {card.description && (
           <div className="text-xs text-muted-foreground line-clamp-2">
             {card.description}
+          </div>
+        )}
+        {ownerLabel && (
+          <div
+            className="text-[11px] text-foreground/80"
+            data-testid={`kanban-card-owner-${card.id}`}
+          >
+            A cargo: <span className="font-medium">{ownerLabel}</span>
           </div>
         )}
         <div className="flex flex-wrap gap-1">
@@ -613,12 +641,14 @@ function CardDialog({
   onOpenChange,
   editing,
   defaultColumnKey,
+  members,
   onSaved,
 }: {
   open: boolean;
   onOpenChange: (o: boolean) => void;
   editing: KanbanCard | null;
   defaultColumnKey: string;
+  members: Member[];
   onSaved: () => void;
 }) {
   const { data: columns } = useListKanbanColumns();
@@ -634,6 +664,7 @@ function CardDialog({
   const [category, setCategory] = useState<Category>("piloto");
   const [dueDate, setDueDate] = useState<string>("");
   const [roles, setRoles] = useState<string[]>([]);
+  const [ownerUserId, setOwnerUserId] = useState<string>("none");
 
   const resetForm = (card: KanbanCard | null) => {
     setTitle(card?.title ?? "");
@@ -650,6 +681,7 @@ function CardDialog({
         : "",
     );
     setRoles(card?.assignedRoles ?? []);
+    setOwnerUserId(card?.ownerUserId ?? "none");
   };
 
   const lastEditingId = editing?.id ?? null;
@@ -676,6 +708,7 @@ function CardDialog({
       priority,
       category,
       dueDate: dueDate ? dueDate : null,
+      ownerUserId: ownerUserId === "none" ? null : ownerUserId,
     };
     try {
       if (editing) {
@@ -786,6 +819,25 @@ function CardDialog({
                 onChange={(e) => setDueDate(e.target.value)}
               />
             </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label>Persona a cargo</Label>
+            <Select value={ownerUserId} onValueChange={setOwnerUserId}>
+              <SelectTrigger data-testid="select-kb-owner">
+                <SelectValue placeholder="Sin asignar" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">Sin asignar</SelectItem>
+                {members.map((m) => (
+                  <SelectItem key={m.id} value={m.id}>
+                    {m.displayName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-xs text-muted-foreground">
+              Recibirá el recordatorio por correo cuando se acerque la fecha.
+            </p>
           </div>
           <div className="space-y-1.5">
             <Label>Fase asociada</Label>
