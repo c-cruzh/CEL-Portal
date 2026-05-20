@@ -46,6 +46,7 @@ export function serializeDecision(row: typeof decisionsTable.$inferSelect) {
     decidedOutcome: row.decidedOutcome ?? null,
     decidedByUserId: row.decidedByUserId ?? null,
     decidedAt: row.decidedAt ?? null,
+    blocksMilestoneId: row.blocksMilestoneId ?? null,
     createdBy: row.createdBy ?? null,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -106,6 +107,7 @@ router.post("/decisions", requireAuth, async (req, res): Promise<void> => {
       ownerUserId: d.ownerUserId ?? null,
       ownerRole: d.ownerRole ?? null,
       dueDate: d.dueDate ? d.dueDate.toISOString().slice(0, 10) : null,
+      blocksMilestoneId: d.blocksMilestoneId ?? null,
       status: "open",
       createdBy: req.userId!,
     })
@@ -215,6 +217,8 @@ router.patch("/decisions/:id", requireAuth, async (req, res): Promise<void> => {
   }
   if (u.decidedAt !== undefined)
     patch.decidedAt = u.decidedAt ?? null;
+  if (u.blocksMilestoneId !== undefined)
+    patch.blocksMilestoneId = u.blocksMilestoneId ?? null;
 
   const [updated] = await db
     .update(decisionsTable)

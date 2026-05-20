@@ -22,4 +22,6 @@ export interface DecisionInput {
   ownerRole?: string | null;
   /** @nullable */
   dueDate?: Date | null;
+  /** @nullable */
+  blocksMilestoneId?: string | null;
 }

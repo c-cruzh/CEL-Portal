@@ -2227,6 +2227,12 @@ components:
         decidedAt:
           type: ["string", "null"]
           format: date-time
+        blocksMilestoneId:
+          type: ["string", "null"]
+          description: |
+            Optional FK to a milestone this decision blocks. When set, the
+            Cronograma can surface the decision as a formal prerequisite of
+            that milestone.
         createdBy:
           type: ["string", "null"]
         createdAt:
@@ -2257,6 +2263,8 @@ components:
         dueDate:
           type: ["string", "null"]
           format: date
+        blocksMilestoneId:
+          type: ["string", "null"]
 
     DecisionUpdate:
       type: object
@@ -2290,6 +2298,8 @@ components:
         decidedAt:
           type: ["string", "null"]
           format: date-time
+        blocksMilestoneId:
+          type: ["string", "null"]
 
     DecisionResolveInput:
       type: object

@@ -36,4 +36,6 @@ export interface DecisionUpdate {
   decidedOutcome?: string | null;
   /** @nullable */
   decidedAt?: Date | null;
+  /** @nullable */
+  blocksMilestoneId?: string | null;
 }

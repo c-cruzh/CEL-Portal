@@ -7,6 +7,7 @@ import {
   useReopenDecision,
   useDeleteDecision,
   useListTeamMembers,
+  useListMilestones,
   useGetMe,
   getListDecisionsQueryKey,
   ApiError,
@@ -14,6 +15,7 @@ import {
   type DecisionInput,
   type DecisionUpdate,
   type Member,
+  type Milestone,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ROLES, PHASES } from "@/lib/projectContent";
@@ -105,6 +107,7 @@ export default function Decisiones() {
   const { data: me } = useGetMe();
   const { data: members } = useListTeamMembers();
   const { data: decisions, isLoading } = useListDecisions();
+  const { data: milestones } = useListMilestones();
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
@@ -401,6 +404,7 @@ export default function Decisiones() {
               key={d.id}
               decision={d}
               members={members ?? []}
+              milestones={milestones ?? []}
               currentUserId={me?.id ?? null}
               meRoles={me?.roles ?? []}
               isPM={isPM}
@@ -417,6 +421,7 @@ export default function Decisiones() {
         <DecisionFormDialog
           mode="create"
           members={members ?? []}
+          milestones={milestones ?? []}
           pending={createMut.isPending}
           onClose={() => setCreateOpen(false)}
           onSubmit={(input) => handleCreate(input as DecisionInput)}
@@ -428,6 +433,7 @@ export default function Decisiones() {
           mode="edit"
           initial={editing}
           members={members ?? []}
+          milestones={milestones ?? []}
           pending={updateMut.isPending}
           onClose={() => setEditing(null)}
           onSubmit={(update) =>
@@ -458,6 +464,7 @@ export default function Decisiones() {
 function DecisionCard({
   decision: d,
   members,
+  milestones,
   currentUserId,
   meRoles,
   isPM,
@@ -469,6 +476,7 @@ function DecisionCard({
 }: {
   decision: Decision;
   members: Member[];
+  milestones: Milestone[];
   currentUserId: string | null;
   meRoles: string[];
   isPM: boolean;
@@ -478,6 +486,9 @@ function DecisionCard({
   onDelete: () => void;
   reopenPending: boolean;
 }) {
+  const blockedMilestone = d.blocksMilestoneId
+    ? milestones.find((m) => m.id === d.blocksMilestoneId) ?? null
+    : null;
   const overdue = isDecisionOverdue(d);
   const ownerName = d.ownerUserId
     ? members.find((m) => m.id === d.ownerUserId)?.displayName ??
@@ -510,6 +521,16 @@ function DecisionCard({
               {d.phase && (
                 <Badge variant="secondary">
                   {PHASES.find((p) => p.id === d.phase)?.shortName ?? d.phase}
+                </Badge>
+              )}
+              {blockedMilestone && (
+                <Badge
+                  className="bg-destructive/15 text-destructive border border-destructive/30 hover:bg-destructive/20"
+                  variant="outline"
+                  title={`Esta decisión bloquea el hito "${blockedMilestone.title}".`}
+                  data-testid={`badge-blocks-milestone-${d.id}`}
+                >
+                  Bloquea hito: {blockedMilestone.title}
                 </Badge>
               )}
             </div>
@@ -629,6 +650,7 @@ function DecisionFormDialog({
   mode,
   initial,
   members,
+  milestones,
   pending,
   onClose,
   onSubmit,
@@ -636,6 +658,7 @@ function DecisionFormDialog({
   mode: "create" | "edit";
   initial?: Decision;
   members: Member[];
+  milestones: Milestone[];
   pending: boolean;
   onClose: () => void;
   onSubmit: (data: DecisionInput | DecisionUpdate) => void;
@@ -658,6 +681,9 @@ function DecisionFormDialog({
         : new Date(initial.dueDate).toISOString().slice(0, 10)
       : "",
   );
+  const [blocksMilestoneId, setBlocksMilestoneId] = useState<string>(
+    initial?.blocksMilestoneId ?? NONE_VALUE,
+  );
   const [status, setStatus] = useState<Decision["status"]>(
     initial?.status ?? "open",
   );
@@ -673,6 +699,8 @@ function DecisionFormDialog({
       ownerRole: ownerKind === "role" ? ownerRole || null : null,
       ownerUserId: ownerKind === "user" ? ownerUserId || null : null,
       dueDate: dueDate || null,
+      blocksMilestoneId:
+        blocksMilestoneId === NONE_VALUE ? null : blocksMilestoneId,
     };
     if (mode === "edit" && status !== "resolved") {
       (payload as DecisionUpdate).status = status as
@@ -753,6 +781,33 @@ function DecisionFormDialog({
                 onChange={(e) => setDueDate(e.target.value)}
               />
             </div>
+          </div>
+
+          <div className="space-y-1.5">
+            <Label>Bloquea hito del Cronograma</Label>
+            <Select
+              value={blocksMilestoneId}
+              onValueChange={setBlocksMilestoneId}
+            >
+              <SelectTrigger data-testid="select-blocks-milestone">
+                <SelectValue placeholder="Ninguno" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value={NONE_VALUE}>
+                  Ninguno — no bloquea un hito formal
+                </SelectItem>
+                {milestones.map((m) => (
+                  <SelectItem key={m.id} value={m.id}>
+                    {m.title}
+                    {m.phaseId ? ` · ${m.phaseId}` : ""}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <p className="text-[11px] text-muted-foreground">
+              Si esta decisión debe cerrarse antes de un hito (p.ej. el cierre
+              de una fase), enlázala aquí para que aparezca en el Cronograma.
+            </p>
           </div>
 
           <div className="space-y-2">

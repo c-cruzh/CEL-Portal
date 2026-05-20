@@ -36,6 +36,14 @@ export interface Decision {
   decidedByUserId?: string | null;
   /** @nullable */
   decidedAt?: Date | null;
+  /**
+     * Optional FK to a milestone this decision blocks. When set, the
+  Cronograma can surface the decision as a formal prerequisite of
+  that milestone.
+
+     * @nullable
+     */
+  blocksMilestoneId?: string | null;
   /** @nullable */
   createdBy?: string | null;
   createdAt: Date;

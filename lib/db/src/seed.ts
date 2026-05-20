@@ -245,6 +245,10 @@ async function bootstrapAdminRoles(): Promise<void> {
 
 type SeedDecision = {
   title: string;
+  // Legacy titles previously seeded (with the "[Bloqueante Fase 0]" prefix).
+  // The seed renames any matching row to the canonical `title` so the formal
+  // `blocksMilestoneSeedKey` link replaces the prefix-as-marker convention.
+  legacyTitles?: string[];
   context: string;
   optionsConsidered: string;
   phase: string | null;
@@ -254,12 +258,19 @@ type SeedDecision = {
   decidedOutcome?: string;
   decidedAt?: Date;
   decidedByEmail?: string | null;
+  // Seed key of the milestone this decision formally blocks. Resolved to a
+  // milestone UUID at seed time.
+  blocksMilestoneSeedKey?: string;
 };
 
 const SEED_DECISIONS: SeedDecision[] = [
   {
     title:
+      "Host final de Mage / PostgreSQL+PostGIS / MongoDB / API",
+    legacyTitles: [
       "[Bloqueante Fase 0] Host final de Mage / PostgreSQL+PostGIS / MongoDB / API",
+    ],
+    blocksMilestoneSeedKey: "phase_review_F0",
     context:
       "Fuente: Paquete Maestro §6 — Asuntos abiertos; referencia cruzada: Anexo Técnico §6.1.\n\nCEL/TI debe definir en qué host físico/virtual corren Mage, PostgreSQL+PostGIS, MongoDB y la API del piloto. La oferta Martinexsa/Dell entrega ML server (R770), virtualización (R770) y NAS (R570) — falta la decisión de mapeo final, incluyendo IPs/DNS/VLANs, credenciales, storage mounts y política de backup. Bloquea el cierre formal de Fase 0 porque ningún pipeline puede desplegarse hasta que el host esté autorizado por el Comité de Informática.",
     optionsConsidered:
@@ -270,7 +281,11 @@ const SEED_DECISIONS: SeedDecision[] = [
     status: "open",
   },
   {
-    title: "[Bloqueante Fase 0] Validación de GPU efectiva entregada",
+    title: "Validación de GPU efectiva entregada",
+    legacyTitles: [
+      "[Bloqueante Fase 0] Validación de GPU efectiva entregada",
+    ],
+    blocksMilestoneSeedKey: "phase_review_F0",
     context:
       "Fuente: Paquete Maestro §6 — Asuntos abiertos; referencia cruzada: Anexo Técnico §6.2.\n\nLa oferta aceptada Martinexsa/Dell lista una NVIDIA H100 NVL 94GB para el servidor ML (R770). Hay que confirmar contra la entrega física que efectivamente es esa GPU (modelo y VRAM), porque el dimensionamiento del entrenamiento LSTM/NeuralHydrology y el throughput de inferencia diaria asumen ese hardware. Bloqueante de Fase 0: sin GPU validada no se puede comprometer ventana de entrenamiento ni SLA de inferencia.",
     optionsConsidered:
@@ -282,7 +297,11 @@ const SEED_DECISIONS: SeedDecision[] = [
   },
   {
     title:
+      "Zona de responsabilidad intermedia (admin continua, backups, hardening, identidad)",
+    legacyTitles: [
       "[Bloqueante Fase 0] Zona de responsabilidad intermedia (admin continua, backups, hardening, identidad)",
+    ],
+    blocksMilestoneSeedKey: "phase_review_F0",
     context:
       "Fuente: Paquete Maestro §6 — Asuntos abiertos; referencia cruzada: Anexo Técnico §6.3.\n\nLa administración continua del entorno, backups corporativos, hardening avanzado, SIEM, AD/LDAP, HA/DR y soporte de plataforma NO están dentro del alcance de la Consultora y tampoco están en la oferta base de Martinexsa/Dell. Default: quedan en CEL salvo adenda expresa. Hay que documentar formalmente la exclusión y confirmar que el Comité de Informática asume estas funciones — o emitir adenda con quien sí las asuma. Bloqueante de Fase 0 porque define quién opera el silo después del piloto.",
     optionsConsidered:
@@ -351,15 +370,54 @@ async function lookupUserId(email: string | null | undefined): Promise<string | 
   return userId ?? null;
 }
 
+async function lookupMilestoneIdBySeedKey(
+  seedKey: string | null | undefined,
+): Promise<string | null> {
+  if (!seedKey) return null;
+  const [row] = await db
+    .select({ id: milestonesTable.id })
+    .from(milestonesTable)
+    .where(eq(milestonesTable.seedKey, seedKey))
+    .limit(1);
+  return row?.id ?? null;
+}
+
 async function seedDecisions(): Promise<number> {
   let inserted = 0;
   for (const d of SEED_DECISIONS) {
+    // Rename any pre-existing rows that still carry a legacy title so the
+    // canonical title + formal blocksMilestoneId combination replaces the old
+    // "[Bloqueante Fase 0]" prefix-as-marker convention.
+    if (d.legacyTitles && d.legacyTitles.length > 0) {
+      for (const legacy of d.legacyTitles) {
+        if (legacy === d.title) continue;
+        await db
+          .update(decisionsTable)
+          .set({ title: d.title })
+          .where(eq(decisionsTable.title, legacy));
+      }
+    }
+
+    const blocksMilestoneId = await lookupMilestoneIdBySeedKey(
+      d.blocksMilestoneSeedKey,
+    );
+
     const [existing] = await db
-      .select({ id: decisionsTable.id })
+      .select({ id: decisionsTable.id, blocksMilestoneId: decisionsTable.blocksMilestoneId })
       .from(decisionsTable)
       .where(eq(decisionsTable.title, d.title))
       .limit(1);
-    if (existing) continue;
+    if (existing) {
+      // Backfill blocksMilestoneId on already-seeded rows that pre-date this
+      // column. We never overwrite a manually-set value.
+      if (blocksMilestoneId && !existing.blocksMilestoneId) {
+        await db
+          .update(decisionsTable)
+          .set({ blocksMilestoneId })
+          .where(eq(decisionsTable.id, existing.id));
+      }
+      continue;
+    }
 
     const ownerUserId = await lookupUserId(d.ownerEmail);
     const decidedByUserId =
@@ -381,6 +439,7 @@ async function seedDecisions(): Promise<number> {
       resolvedAt: d.status === "resolved" ? d.decidedAt ?? new Date() : null,
       decidedByUserId,
       resolvedBy: decidedByUserId,
+      blocksMilestoneId,
     });
     inserted += 1;
   }

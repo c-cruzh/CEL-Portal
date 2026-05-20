@@ -6,6 +6,7 @@ import {
   date,
 } from "drizzle-orm/pg-core";
 import { usersTable } from "./users";
+import { milestonesTable } from "./milestones";
 
 export const decisionsTable = pgTable("decisions", {
   id: uuid("id").primaryKey().defaultRandom(),
@@ -33,6 +34,10 @@ export const decisionsTable = pgTable("decisions", {
     onDelete: "set null",
   }),
   decidedAt: timestamp("decided_at", { withTimezone: true }),
+  blocksMilestoneId: uuid("blocks_milestone_id").references(
+    () => milestonesTable.id,
+    { onDelete: "set null" },
+  ),
   createdBy: text("created_by").references(() => usersTable.id, {
     onDelete: "set null",
   }),

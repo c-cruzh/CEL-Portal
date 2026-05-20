@@ -1,5 +1,18 @@
-import { useGetProjectConfig, useUpdateProjectConfig, getGetProjectConfigQueryKey, useGetTeamSummary } from "@workspace/api-client-react";
-import type { ProjectConfig } from "@workspace/api-client-react";
+import {
+  useGetProjectConfig,
+  useUpdateProjectConfig,
+  getGetProjectConfigQueryKey,
+  useGetTeamSummary,
+  useListMilestones,
+  useListDecisions,
+} from "@workspace/api-client-react";
+import type {
+  ProjectConfig,
+  Decision,
+  Milestone,
+} from "@workspace/api-client-react";
+import { Badge } from "@/components/ui/badge";
+import { Link } from "wouter";
 import { PHASES } from "@/lib/projectContent";
 import { GANTT_PHASES, GANTT_TOTAL_WEEKS } from "@/lib/ganttContent";
 import { Card, CardContent } from "@/components/ui/card";
@@ -19,6 +32,8 @@ const LABEL_WIDTH = 320;
 export default function Cronograma() {
   const { data: config, isLoading } = useGetProjectConfig();
   const { data: teamSummary } = useGetTeamSummary();
+  const { data: milestones } = useListMilestones();
+  const { data: decisions } = useListDecisions();
 
   const startDate = config?.startDate ? parseISO(config.startDate) : null;
 
@@ -85,6 +100,11 @@ export default function Cronograma() {
 
       <WeeklyGantt startDate={startDate} />
 
+      <BlockingDecisionsByMilestone
+        milestones={milestones ?? []}
+        decisions={decisions ?? []}
+      />
+
       <div className="flex flex-wrap gap-3">
         {GANTT_PHASES.map((p) => (
           <div key={p.id} className="flex items-center gap-2 text-xs text-muted-foreground">
@@ -119,6 +139,105 @@ export default function Cronograma() {
         })}
       </div>
     </div>
+  );
+}
+
+function BlockingDecisionsByMilestone({
+  milestones,
+  decisions,
+}: {
+  milestones: Milestone[];
+  decisions: Decision[];
+}) {
+  const groups = useMemo(() => {
+    const byMilestone = new Map<
+      string,
+      { milestone: Milestone; decisions: Decision[] }
+    >();
+    for (const d of decisions) {
+      if (!d.blocksMilestoneId) continue;
+      if (d.status === "resolved" || d.status === "cancelled") continue;
+      const m = milestones.find((x) => x.id === d.blocksMilestoneId);
+      if (!m) continue;
+      const entry = byMilestone.get(m.id) ?? { milestone: m, decisions: [] };
+      entry.decisions.push(d);
+      byMilestone.set(m.id, entry);
+    }
+    return Array.from(byMilestone.values()).sort(
+      (a, b) => a.milestone.weekOffset - b.milestone.weekOffset,
+    );
+  }, [milestones, decisions]);
+
+  if (groups.length === 0) return null;
+
+  return (
+    <Card
+      className="border-destructive/30 bg-destructive/5"
+      data-testid="card-blocking-decisions-by-milestone"
+    >
+      <CardContent className="p-5 space-y-4">
+        <div className="flex items-start justify-between gap-3 flex-wrap">
+          <div>
+            <h2 className="text-base font-semibold text-foreground">
+              Decisiones bloqueantes por hito
+            </h2>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              Estos hitos no pueden cerrarse hasta resolver las decisiones
+              enlazadas formalmente.
+            </p>
+          </div>
+        </div>
+        <div className="space-y-3">
+          {groups.map(({ milestone, decisions: ds }) => (
+            <div
+              key={milestone.id}
+              className="rounded-md border border-destructive/20 bg-card p-3"
+              data-testid={`milestone-blockers-${milestone.id}`}
+            >
+              <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="text-sm font-medium text-foreground">
+                      {milestone.title}
+                    </span>
+                    {milestone.phaseId && (
+                      <Badge variant="secondary" className="text-[10px]">
+                        {milestone.phaseId}
+                      </Badge>
+                    )}
+                    <Badge
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive text-[10px]"
+                      data-testid={`badge-blocker-count-${milestone.id}`}
+                    >
+                      {ds.length} pendiente{ds.length === 1 ? "" : "s"}
+                    </Badge>
+                  </div>
+                  <p className="text-[11px] text-muted-foreground">
+                    Semana {milestone.weekOffset}
+                  </p>
+                </div>
+              </div>
+              <ul className="mt-2 space-y-1">
+                {ds.map((d) => (
+                  <li key={d.id} className="text-sm">
+                    <Link
+                      href="/portal/decisiones"
+                      className="text-primary hover:underline"
+                      data-testid={`link-blocker-decision-${d.id}`}
+                    >
+                      · {d.title}
+                    </Link>
+                    <span className="text-xs text-muted-foreground ml-2">
+                      ({d.status === "in_analysis" ? "en análisis" : "abierta"})
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 

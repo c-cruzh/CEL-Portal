@@ -899,6 +899,7 @@ export const ListDecisionsResponseItem = zod.object({
   "decidedOutcome": zod.string().nullish(),
   "decidedByUserId": zod.string().nullish(),
   "decidedAt": zod.coerce.date().nullish(),
+  "blocksMilestoneId": zod.string().nullish().describe('Optional FK to a milestone this decision blocks. When set, the\nCronograma can surface the decision as a formal prerequisite of\nthat milestone.\n'),
   "createdBy": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
@@ -920,7 +921,8 @@ export const CreateDecisionBody = zod.object({
   "phase": zod.string().nullish(),
   "ownerUserId": zod.string().nullish(),
   "ownerRole": zod.string().nullish(),
-  "dueDate": zod.coerce.date().nullish()
+  "dueDate": zod.coerce.date().nullish(),
+  "blocksMilestoneId": zod.string().nullish()
 })
 
 
@@ -949,6 +951,7 @@ export const GetDecisionResponse = zod.object({
   "decidedOutcome": zod.string().nullish(),
   "decidedByUserId": zod.string().nullish(),
   "decidedAt": zod.coerce.date().nullish(),
+  "blocksMilestoneId": zod.string().nullish().describe('Optional FK to a milestone this decision blocks. When set, the\nCronograma can surface the decision as a formal prerequisite of\nthat milestone.\n'),
   "createdBy": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
@@ -981,7 +984,8 @@ export const UpdateDecisionBody = zod.object({
   "status": zod.enum(['open', 'in_analysis', 'cancelled']).optional(),
   "decidedOptionId": zod.string().max(updateDecisionBodyDecidedOptionIdMax).nullish(),
   "decidedOutcome": zod.string().max(updateDecisionBodyDecidedOutcomeMax).nullish(),
-  "decidedAt": zod.coerce.date().nullish()
+  "decidedAt": zod.coerce.date().nullish(),
+  "blocksMilestoneId": zod.string().nullish()
 })
 
 export const UpdateDecisionResponse = zod.object({
@@ -1002,6 +1006,7 @@ export const UpdateDecisionResponse = zod.object({
   "decidedOutcome": zod.string().nullish(),
   "decidedByUserId": zod.string().nullish(),
   "decidedAt": zod.coerce.date().nullish(),
+  "blocksMilestoneId": zod.string().nullish().describe('Optional FK to a milestone this decision blocks. When set, the\nCronograma can surface the decision as a formal prerequisite of\nthat milestone.\n'),
   "createdBy": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
@@ -1054,6 +1059,7 @@ export const ResolveDecisionResponse = zod.object({
   "decidedOutcome": zod.string().nullish(),
   "decidedByUserId": zod.string().nullish(),
   "decidedAt": zod.coerce.date().nullish(),
+  "blocksMilestoneId": zod.string().nullish().describe('Optional FK to a milestone this decision blocks. When set, the\nCronograma can surface the decision as a formal prerequisite of\nthat milestone.\n'),
   "createdBy": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
@@ -1089,6 +1095,7 @@ export const ReopenDecisionResponse = zod.object({
   "decidedOutcome": zod.string().nullish(),
   "decidedByUserId": zod.string().nullish(),
   "decidedAt": zod.coerce.date().nullish(),
+  "blocksMilestoneId": zod.string().nullish().describe('Optional FK to a milestone this decision blocks. When set, the\nCronograma can surface the decision as a formal prerequisite of\nthat milestone.\n'),
   "createdBy": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
@@ -1156,6 +1163,7 @@ export const BatchImportDecisionsResponse = zod.object({
   "decidedOutcome": zod.string().nullish(),
   "decidedByUserId": zod.string().nullish(),
   "decidedAt": zod.coerce.date().nullish(),
+  "blocksMilestoneId": zod.string().nullish().describe('Optional FK to a milestone this decision blocks. When set, the\nCronograma can surface the decision as a formal prerequisite of\nthat milestone.\n'),
   "createdBy": zod.string().nullish(),
   "createdAt": zod.coerce.date(),
   "updatedAt": zod.coerce.date()
