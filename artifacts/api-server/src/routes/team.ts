@@ -139,6 +139,7 @@ router.get(
         assignees: merged,
         tbd: !!governance?.tbd && merged.length === 0,
         pendingOnCommittee: !!governance?.pendingOnCommittee,
+        pendingPerPhase: !!governance?.pendingPerPhase,
       };
     });
 

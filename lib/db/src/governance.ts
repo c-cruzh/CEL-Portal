@@ -3,6 +3,7 @@ export type GovernanceRoleEntry = {
   assignees: string[];
   tbd: boolean;
   pendingOnCommittee: boolean;
+  pendingPerPhase?: boolean;
 };
 
 export const GOVERNANCE_ROLE_ASSIGNEES: GovernanceRoleEntry[] = [
@@ -38,20 +39,13 @@ export const GOVERNANCE_ROLE_ASSIGNEES: GovernanceRoleEntry[] = [
   },
   {
     roleId: "infra_devops",
-    assignees: [
-      "Ing. José Manuel Guardado",
-      "Lic. Lorena Pineda",
-      "Nelson Flores",
-    ],
+    assignees: ["Ing. José Manuel Guardado"],
     tbd: false,
     pendingOnCommittee: false,
   },
   {
     roleId: "data_engineer",
-    assignees: [
-      "Ing. William Juarez",
-      "Ing. José Mauricio Herrera Mercado",
-    ],
+    assignees: ["Ing. William Juárez"],
     tbd: false,
     pendingOnCommittee: false,
   },
@@ -60,6 +54,48 @@ export const GOVERNANCE_ROLE_ASSIGNEES: GovernanceRoleEntry[] = [
     assignees: [],
     tbd: true,
     pendingOnCommittee: true,
+  },
+  {
+    roleId: "it_committee_lead",
+    assignees: ["Lic. Lorena Pineda"],
+    tbd: false,
+    pendingOnCommittee: false,
+  },
+  {
+    roleId: "it_committee_networks",
+    assignees: ["Nelson Flores"],
+    tbd: false,
+    pendingOnCommittee: false,
+  },
+  {
+    roleId: "it_committee_sysadmin",
+    assignees: ["Adrián Miranda"],
+    tbd: false,
+    pendingOnCommittee: false,
+  },
+  {
+    roleId: "it_committee_dba",
+    assignees: ["Carlos Sánchez"],
+    tbd: false,
+    pendingOnCommittee: false,
+  },
+  {
+    roleId: "it_committee_security",
+    assignees: ["Miladis"],
+    tbd: false,
+    pendingOnCommittee: false,
+  },
+  {
+    roleId: "direccion_member",
+    assignees: [
+      "Ing. Guillermo Colorado",
+      "Ing. Gerardo Ávalos",
+      "Ing. Mauricio Herrera Landaverde",
+      "Ing. Rigoberto Ávila",
+    ],
+    tbd: false,
+    pendingOnCommittee: false,
+    pendingPerPhase: true,
   },
 ];
 

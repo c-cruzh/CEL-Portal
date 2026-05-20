@@ -232,7 +232,8 @@ export const GetTeamSummaryResponse = zod.object({
   "count": zod.number(),
   "assignees": zod.array(zod.string()),
   "tbd": zod.boolean().describe('True when the role is part of the agreed governance structure but the\nactual person is still pending designation (e.g. awaiting the CEL\nComité de Dirección). The UI should render a \"TBD\" placeholder.\n'),
-  "pendingOnCommittee": zod.boolean().describe('True when closing this role depends on a decision from the CEL\nComité de Dirección.\n')
+  "pendingOnCommittee": zod.boolean().describe('True when closing this role depends on a decision from the CEL\nComité de Dirección.\n'),
+  "pendingPerPhase": zod.boolean().describe('True when the role has confirmed candidates (assignees) but the actual\ninvolvement per phase is still pending definition (e.g. CEL Equipo de\nDirección members whose participation depends on the phase). The UI\nshould render a \"Pendiente por etapa\" badge alongside the names.\n')
 }))
 })
 

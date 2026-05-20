@@ -15,9 +15,10 @@ Portal web privado para coordinar el piloto de pronóstico hidrológico CEL × C
 Quién integra el piloto y qué hace cada uno.
 
 - Vista "Personas": tarjetas por persona con avatar (iniciales), nombre, correo, roles (chips), CV (link si existe).
-- Vista "Roles": catálogo de los 14 roles del piloto (12 originales + Gerente de Proyecto CEL + Hidrólogos Operativos CEL). Cada rol muestra descripción, conteo, personas asignadas (avatares) y, cuando aplica, badges:
+- Vista "Roles": catálogo de roles del piloto, alineado al Paquete Maestro — Piloto CEL (Core Pilot Team C²Labs/CEL, Comité de Informática desdoblado en 5 sub-roles —Jefa de Unidad, Redes, Sistemas, DBA, Ciberseguridad—, Gerente de Proyecto CEL, Hidrólogos Operativos CEL y Equipo de Dirección del Piloto). Cada rol muestra descripción, conteo, personas asignadas (avatares) y, cuando aplica, badges:
   - **"Por determinar (TBD)"** — el rol existe pero CEL aún no asignó persona.
-  - **"Pendiente Comité de Dirección CEL"** — el rol depende del Comité de Dirección de CEL (los dos roles CEL nuevos).
+  - **"Pendiente Comité de Dirección CEL"** — el rol depende del Comité de Dirección de CEL (Gerente de Proyecto CEL e Hidrólogos Operativos).
+  - **"Pendiente por etapa"** — el Equipo de Dirección del Piloto (Guillermo Colorado, Gerardo Ávalos, Mauricio Herrera Landaverde, Rigoberto Ávila) tiene candidatos confirmados, pero el involucramiento específico por etapa está pendiente de definir conforme al DSP.
 - Subida de CV propio (PDF/DOC/DOCX, ≤10 MB) desde la propia tarjeta del integrante.
 
 ### 2. Cronograma
@@ -115,6 +116,17 @@ Portal de administración. Visible sólo si `me.isAdmin === true`. No‑admins v
 - **Notificaciones**: destinatarios CC fijos + test email + log de notificaciones.
 - **Auditoría**: últimas 200 entradas de `admin_audit_log` con filtros por acción y actor.
 - **T0 del proyecto**: setear / cambiar / limpiar; cualquier cambio dispara `ensureSystemWeeklies`.
+
+## Gobernanza (Paquete Maestro)
+
+Estructura confirmada en el Paquete Maestro — Piloto CEL. Fuente única de verdad en `lib/db/src/governance.ts`:
+
+- **C² Labs (consultora):** Camila Cruz (`camila@c2labs.ai`) y Kevin Centeno (`kevin@c2labs.ai`).
+- **Core Pilot Team (CEL):** Ing. José Mauricio Herrera Mercado (`jmherreram@cel.gob.sv`) como PM CEL + Contrato; Ing. Víctor Alabí (`vialabi@cel.gob.sv`) como Líder Técnico Hidrología; Ing. Fernando Garay (`fgaray@cel.gob.sv`) SIG; Ing. William Juárez (`wjuarez@cel.gob.sv`) Datos; Ing. José Manuel Guardado (`jmguardado@cel.gob.sv`) DevOps / enlace operativo.
+- **Comité de Informática (CEL):** Lic. Lorena Pineda (`alpineda@cel.gob.sv`, Jefa de Unidad), Nelson Flores (`nfloresc@cel.gob.sv`, Redes), Adrián Miranda (Sistemas), Carlos Sánchez (DBA), Miladis (Ciberseguridad). José Manuel Guardado no se cuenta como sexto miembro consultivo (figura embebido como DevOps operativo) — cero doble conteo FTE.
+- **Equipo de Dirección del Piloto (CEL) — TBD por etapa:** Ing. Guillermo Colorado, Ing. Gerardo Ávalos, Ing. Mauricio Herrera Landaverde (persona distinta de Herrera Mercado), Ing. Rigoberto Ávila (`ravila@cel.gob.sv`). Aparecen como `direccion_member` con badge "Pendiente por etapa": rol e involucramiento se definen conforme al DSP.
+
+**Dinámica de escalación operativa:** Consultora (C²Labs) → José Mauricio Herrera Mercado (PM CEL + Contrato) → Lorena Pineda / Nelson Flores (Comité de Informática) para autorizaciones y lineamientos. José Manuel Guardado actúa como enlace operativo embebido entre el Comité y el Core Pilot Team.
 
 ## Reglas transversales
 

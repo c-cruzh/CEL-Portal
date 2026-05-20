@@ -91,6 +91,7 @@ export default function Equipo() {
                 const shared = count > 1;
                 const tbd = !!coverage?.tbd;
                 const pendingOnCommittee = !!coverage?.pendingOnCommittee;
+                const pendingPerPhase = !!coverage?.pendingPerPhase;
                 const holders = assignees.map((name) => {
                   const m = members?.find((mm) => mm.displayName === name);
                   return { name, email: m?.email };
@@ -142,6 +143,14 @@ export default function Equipo() {
                         className="self-start text-[10px] border-amber-500/40 text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30"
                       >
                         Pendiente Comité de Dirección CEL
+                      </Badge>
+                    )}
+                    {pendingPerPhase && (
+                      <Badge
+                        variant="outline"
+                        className="self-start text-[10px] border-sky-500/40 text-sky-700 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/30"
+                      >
+                        Pendiente por etapa
                       </Badge>
                     )}
                   </div>

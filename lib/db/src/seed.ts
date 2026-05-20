@@ -48,10 +48,14 @@ const ROLES: Array<{
   { id: "qa_validation", label: "QA / Validación", description: "Pruebas fuera de muestra y validación del piloto.", sortOrder: 10 },
   { id: "docs_training", label: "Documentación / Capacitación", description: "POE, informes y talleres de transferencia.", sortOrder: 11 },
   { id: "stakeholder_cel", label: "Stakeholder CEL", description: "Revisión, retroalimentación y sesiones de avance.", sortOrder: 12 },
-  { id: "it_committee_lead", label: "Jefe de Unidad de Informática (CEL)", description: "Lidera el Comité de Informática de CEL. Aprueba, autoriza y permanece informada del piloto.", sortOrder: 13 },
-  { id: "it_committee", label: "Comité de Informática (CEL)", description: "Integrantes del Comité de Informática de CEL: redes, sistemas, bases de datos y ciberseguridad. Aprueban, delegan y entregan recursos al enlace DevOps.", sortOrder: 14 },
-  { id: "pm_director_cel", label: "Gerente de Proyecto (CEL)", description: "Gerente de Proyecto por parte de CEL. Por determinar por el Comité de Dirección de CEL.", sortOrder: 15 },
-  { id: "hydrology_ops_cel", label: "Hidrólogos Operativos (CEL)", description: "Hidrólogos operativos asignados por CEL al piloto. Por determinar por el Comité de Dirección de CEL.", sortOrder: 16 },
+  { id: "it_committee_lead", label: "Jefa de Unidad de Informática (CEL)", description: "Lidera el Comité de Informática de CEL. Autoridad final: aprueba, autoriza y permanece informada del piloto. Autorización exclusiva para exposición de servicios al exterior.", sortOrder: 13 },
+  { id: "it_committee_networks", label: "Jefe de Redes e Informática (CEL)", description: "Comité de Informática — Jefatura de Administración de Redes e Informática. Aprueba, delega y maneja recursos. Mecanismo operativo de escalamiento para el enlace DevOps.", sortOrder: 14 },
+  { id: "it_committee_sysadmin", label: "Administrador de Sistemas y Redes (CEL)", description: "Comité de Informática — Configura entornos (VLANs, túneles VPN, listas blancas de IPs) y entrega recursos al enlace DevOps. Realiza pre-auditorías de red antes del pase a producción.", sortOrder: 15 },
+  { id: "it_committee_dba", label: "Administrador de Base de Datos (CEL)", description: "Comité de Informática — DBA. Gobierna las bases de datos del piloto (acceso, replicación, ground truth) y entrega recursos al enlace DevOps.", sortOrder: 16 },
+  { id: "it_committee_security", label: "Especialista de Ciberseguridad (CEL)", description: "Comité de Informática — Lineamientos de seguridad y pre-auditorías de ciberseguridad antes del pase a producción. Entrega recursos al enlace DevOps.", sortOrder: 17 },
+  { id: "pm_director_cel", label: "Gerente de Proyecto (CEL)", description: "Gerente de Proyecto por parte de CEL. Por determinar por el Comité de Dirección de CEL.", sortOrder: 18 },
+  { id: "hydrology_ops_cel", label: "Hidrólogos Operativos (CEL)", description: "Hidrólogos operativos asignados por CEL al piloto. Por determinar por el Comité de Dirección de CEL.", sortOrder: 19 },
+  { id: "direccion_member", label: "Equipo de Dirección del Piloto (CEL)", description: "Integrantes del Equipo de Dirección del piloto por parte de CEL. Rol e involucramiento por definir por etapa, conforme al DSP.", sortOrder: 20 },
 ];
 
 type SeedMilestone = {
@@ -198,7 +202,8 @@ const ADMIN_ROLE_BOOTSTRAP: Array<{ email: string; roles: string[] }> = [
   { email: "wjuarez@cel.gob.sv", roles: ["data_engineer"] },
   { email: "jmguardado@cel.gob.sv", roles: ["infra_devops"] },
   { email: "alpineda@cel.gob.sv", roles: ["it_committee_lead"] },
-  { email: "nfloresc@cel.gob.sv", roles: ["it_committee"] },
+  { email: "nfloresc@cel.gob.sv", roles: ["it_committee_networks"] },
+  { email: "ravila@cel.gob.sv", roles: ["direccion_member"] },
 ];
 
 async function bootstrapAdminRoles(): Promise<void> {

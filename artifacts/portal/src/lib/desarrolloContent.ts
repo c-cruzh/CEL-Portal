@@ -941,10 +941,10 @@ export const FTE_BREAKDOWN: {
     tone: "external",
   },
   {
-    label: "Comité Consultivo de TI (6 roles)",
+    label: "Comité Consultivo de TI (5 roles)",
     fte: "0.35 compartido",
     scope:
-      "Lorena, Nelson, José Manuel, Carlos Sánchez, Adrián y Miladis (Unidad de Informática de CEL).",
+      "Lorena Pineda, Nelson Flores, Carlos Sánchez, Adrián Miranda y Miladis (Unidad de Informática de CEL). José Manuel Guardado no se cuenta aquí: figura embebido como DevOps operativo.",
     detail:
       "No tiene rol operativo diario. Funciona como comité que autoriza, informa y dicta cómo proceder en ciberseguridad, acceso a datos, infraestructura, redes y aprobaciones formales.",
     tone: "committee",
@@ -952,7 +952,7 @@ export const FTE_BREAKDOWN: {
   {
     label: "Ingeniero DevOps / Enlace operativo",
     fte: "1.0",
-    scope: "Recurso 100% operativo durante la fase de ejecución (asignación TBD).",
+    scope: "José Manuel Guardado (jmguardado@cel.gob.sv) — recurso 100% operativo durante la fase de ejecución.",
     detail:
       "Único punto de contacto entre el equipo del piloto y la Unidad de Informática. Ejecuta la implementación técnica siguiendo estrictamente los lineamientos del Comité, aprovechando su conocimiento interno de la infraestructura de CEL.",
     tone: "operational",
@@ -981,20 +981,31 @@ export const TEAM_PROFILES: TeamProfile[] = [
     ],
   },
   {
-    id: "pm-hidrologia",
-    role: "Líder Técnico en Hidrología y Gerente de Proyecto",
-    person: "José Mauricio (CEL)",
+    id: "pm-cel",
+    role: "PM CEL + Contrato",
+    person: "Ing. José Mauricio Herrera Mercado (jmherreram@cel.gob.sv)",
     scope: "Interno CEL",
     responsibilities: [
+      "Gerente de Proyecto por parte de CEL y dueño de la administración del contrato con la consultora.",
       "Supervisión integral de la ejecución: cronogramas, comunicación interinstitucional y asignación de recursos.",
+      "Punto de escalación primario entre la consultora y el liderazgo interno de CEL.",
+    ],
+  },
+  {
+    id: "lider-hidrologia",
+    role: "Líder Técnico en Hidrología",
+    person: "Ing. Víctor Alabí (vialabi@cel.gob.sv)",
+    scope: "Interno CEL",
+    responsibilities: [
       "Orientación experta y conocimiento empírico del río Lempa.",
       "Interpretación de la dinámica hidrológica y validación de coherencia operativa de las predicciones.",
+      "Validador final de modelo, variables y utilidad operativa de los resultados; usuario principal del sistema.",
     ],
   },
   {
     id: "devops",
     role: "Administrador de Sistemas / Ingeniero DevOps",
-    person: "Enlace operativo (TBD)",
+    person: "Ing. José Manuel Guardado (jmguardado@cel.gob.sv)",
     scope: "Interno CEL",
     responsibilities: [
       "Enlace directo entre el Comité de Informática y el equipo del piloto.",
@@ -1004,8 +1015,8 @@ export const TEAM_PROFILES: TeamProfile[] = [
   },
   {
     id: "datos",
-    role: "Ingenieros de Datos y Backend",
-    person: "William Juárez / José Mauricio Herrera (CEL)",
+    role: "Ingeniero de Datos y Backend",
+    person: "Ing. William Juárez (wjuarez@cel.gob.sv)",
     scope: "Interno CEL",
     responsibilities: [
       "Migración de la lógica de negocio a los nuevos pipelines en Python con Mage.",
@@ -1025,14 +1036,13 @@ export const TEAM_PROFILES: TeamProfile[] = [
     ],
   },
   {
-    id: "operacion",
-    role: "Hidrólogo Operativo",
-    person: "Víctor Alabi (CEL)",
+    id: "direccion",
+    role: "Equipo de Dirección del Piloto (CEL)",
+    person: "Ing. Guillermo Colorado · Ing. Gerardo Ávalos · Ing. Mauricio Herrera Landaverde · Ing. Rigoberto Ávila (ravila@cel.gob.sv)",
     scope: "Interno CEL",
     responsibilities: [
-      "Usuario principal del sistema durante todo el proyecto.",
-      "Monitoreo diario del desempeño e interpretación de alertas.",
-      "Validador final de coherencia y utilidad operativa de los resultados del modelo.",
+      "Lineamiento ejecutivo del piloto a nivel CEL; rol e involucramiento específico pendiente por definir por etapa, conforme al DSP.",
+      "Persona distinta al PM José Mauricio Herrera Mercado: Mauricio Herrera Landaverde participa aquí únicamente como integrante de Dirección.",
     ],
   },
 ];
@@ -1525,12 +1535,12 @@ export interface RaciRole {
 
 export const RACI_ROLES: RaciRole[] = [
   { short: "Consultora IA", full: "Consultora IA (Equipo C2Labs)" },
-  { short: "Líder/PM", full: "José Mauricio — Líder Hidrología y PM (CEL)" },
+  { short: "PM CEL", full: "José Mauricio Herrera Mercado — PM CEL + Contrato" },
   { short: "Comité TI", full: "Comité de Informática — Autorización y Gobernanza" },
-  { short: "DevOps", full: "DevOps / Enlace (TBD)" },
-  { short: "Datos", full: "William / José Mauricio Herrera (Datos)" },
-  { short: "SIG", full: "Fernando Garay (SIG)" },
-  { short: "Operaciones", full: "Víctor Alabi (Operaciones)" },
+  { short: "DevOps", full: "José Manuel Guardado — DevOps / Enlace operativo" },
+  { short: "Datos", full: "William Juárez — Ingeniería de Datos" },
+  { short: "SIG", full: "Fernando Garay — SIG / Teledetección" },
+  { short: "Líder Hidrología", full: "Víctor Alabí — Líder Técnico Hidrología" },
 ];
 
 export const RACI_TASKS: { task: string; note?: string; values: string[] }[] = [

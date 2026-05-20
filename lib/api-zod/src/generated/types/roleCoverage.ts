@@ -20,4 +20,10 @@ export interface RoleCoverage {
   Comité de Dirección.
    */
   pendingOnCommittee: boolean;
+  /** True when the role has confirmed candidates (assignees) but the actual
+  involvement per phase is still pending definition (e.g. CEL Equipo de
+  Dirección members whose participation depends on the phase). The UI
+  should render a "Pendiente por etapa" badge alongside the names.
+   */
+  pendingPerPhase: boolean;
 }
