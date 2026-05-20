@@ -24,6 +24,8 @@ import {
   Image as ImageIcon,
   Upload,
   RotateCcw,
+  ListOrdered,
+  ChevronRight,
 } from "lucide-react";
 import {
   PAQUETE_DOCS,
@@ -430,7 +432,66 @@ export default function PaqueteFase0() {
         )}
       </header>
 
-      <section className="space-y-4">
+      <Card className="border-border">
+        <CardHeader className="pb-3">
+          <div className="flex items-center gap-2">
+            <ListOrdered className="h-5 w-5 text-primary" />
+            <CardTitle className="text-base">Índice del paquete</CardTitle>
+          </div>
+        </CardHeader>
+        <CardContent className="pt-0">
+          <nav aria-label="Índice de la página">
+            <ul className="grid grid-cols-1 md:grid-cols-2 gap-2">
+              {[
+                {
+                  id: "correo-de-remision",
+                  title: "Correo de Remisión",
+                  desc: "Asunto y cuerpo de la carta de envío del paquete.",
+                  Icon: Mail,
+                },
+                {
+                  id: "documentos-finales",
+                  title: "Documentos Finales",
+                  desc: `${PAQUETE_DOCS.length} documentos formales en PDF y DOCX.`,
+                  Icon: FileText,
+                },
+                {
+                  id: "deck-ejecutivo",
+                  title: "Deck Ejecutivo",
+                  desc: "Presentación de alineación con CEL (PPTX y PDF).",
+                  Icon: Presentation,
+                },
+                {
+                  id: "diagramas",
+                  title: "Diagramas",
+                  desc: `${PAQUETE_DIAGRAMS.length} diagramas Mermaid con PNG y .mmd editable.`,
+                  Icon: Workflow,
+                },
+              ].map(({ id, title, desc, Icon }) => (
+                <li key={id}>
+                  <a
+                    href={`#${id}`}
+                    className="group flex items-start gap-3 rounded-md border border-border bg-card hover:bg-accent hover:border-primary/40 transition-colors p-3"
+                  >
+                    <Icon className="h-5 w-5 text-primary shrink-0 mt-0.5" />
+                    <div className="flex-1 min-w-0">
+                      <div className="text-sm font-medium text-foreground">
+                        {title}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {desc}
+                      </div>
+                    </div>
+                    <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0 mt-1 transition-transform group-hover:translate-x-0.5" />
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        </CardContent>
+      </Card>
+
+      <section id="correo-de-remision" className="space-y-4 scroll-mt-20">
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <Mail className="h-5 w-5 text-primary" />
@@ -503,7 +564,7 @@ export default function PaqueteFase0() {
         </Card>
       </section>
 
-      <section className="space-y-4">
+      <section id="documentos-finales" className="space-y-4 scroll-mt-20">
         <div className="flex items-center gap-2">
           <FileText className="h-5 w-5 text-primary" />
           <h2 className="text-xl font-semibold text-foreground">
@@ -571,7 +632,7 @@ export default function PaqueteFase0() {
         </div>
       </section>
 
-      <section className="space-y-4">
+      <section id="deck-ejecutivo" className="space-y-4 scroll-mt-20">
         <div className="flex items-center gap-2">
           <Presentation className="h-5 w-5 text-primary" />
           <h2 className="text-xl font-semibold text-foreground">
@@ -630,7 +691,7 @@ export default function PaqueteFase0() {
         </Card>
       </section>
 
-      <section className="space-y-4">
+      <section id="diagramas" className="space-y-4 scroll-mt-20">
         <div className="flex items-center gap-2">
           <Workflow className="h-5 w-5 text-primary" />
           <h2 className="text-xl font-semibold text-foreground">Diagramas</h2>
