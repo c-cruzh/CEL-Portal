@@ -323,8 +323,8 @@ export async function requireAuth(
           targetId: clerkUserId,
           payload: {
             placeholderId,
-            transferredRoles,
-            titularSlots,
+            transferredRoles: reconciled.transferredRoles,
+            titularSlots: reconciled.titularSlots,
           },
         });
         notifyAsync({
