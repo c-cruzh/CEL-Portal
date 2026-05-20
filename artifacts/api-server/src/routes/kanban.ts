@@ -17,8 +17,23 @@ import {
   MoveKanbanCardResponse,
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
+import { notifyKanbanCardAssignedAsync } from "../lib/notifications";
+import { usersTable } from "@workspace/db";
 
 const router: IRouter = Router();
+
+async function loadActor(userId: string) {
+  const [actor] = await db
+    .select({
+      id: usersTable.id,
+      email: usersTable.email,
+      displayName: usersTable.displayName,
+    })
+    .from(usersTable)
+    .where(eq(usersTable.id, userId))
+    .limit(1);
+  return actor ?? null;
+}
 
 const PM_ROLE_IDS = new Set(["pm_lead", "pm_cel"]);
 
@@ -121,6 +136,20 @@ router.post(
       })
       .returning();
 
+    if (created && (created.assignedRoles?.length ?? 0) > 0) {
+      const actor = await loadActor(req.userId!);
+      notifyKanbanCardAssignedAsync({
+        cardId: created.id,
+        title: created.title,
+        columnKey: created.columnKey,
+        dueDate: created.dueDate ?? null,
+        newRoleIds: created.assignedRoles ?? [],
+        previousRoleIds: [],
+        actor,
+        isReassignment: false,
+      });
+    }
+
     res.status(201).json(ListKanbanCardsResponseItem.parse(serializeCard(created!)));
   },
 );
@@ -171,6 +200,25 @@ router.patch(
       .set(update)
       .where(eq(kanbanCardsTable.id, id))
       .returning();
+
+    if (updated && data.assignedRoles !== undefined) {
+      const previousRoleIds = existing.assignedRoles ?? [];
+      const newRoleIds = updated.assignedRoles ?? [];
+      const added = newRoleIds.filter((r) => !previousRoleIds.includes(r));
+      if (added.length > 0) {
+        const actor = await loadActor(req.userId!);
+        notifyKanbanCardAssignedAsync({
+          cardId: updated.id,
+          title: updated.title,
+          columnKey: updated.columnKey,
+          dueDate: updated.dueDate ?? null,
+          newRoleIds,
+          previousRoleIds,
+          actor,
+          isReassignment: previousRoleIds.length > 0,
+        });
+      }
+    }
 
     res.json(UpdateKanbanCardResponse.parse(serializeCard(updated!)));
   },

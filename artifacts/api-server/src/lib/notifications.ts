@@ -2,11 +2,13 @@ import { and, desc, eq, gte, ne, inArray } from "drizzle-orm";
 import {
   db,
   usersTable,
+  userRolesTable,
+  rolesTable,
+  kanbanColumnsTable,
   notificationRecipientsTable,
   notificationLogTable,
   decisionsTable,
   kanbanCardsTable,
-  kanbanColumnsTable,
 } from "@workspace/db";
 import { logger } from "./logger";
 
@@ -89,6 +91,26 @@ type PersonalNotificationEvent =
       dueDate: string;
       daysUntilDue: number;
       columnLabel: string;
+    }
+  | {
+      kind: "kanban_card_assigned";
+      actor: { id: string; email: string; displayName: string } | null;
+      title: string;
+      cardId: string;
+      columnLabel: string;
+      dueDate: string | null;
+      assignedRoleLabels: string[];
+      matchedRoleLabels: string[];
+      isReassignment: boolean;
+    }
+  | {
+      kind: "kanban_card_due_reminder";
+      title: string;
+      cardId: string;
+      columnLabel: string;
+      dueDate: string;
+      daysUntilDue: number;
+      matchedRoleLabels: string[];
     };
 
 export type NotificationStatus =
@@ -240,6 +262,52 @@ function renderPersonalEmail(ev: PersonalNotificationEvent): {
           `Columna: ${ev.columnLabel}\n` +
           `Fecha límite: ${ev.dueDate}\n\n` +
           `Entra al portal para avanzarla o reagendarla.\n`,
+      };
+    }
+    case "kanban_card_assigned": {
+      const who = ev.actor
+        ? `${ev.actor.displayName} <${ev.actor.email}>`
+        : "El equipo";
+      const intro = ev.isReassignment
+        ? `${who} actualizó los roles de una tarjeta del Kanban`
+        : `${who} creó una nueva tarjeta del Kanban`;
+      const matched = ev.matchedRoleLabels.length
+        ? `Te involucra por tu rol: ${ev.matchedRoleLabels.join(", ")}\n`
+        : "";
+      const allRoles = ev.assignedRoleLabels.length
+        ? `Roles asignados: ${ev.assignedRoleLabels.join(", ")}\n`
+        : "";
+      return {
+        subject: `[Portal CEL] Te asignaron una tarjeta: ${ev.title}`,
+        text:
+          `${intro} que te involucra.\n\n` +
+          `Título: ${ev.title}\n` +
+          `Columna: ${ev.columnLabel}\n` +
+          `Fecha límite: ${ev.dueDate ?? "(sin definir)"}\n` +
+          matched +
+          allRoles +
+          `\nEntra al portal para revisarla y avanzarla.\n`,
+      };
+    }
+    case "kanban_card_due_reminder": {
+      const when =
+        ev.daysUntilDue < 0
+          ? `venció hace ${Math.abs(ev.daysUntilDue)} día${Math.abs(ev.daysUntilDue) === 1 ? "" : "s"}`
+          : ev.daysUntilDue === 0
+            ? "vence hoy"
+            : `vence en ${ev.daysUntilDue} día${ev.daysUntilDue === 1 ? "" : "s"}`;
+      const matched = ev.matchedRoleLabels.length
+        ? `Tu rol asignado: ${ev.matchedRoleLabels.join(", ")}\n`
+        : "";
+      return {
+        subject: `[Portal CEL] Recordatorio: tarjeta ${when} — ${ev.title}`,
+        text:
+          `Una tarjeta del Kanban asignada a tu rol ${when}.\n\n` +
+          `Título: ${ev.title}\n` +
+          `Columna: ${ev.columnLabel}\n` +
+          `Fecha límite: ${ev.dueDate}\n` +
+          matched +
+          `\nEntra al portal para avanzarla o moverla a "Hecho".\n`,
       };
     }
   }
@@ -964,6 +1032,11 @@ export function startDueDateReminderScheduler(): void {
       { result: kanbanResult },
       "Kanban due-date reminders job finished",
     );
+    const kanbanRoleResult = await runKanbanRoleAssigneeDueReminders();
+    logger.info(
+      { result: kanbanRoleResult },
+      "Kanban role-assignee due-date reminders job finished",
+    );
   };
   // Run once shortly after boot so a freshly-deployed server still sends today's reminders.
   setTimeout(() => {
@@ -1099,3 +1172,265 @@ export async function listRecentNotificationLog(
     createdAt: r.createdAt,
   }));
 }
+
+const KANBAN_CARD_DUE_REMINDER_KIND = "kanban_card_due_reminder";
+
+async function loadRoleLabels(roleIds: string[]): Promise<Map<string, string>> {
+  if (roleIds.length === 0) return new Map();
+  const rows = await db
+    .select({ id: rolesTable.id, label: rolesTable.label })
+    .from(rolesTable)
+    .where(inArray(rolesTable.id, roleIds));
+  const map = new Map<string, string>();
+  for (const r of rows) map.set(r.id, r.label);
+  for (const id of roleIds) if (!map.has(id)) map.set(id, id);
+  return map;
+}
+
+async function loadColumnLabel(columnKey: string): Promise<string> {
+  const [row] = await db
+    .select({ label: kanbanColumnsTable.label })
+    .from(kanbanColumnsTable)
+    .where(eq(kanbanColumnsTable.key, columnKey))
+    .limit(1);
+  return row?.label ?? columnKey;
+}
+
+async function loadUsersForRoles(
+  roleIds: string[],
+): Promise<Array<{ userId: string; email: string; displayName: string; optOut: boolean; roleIds: string[] }>> {
+  if (roleIds.length === 0) return [];
+  const rows = await db
+    .select({
+      userId: usersTable.id,
+      email: usersTable.email,
+      displayName: usersTable.displayName,
+      optOut: usersTable.emailNotificationsOptOut,
+      roleId: userRolesTable.roleId,
+    })
+    .from(userRolesTable)
+    .innerJoin(usersTable, eq(usersTable.id, userRolesTable.userId))
+    .where(inArray(userRolesTable.roleId, roleIds));
+  const byUser = new Map<
+    string,
+    { userId: string; email: string; displayName: string; optOut: boolean; roleIds: string[] }
+  >();
+  for (const r of rows) {
+    const existing = byUser.get(r.userId);
+    if (existing) {
+      if (!existing.roleIds.includes(r.roleId)) existing.roleIds.push(r.roleId);
+    } else {
+      byUser.set(r.userId, {
+        userId: r.userId,
+        email: r.email,
+        displayName: r.displayName,
+        optOut: r.optOut,
+        roleIds: [r.roleId],
+      });
+    }
+  }
+  return Array.from(byUser.values());
+}
+
+export function notifyKanbanCardAssignedAsync(args: {
+  cardId: string;
+  title: string;
+  columnKey: string;
+  dueDate: string | null;
+  newRoleIds: string[];
+  previousRoleIds: string[];
+  actor: { id: string; email: string; displayName: string } | null;
+  isReassignment: boolean;
+}): void {
+  void (async () => {
+    try {
+      const addedRoles = args.newRoleIds.filter(
+        (r) => !args.previousRoleIds.includes(r),
+      );
+      if (addedRoles.length === 0) return;
+
+      const [allLabels, columnLabel, candidates, previouslyAssignedUsers] =
+        await Promise.all([
+          loadRoleLabels(
+            Array.from(new Set([...args.newRoleIds, ...args.previousRoleIds])),
+          ),
+          loadColumnLabel(args.columnKey),
+          loadUsersForRoles(addedRoles),
+          args.previousRoleIds.length > 0
+            ? loadUsersForRoles(args.previousRoleIds)
+            : Promise.resolve([]),
+        ]);
+
+      const previousUserIds = new Set(
+        previouslyAssignedUsers.map((u) => u.userId),
+      );
+      const assignedRoleLabels = args.newRoleIds.map(
+        (id) => allLabels.get(id) ?? id,
+      );
+
+      for (const user of candidates) {
+        if (args.actor && user.userId === args.actor.id) continue;
+        if (previousUserIds.has(user.userId)) continue; // already covered through a previous role assignment
+        const matchedAddedRoles = user.roleIds.filter((r) =>
+          addedRoles.includes(r),
+        );
+        const matchedRoleLabels = matchedAddedRoles.map(
+          (id) => allLabels.get(id) ?? id,
+        );
+        await sendPersonalNotification(
+          {
+            kind: "kanban_card_assigned",
+            actor: args.actor,
+            title: args.title,
+            cardId: args.cardId,
+            columnLabel,
+            dueDate: args.dueDate,
+            assignedRoleLabels,
+            matchedRoleLabels,
+            isReassignment: args.isReassignment,
+          },
+          {
+            userId: user.userId,
+            email: user.email,
+            displayName: user.displayName,
+          },
+        );
+      }
+    } catch (err) {
+      logger.error(
+        { err, cardId: args.cardId },
+        "Failed to dispatch kanban card assigned notifications",
+      );
+    }
+  })();
+}
+
+export async function runKanbanRoleAssigneeDueReminders(
+  now: Date = new Date(),
+): Promise<{
+  evaluated: number;
+  sent: number;
+  skipped: number;
+  failed: number;
+  noProvider: number;
+}> {
+  const todayIso = toDateOnly(now);
+  let evaluated = 0;
+  let sent = 0;
+  let skipped = 0;
+  let failed = 0;
+  let noProvider = 0;
+
+  try {
+    const cards = await db
+      .select({
+        id: kanbanCardsTable.id,
+        title: kanbanCardsTable.title,
+        dueDate: kanbanCardsTable.dueDate,
+        assignedRoles: kanbanCardsTable.assignedRoles,
+        columnKey: kanbanCardsTable.columnKey,
+      })
+      .from(kanbanCardsTable)
+      .where(ne(kanbanCardsTable.columnKey, KANBAN_DONE_COLUMN_KEY));
+
+    const due = cards.filter(
+      (c) =>
+        c.dueDate !== null &&
+        c.dueDate <= todayIso &&
+        (c.assignedRoles?.length ?? 0) > 0,
+    );
+    evaluated = due.length;
+    if (due.length === 0)
+      return { evaluated, sent, skipped, failed, noProvider };
+
+    // Dedup: providerMessage encodes tag "card:<id>:user:<userId>"
+    const startOfDay = new Date(`${todayIso}T00:00:00.000Z`);
+    const recentLogs = await db
+      .select({
+        providerMessage: notificationLogTable.providerMessage,
+        status: notificationLogTable.status,
+      })
+      .from(notificationLogTable)
+      .where(
+        and(
+          eq(notificationLogTable.eventKind, KANBAN_CARD_DUE_REMINDER_KIND),
+          gte(notificationLogTable.createdAt, startOfDay),
+        ),
+      );
+    const alreadyNotified = new Set<string>();
+    for (const log of recentLogs) {
+      if (log.status !== "sent" && log.status !== "no_provider") continue;
+      const tag = log.providerMessage ?? "";
+      const m = /card:([^\s:]+):user:([^\s]+)/.exec(tag);
+      if (m) alreadyNotified.add(`${m[1]}|${m[2]}`);
+    }
+
+    const allRoleIds = Array.from(
+      new Set(due.flatMap((c) => c.assignedRoles ?? [])),
+    );
+    const roleLabelMap = await loadRoleLabels(allRoleIds);
+    const columnKeys = Array.from(new Set(due.map((c) => c.columnKey)));
+    const columnRows = columnKeys.length
+      ? await db
+          .select({
+            key: kanbanColumnsTable.key,
+            label: kanbanColumnsTable.label,
+          })
+          .from(kanbanColumnsTable)
+          .where(inArray(kanbanColumnsTable.key, columnKeys))
+      : [];
+    const columnLabelMap = new Map(columnRows.map((c) => [c.key, c.label]));
+
+    for (const card of due) {
+      const roles = card.assignedRoles ?? [];
+      if (roles.length === 0) {
+        skipped++;
+        continue;
+      }
+      const users = await loadUsersForRoles(roles);
+      const daysUntilDue = diffDays(card.dueDate!, todayIso);
+      const columnLabel = columnLabelMap.get(card.columnKey) ?? card.columnKey;
+      for (const user of users) {
+        const key = `${card.id}|${user.userId}`;
+        if (alreadyNotified.has(key)) {
+          skipped++;
+          continue;
+        }
+        if (user.optOut) {
+          skipped++;
+          continue;
+        }
+        const matchedRoleLabels = user.roleIds
+          .filter((r) => roles.includes(r))
+          .map((id) => roleLabelMap.get(id) ?? id);
+        const status = await sendPersonalNotificationWithTag(
+          {
+            kind: "kanban_card_due_reminder",
+            title: card.title,
+            cardId: card.id,
+            columnLabel,
+            dueDate: card.dueDate!,
+            daysUntilDue,
+            matchedRoleLabels,
+          },
+          {
+            userId: user.userId,
+            email: user.email,
+            displayName: user.displayName,
+          },
+          `card:${card.id}:user:${user.userId}`,
+        );
+        if (status === "sent") sent++;
+        else if (status === "no_provider") noProvider++;
+        else if (status === "failed") failed++;
+        else skipped++;
+      }
+    }
+  } catch (err) {
+    logger.error({ err }, "Failed to run kanban due-date reminders job");
+  }
+
+  return { evaluated, sent, skipped, failed, noProvider };
+}
+
+
