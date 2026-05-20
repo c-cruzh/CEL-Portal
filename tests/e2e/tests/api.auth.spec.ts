@@ -15,7 +15,7 @@ test.describe("auth + test-mode bypass", () => {
     expect(body.email).toBe(ADMIN_EMAIL);
     expect(body.isAdmin).toBe(true);
     expect(Array.isArray(body.roles)).toBe(true);
-    expect(body.roles).toContain("pm_lead");
+    expect(body.roles).toContain("project_lead");
     await api.dispose();
   });
 
