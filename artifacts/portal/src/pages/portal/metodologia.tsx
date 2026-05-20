@@ -501,7 +501,16 @@ function NeedsReviewBadge({ note }: { note?: string } = {}) {
   );
 }
 
+function extractInfraRoleLabel(source: string): string {
+  const colon = source.indexOf(":");
+  if (colon > 0) return source.slice(0, colon).trim();
+  const m = source.match(/^(.+?\bde CEL\b)/i);
+  if (m) return m[1].trim();
+  return source.split(/[.,]/)[0].trim();
+}
+
 function InfraStackDiagram() {
+  const faseById = new Map(INFRA_FASES_OPERATIVAS.map((f) => [f.id, f]));
   const layers = [
     {
       id: "F3",
@@ -509,6 +518,8 @@ function InfraStackDiagram() {
       label: "F3 · Servicio",
       sub: "API + dashboard al usuario CEL",
       icon: Activity,
+      role: extractInfraRoleLabel(faseById.get("F3")?.rolCEL ?? ""),
+      roleSource: faseById.get("F3")?.rolCEL ?? "",
     },
     {
       id: "F2",
@@ -516,6 +527,8 @@ function InfraStackDiagram() {
       label: "F2 · Modelado",
       sub: "Pronósticos hidrológicos con IA",
       icon: BrainCircuit,
+      role: extractInfraRoleLabel(faseById.get("F2")?.rolCEL ?? ""),
+      roleSource: faseById.get("F2")?.rolCEL ?? "",
     },
     {
       id: "F1",
@@ -523,6 +536,8 @@ function InfraStackDiagram() {
       label: "F1 · Datos",
       sub: "Ingesta, limpieza y almacenamiento",
       icon: Database,
+      role: extractInfraRoleLabel(faseById.get("F1")?.rolCEL ?? ""),
+      roleSource: faseById.get("F1")?.rolCEL ?? "",
     },
     {
       id: "fisica",
@@ -530,6 +545,8 @@ function InfraStackDiagram() {
       label: "Infra física / cómputo",
       sub: "Silo on-premise: servidores, GPU y red",
       icon: HardDrive,
+      role: extractInfraRoleLabel(INFRA_AI_SILO.rolesCEL[0] ?? ""),
+      roleSource: INFRA_AI_SILO.rolesCEL[0] ?? "",
     },
   ];
   return (
@@ -575,7 +592,7 @@ function InfraStackDiagram() {
             <li key={l.id}>
               <a
                 href={`#${l.anchor}`}
-                aria-label={`Ir a ${l.label}: ${l.sub}`}
+                aria-label={`Ir a ${l.label}: ${l.sub}. Responsable: ${l.role}`}
                 className={[
                   "group flex items-center gap-3 rounded-md border px-3 py-2.5 sm:py-3",
                   "bg-background/70 border-primary/25 hover:bg-primary/10 hover:border-primary/50",
@@ -592,8 +609,17 @@ function InfraStackDiagram() {
                   <Icon className="h-4 w-4" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <div className="text-sm font-semibold text-foreground leading-tight">
-                    {l.label}
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <div className="text-sm font-semibold text-foreground leading-tight">
+                      {l.label}
+                    </div>
+                    <span
+                      title={l.roleSource}
+                      className="inline-flex items-center gap-1 rounded-full bg-primary/10 text-primary border border-primary/25 px-1.5 py-0.5 text-[10px] font-medium leading-none max-w-full"
+                    >
+                      <Users className="h-2.5 w-2.5 shrink-0" aria-hidden="true" />
+                      <span className="truncate">{l.role}</span>
+                    </span>
                   </div>
                   <div className="text-[11px] text-muted-foreground leading-snug mt-0.5">
                     {l.sub}
