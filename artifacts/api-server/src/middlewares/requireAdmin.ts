@@ -1,5 +1,6 @@
 import { type Request, type Response, type NextFunction } from "express";
 import { requirePM } from "./requirePM";
+import { isE2EBypassRequest } from "../lib/e2eTestMode";
 
 // Hard-coded admin principals for the pilot (task #40). Only these two
 // people can reach the /api/admin/* surface, regardless of which roles
@@ -11,13 +12,22 @@ const ADMIN_EMAILS = new Set<string>([
   "kevin@c2labs.ai",
 ]);
 
+// E2E test-mode escape hatch — when the Playwright bypass produced this
+// request and the test asked to act as admin, treat it as such. Gated by
+// the same env var so production behavior is unchanged.
+function isE2EAdmin(req: Request): boolean {
+  if (!isE2EBypassRequest(req)) return false;
+  const header = req.header("x-e2e-admin");
+  return header === "1" || header === "true";
+}
+
 export function requireAdmin(
   req: Request,
   res: Response,
   next: NextFunction,
 ): void | Promise<void> {
   const email = (req.userEmail ?? "").trim().toLowerCase();
-  if (!email || !ADMIN_EMAILS.has(email)) {
+  if ((!email || !ADMIN_EMAILS.has(email)) && !isE2EAdmin(req)) {
     res.status(403).json({
       error:
         "El Portal de Administración está restringido a los PM del piloto (Camila y Kevin).",

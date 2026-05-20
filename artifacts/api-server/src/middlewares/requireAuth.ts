@@ -9,6 +9,7 @@ import {
   isEmailAllowed,
   domainRejectionMessage,
 } from "../lib/allowedDomains";
+import { isE2EBypassRequest } from "../lib/e2eTestMode";
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -65,11 +66,77 @@ const AUTO_APPROVED_EMAILS = new Set<string>([
   "kevin@c2labs.ai",
 ]);
 
+// E2E test-mode bypass. Gated by the env var so it is impossible to enable
+// in production. When ON, requests with `x-e2e-user-email` header skip Clerk
+// entirely and resolve to a deterministic local user (created on first hit,
+// updated thereafter). Used by the Playwright suite in `tests/e2e/`.
+async function tryE2ETestModeAuth(
+  req: Request,
+): Promise<{ userId: string; email: string } | null> {
+  if (!isE2EBypassRequest(req)) return null;
+  const headerEmail = req.header("x-e2e-user-email");
+  if (!headerEmail) return null;
+  const email = headerEmail.trim().toLowerCase();
+  if (!email) return null;
+  const displayName = req.header("x-e2e-user-name") ?? email;
+  // Reuse the existing row if this email already has a Clerk-provisioned
+  // user (e.g. the admin emails seeded on first real login). Otherwise
+  // synthesize a deterministic id so the test suite stays self-contained.
+  const [existing] = await db
+    .select({ id: usersTable.id })
+    .from(usersTable)
+    .where(eq(usersTable.email, email))
+    .limit(1);
+  const userId = existing?.id ?? `e2e_${email.replace(/[^a-z0-9]/g, "_")}`;
+  if (existing) {
+    await db
+      .update(usersTable)
+      .set({ status: "active", displayName })
+      .where(eq(usersTable.id, userId));
+  } else {
+    await db
+      .insert(usersTable)
+      .values({
+        id: userId,
+        email,
+        displayName,
+        status: "active",
+        statusChangedBy: "e2e-test-mode",
+      })
+      .onConflictDoNothing();
+  }
+  const adminEmail = AUTO_APPROVED_EMAILS.has(email);
+  const requestedRoles = (req.header("x-e2e-user-roles") ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  const rolesToAssign = adminEmail
+    ? Array.from(
+        new Set([...(AUTO_MULTI_ROLES[email] ?? ["pm_lead"]), ...requestedRoles]),
+      )
+    : requestedRoles;
+  for (const roleId of rolesToAssign) {
+    await db
+      .insert(userRolesTable)
+      .values({ userId, roleId })
+      .onConflictDoNothing();
+  }
+  return { userId, email };
+}
+
 export async function requireAuth(
   req: Request,
   res: Response,
   next: NextFunction,
 ): Promise<void> {
+  const testModeUser = await tryE2ETestModeAuth(req);
+  if (testModeUser) {
+    req.userId = testModeUser.userId;
+    req.userEmail = testModeUser.email;
+    void touchLastActivity(testModeUser.userId);
+    next();
+    return;
+  }
   const auth = getAuth(req);
   const sessionClaims = auth?.sessionClaims as
     | { userId?: string; email?: string }
