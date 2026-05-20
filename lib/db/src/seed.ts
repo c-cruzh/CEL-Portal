@@ -207,6 +207,15 @@ const ADMIN_ROLE_BOOTSTRAP: Array<{ email: string; roles: string[] }> = [
   { email: "ravila@cel.gob.sv", roles: ["direccion_member"] },
 ];
 
+// Hard allowlist of portal admins (mirrors ADMIN_EMAILS in the api-server
+// `requireAdmin` middleware). These two principals must never get stuck in
+// the `pending` approval queue — otherwise the only people who CAN approve
+// pending users get locked out themselves.
+const ADMIN_AUTO_APPROVE_EMAILS = new Set<string>([
+  "camila@c2labs.ai",
+  "kevin@c2labs.ai",
+]);
+
 async function bootstrapAdminRoles(): Promise<void> {
   for (const entry of ADMIN_ROLE_BOOTSTRAP) {
     const rows = await db.execute(
@@ -220,6 +229,16 @@ async function bootstrapAdminRoles(): Promise<void> {
         .values({ userId, roleId })
         .onConflictDoNothing();
     }
+  }
+
+  // Auto-approve the hard-coded portal admins so a freshly-seeded environment
+  // (or a re-seed after Clerk re-creates the user) never leaves Camila/Kevin
+  // sitting in `pending` with no one to approve them.
+  for (const email of ADMIN_AUTO_APPROVE_EMAILS) {
+    await db.execute(
+      sql`UPDATE users SET status = 'active'
+          WHERE lower(email) = ${email} AND status <> 'active'`,
+    );
   }
   void usersTable;
 }
