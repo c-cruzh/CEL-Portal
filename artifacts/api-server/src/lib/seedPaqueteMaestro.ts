@@ -1,11 +1,34 @@
 import fs from "node:fs/promises";
 import path from "node:path";
-import { and, eq } from "drizzle-orm";
+import { and, asc, eq, ne, notLike } from "drizzle-orm";
 import { db, documentFoldersTable, documentsTable, usersTable } from "@workspace/db";
 import { objectStorageClient } from "./objectStorage";
 import { logger } from "./logger";
 
-const SYSTEM_USER_ID = "system";
+// The Paquete Maestro documents need a real `uploaded_by` user so the FK is
+// satisfied. We pick a stable owner (Camila → project lead → any active real
+// user) instead of creating a synthetic "system" user.
+async function resolveOwnerUserId(): Promise<string | null> {
+  const [camila] = await db
+    .select({ id: usersTable.id })
+    .from(usersTable)
+    .where(eq(usersTable.email, "camila@c2labs.ai"))
+    .limit(1);
+  if (camila) return camila.id;
+  const [fallback] = await db
+    .select({ id: usersTable.id })
+    .from(usersTable)
+    .where(
+      and(
+        eq(usersTable.status, "active"),
+        ne(usersTable.id, "system"),
+        notLike(usersTable.id, "placeholder_%"),
+      ),
+    )
+    .orderBy(asc(usersTable.createdAt))
+    .limit(1);
+  return fallback?.id ?? null;
+}
 
 type FolderSeed = { key: string; label: string; sortOrder: number };
 type FileSeed = {
@@ -241,30 +264,6 @@ async function ensureFolders(): Promise<void> {
   }
 }
 
-async function ensureSystemUser(): Promise<boolean> {
-  const [u] = await db
-    .select({ id: usersTable.id })
-    .from(usersTable)
-    .where(eq(usersTable.id, SYSTEM_USER_ID))
-    .limit(1);
-  if (u) return true;
-  try {
-    await db
-      .insert(usersTable)
-      .values({
-        id: SYSTEM_USER_ID,
-        email: "system@portal.local",
-        displayName: "Sistema (Paquete Maestro)",
-        status: "active",
-      })
-      .onConflictDoNothing();
-    return true;
-  } catch (err) {
-    logger.warn({ err }, "[paqueteMaestro] could not ensure system user");
-    return false;
-  }
-}
-
 async function uploadFile(
   privateDir: string,
   objectKey: string,
@@ -298,10 +297,10 @@ export async function seedPaqueteMaestro(): Promise<void> {
   }
 
   await ensureFolders();
-  const hasSystemUser = await ensureSystemUser();
-  if (!hasSystemUser) {
+  const ownerUserId = await resolveOwnerUserId();
+  if (!ownerUserId) {
     logger.warn(
-      "[paqueteMaestro] system user unavailable, skipping document seeding.",
+      "[paqueteMaestro] no active owner user found, skipping document seeding.",
     );
     return;
   }
@@ -355,7 +354,7 @@ export async function seedPaqueteMaestro(): Promise<void> {
           objectKey,
           mimeType: f.mime,
           sizeBytes,
-          uploadedBy: SYSTEM_USER_ID,
+          uploadedBy: ownerUserId,
           isActive: true,
         });
       created += 1;

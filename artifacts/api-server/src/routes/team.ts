@@ -25,14 +25,12 @@ const router: IRouter = Router();
 // Basic phone validation: 6-30 chars, digits / spaces / + - ( ) only.
 const PHONE_REGEX = /^[\d+()\-\s]{6,30}$/;
 
-// The synthetic "system" user (seeded so the Paquete Maestro can sign
-// decisions/documents) must stay in the DB to satisfy FKs, but should never
-// appear in member-facing or admin-facing listings.
-const SYSTEM_USER_ID = "system";
-const SYSTEM_EMAIL_DOMAIN_SUFFIX = "%@portal.local";
+// Defensive filter: hide any legacy synthetic system rows (id="system" or
+// "*@portal.local" emails) that may linger in older DBs from member/admin
+// listings. The Paquete Maestro now uses a real owner.
 const visibleUserFilter = and(
-  ne(usersTable.id, SYSTEM_USER_ID),
-  notLike(usersTable.email, SYSTEM_EMAIL_DOMAIN_SUFFIX),
+  ne(usersTable.id, "system"),
+  notLike(usersTable.email, "%@portal.local"),
 );
 
 router.get(

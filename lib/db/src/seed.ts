@@ -612,18 +612,6 @@ async function main(): Promise<void> {
     .values({ id: 1, startDate: null })
     .onConflictDoNothing();
 
-  // Ensure a synthetic "system" user exists so system-uploaded rows (e.g. the
-  // Paquete Maestro seed in api-server) can satisfy the uploaded_by FK.
-  await db
-    .insert(usersTable)
-    .values({
-      id: "system",
-      email: "system@portal.local",
-      displayName: "Sistema (Paquete Maestro)",
-      status: "active",
-    })
-    .onConflictDoNothing();
-
   for (const col of KANBAN_COLUMNS) {
     await db
       .insert(kanbanColumnsTable)
