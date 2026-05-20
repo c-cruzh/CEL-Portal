@@ -1,0 +1,70 @@
+flowchart TB
+    subgraph EXT["Fuera del Silo / Insumos"]
+        MET["Fuentes meteorologicas y satelitales: ECMWF/ERA5, GPM/IMERG, CHIRPS, Sentinel-1"]
+        GEO["Fuentes geoespaciales: HydroATLAS/HydroSHEDS, DEM/MDE, suelos, OSM"]
+        CELDATA["Fuentes internas CEL: hidrologia, aforos, embalses, Excel/macros, BD (read-only o replica)"]
+        CONSULTORA["Consultora: acceso remoto autorizado"]
+        OPS["Usuarios CEL: operacion, hidrologia, SIG, gerencia"]
+    end
+    subgraph CEL["Perimetro CEL / Data Center"]
+        FW["Firewall / VPN / Bastion / Politicas TI: VLAN, ACL, egress allowlist, credenciales"]
+        SW["Dell PowerSwitch S5224F-ON: Top-of-Rack 25/100GbE"]
+        subgraph HW["Infraestructura fisica provista por CEL + Martinexsa/Dell"]
+            ML["Servidor ML/IA: Dell PowerEdge R770, Ubuntu Server 24.04 LTS + Docker, NVIDIA GPU efectiva (H100 NVL segun oferta; validar contra entrega), NVIDIA AI Enterprise"]
+            VIRT["Servidor de Virtualizacion: Dell PowerEdge R770, VMs/servicios institucionales, host final definido por CEL/TI"]
+            NAS["NAS/File Server: Dell PowerEdge R570, Windows Server 2025, SMB/NFS, RAID, datasets, artefactos, respaldos"]
+            WS["Estaciones de Gestion: Dell Pro Max + monitores, visualizacion/administracion"]
+        end
+        subgraph PILOTO["AI Silo funcional del piloto - scope tecnico de la Consultora"]
+            GIT["Git/repositorio: versionamiento de codigo, configs y documentacion"]
+            MAGE["Mage: orquestacion central, scheduling, DAGs, retries, logs, monitoreo operativo"]
+            ETL["Pipelines Python ETL/QA-QC: normalizacion, limpieza, features, geoprocesamiento"]
+            PG["PostgreSQL + PostGIS: historico, capas geoespaciales, subcuencas, mapas"]
+            MDB["MongoDB: datos operacionales, pronosticos recientes, estado del dashboard"]
+            MODEL["Modelo hidrologico IA: PyTorch/NeuralHydrology/LSTM, entrenamiento + inferencia"]
+            FLOOD["Modelo de inundacion: umbrales, escenarios, capas de anegacion"]
+            API["API/Backend del piloto: servicio de resultados y consultas"]
+            DASH["Dashboard web: React + Leaflet/Mapbox GL JS, mapas, hidrogramas, alertas"]
+            ALERTS["Alertas operativas: SMTP CEL + gateway SMS si CEL lo habilita"]
+        end
+        DEC["Gate de definicion CEL/TI: host final de Mage/BDs/API, IPs/DNS/VLANs, credenciales, storage mounts, politica de backup, politicas de seguridad y acceso"]
+    end
+    MET -->|descarga programada| FW
+    GEO -->|descarga/ingesta| FW
+    CELDATA -->|consulta read-only o replica| FW
+    CONSULTORA -->|VPN o bastion aprobado| FW
+    OPS -->|uso/validacion operacional| DASH
+    FW --> SW
+    SW <--> ML
+    SW <--> VIRT
+    SW <--> NAS
+    SW <--> WS
+    DEC -. habilita .-> MAGE
+    DEC -. define host final .-> PG
+    DEC -. define host final .-> MDB
+    DEC -. define host final .-> API
+    ML -. computo GPU .-> MODEL
+    ML -. runtime posible .-> MAGE
+    VIRT -. host posible .-> MAGE
+    VIRT -. host posible .-> API
+    NAS -. datasets/artefactos .-> ETL
+    NAS -. storage/respaldos .-> PG
+    NAS -. storage/respaldos .-> MDB
+    NAS -. checkpoints/modelos .-> MODEL
+    GIT --> MAGE
+    MAGE --> ETL
+    ETL --> PG
+    ETL --> MDB
+    PG --> MODEL
+    MDB --> MODEL
+    MODEL --> FLOOD
+    FLOOD --> PG
+    FLOOD --> MDB
+    PG --> API
+    MDB --> API
+    API --> DASH
+    API --> ALERTS
+    ALERTS --> OPS
+    NOTE["Nota de alcance: Mage sustituye Pentaho/Grafana para orquestacion y observabilidad operativa del piloto. Racking, red fisica, garantias, administracion continua, backups corporativos, hardening avanzado, SIEM, AD/LDAP, HA/DR y soporte de plataforma quedan en CEL/Martinexsa/Dell salvo adenda expresa."]
+    NOTE -.-> MAGE
+    NOTE -.-> DEC

@@ -1,0 +1,23 @@
+Asunto: Remisión de paquete final all-in-one de alineación técnica - AI Silo / Fase 0 | CEL-CFU 02/26
+
+Estimados Ing. José Mauricio, Lic. Lorena, Nelson y equipo CEL,
+
+Espero que se encuentren bien.
+
+Por este medio remito el paquete final all-in-one de alineación técnica y operativa correspondiente al AI Silo y la Fase 0 del proceso CEL-CFU 02/26. El paquete consolida la readecuación de la documentación técnica frente a la infraestructura física adquirida por CEL mediante la plataforma Martinexsa/Dell, manteniendo como fuente contractual el DSP firmado y sus entregables.
+
+El objetivo es dejar una base común, formal y ejecutable para iniciar y certificar la Fase 0 sin ambigüedad de alcance. En particular, los documentos separan: (i) el alcance funcional del piloto a cargo de la Consultora; (ii) la infraestructura, red, soporte, garantías, accesos, seguridad y administración continua a cargo de CEL/TI/proveedor; y (iii) la información mínima que debe confirmarse para ejecutar y cerrar el entorno operacional del piloto.
+
+El paquete incluye: carta formal, anexo técnico consolidado, BOM HW/SW actualizado, handoff técnico CEL/TI/Martinexsa, one-page brief, minuta formal de sesión, deck ejecutivo, correo de remisión, seis diagramas en PNG y los archivos Mermaid editables correspondientes.
+
+Solicito que podamos usar este material como base de la próxima sesión de alineación para cerrar, de forma concreta, los puntos habilitantes de Fase 0: inventario final, GPU efectiva, hosts de Mage/BD/API/dashboard, accesos VPN o bastion, IPs/VLANs/DNS, rutas NAS/SMB/NFS, política de backups, egress a fuentes externas, acceso read-only a fuentes internas, canales SMTP/SMS y responsables técnicos por dominio.
+
+La postura central del paquete es que la infraestructura adquirida por CEL constituye el entorno habilitante del piloto, pero no una ampliación tácita del alcance de la Consultora. La ejecución técnica plena de Fase 0 debe iniciar cuando el entorno esté instalado, accesible, documentado y verificable, o cuando CEL emita una aceptación formal sobre cualquier dependencia pendiente.
+
+Quedo atenta a sus comentarios y a la confirmación de la ruta de revisión formal.
+
+Atentamente,
+
+Camila Alejandra Cruz Hernández
+C² Labs
+camila@c2labs.ai

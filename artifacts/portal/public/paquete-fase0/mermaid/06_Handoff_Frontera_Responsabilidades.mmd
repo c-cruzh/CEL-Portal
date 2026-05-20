@@ -1,0 +1,27 @@
+flowchart LR
+    subgraph CEL_PROVIDER["CEL / TI / Martinexsa / Dell"]
+        H0["Handoff de infraestructura"]
+        H1["Equipos instalados y energizados"]
+        H2["Red / VLAN / Firewall / VPN"]
+        H3["OS base, drivers, GPU y storage"]
+        H4["Soporte, garantías y administración de plataforma"]
+    end
+
+    subgraph CONSULTORA["Consultora / C² Labs"]
+        C0["Consumo del entorno habilitado"]
+        C1["Mage + pipelines + repositorio"]
+        C2["PostgreSQL/PostGIS + MongoDB funcionales"]
+        C3["Modelo IA, dashboard, alertas y documentación"]
+        C4["Validación funcional y certificación Fase 0"]
+    end
+
+    H0 --> H1 --> H2 --> H3 --> C0
+    H4 -. responsabilidad institucional .-> H0
+    C0 --> C1 --> C2 --> C3 --> C4
+
+    GATE["Gate de inicio técnico de Fase 0:<br/>entorno instalado, accesible, documentado y verificable"]
+    H3 --> GATE --> C0
+
+    NOTE["Frontera de responsabilidad:<br/>la infraestructura adquirida por CEL habilita el piloto,<br/>pero no amplía tácitamente el alcance de la Consultora."]
+    NOTE -.-> H0
+    NOTE -.-> C0

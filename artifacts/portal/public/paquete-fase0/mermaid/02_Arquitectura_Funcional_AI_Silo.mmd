@@ -1,0 +1,10 @@
+flowchart TB
+    INPUTS["Insumos<br/>Meteorología + hidrología + geoespacial + Excel/macros CEL"] --> ACCESS
+    ACCESS["Acceso y seguridad<br/>read-only / réplicas / VPN / políticas CEL"] --> MAGE
+    MAGE["Mage<br/>orquestación central: DAGs, logs, retries, scheduling"] --> ETL
+    ETL["Python ETL + QA/QC<br/>normalización, features, geoprocesamiento"] --> STORES
+    STORES["PostgreSQL/PostGIS + MongoDB<br/>histórico/geoespacial + operativo/latest state"] --> MODEL
+    MODEL["Modelo IA hidrológico<br/>PyTorch / NeuralHydrology / LSTM"] --> FLOOD
+    FLOOD["Modelo de inundación<br/>umbrales, escenarios, capas"] --> DELIVERY
+    DELIVERY["API + Dashboard + Alertas<br/>React/Leaflet-Mapbox + SMTP/SMS si habilitado"] --> USERS
+    USERS["Usuarios CEL<br/>operadores, hidrología, SIG, dirección"] -. feedback operativo .-> MODEL

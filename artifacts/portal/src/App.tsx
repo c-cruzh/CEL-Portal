@@ -19,6 +19,7 @@ import Configuracion from "@/pages/portal/configuracion";
 import Kanban from "@/pages/portal/kanban";
 import Documentos from "@/pages/portal/documentos";
 import Decisiones from "@/pages/portal/decisiones";
+import PaqueteFase0 from "@/pages/portal/paquete-fase0";
 import NotFound from "@/pages/not-found";
 
 const queryClient = new QueryClient();
@@ -432,6 +433,7 @@ function PortalRoutes() {
         <Route path="/portal/kanban" component={Kanban} />
         <Route path="/portal/documentos" component={Documentos} />
         <Route path="/portal/decisiones" component={Decisiones} />
+        <Route path="/portal/paquete-fase0" component={PaqueteFase0} />
         <Route path="/portal/configuracion" component={Configuracion} />
         <Route component={NotFound} />
       </Switch>

@@ -39,6 +39,7 @@ export default function PortalLayout({ children }: { children: ReactNode }) {
               <NavItem href="/portal/calendario" label="Calendario" />
               <NavItem href="/portal/decisiones" label="Decisiones" badgeCount={overdueCount} />
               <NavItem href="/portal/documentos" label="Documentos" />
+              <NavItem href="/portal/paquete-fase0" label="Paquete Fase 0" />
               {isPM && <NavItem href="/portal/configuracion" label="Configuración" />}
             </nav>
           </div>

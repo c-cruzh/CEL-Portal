@@ -1,0 +1,16 @@
+flowchart LR
+    EXT["Fuentes externas<br/>ECMWF / Copernicus / NASA / CHIRPS"] --> FW
+    REM["Acceso remoto autorizado<br/>Consultora / soporte<br/>VPN o bastion CEL"] --> FW
+    LAN["Usuarios CEL<br/>Operación / Hidrología / SIG / Dirección"] --> FW
+    FW["Perímetro de seguridad CEL<br/>Firewall / VPN / Bastion / ACL / DNS"] --> SW
+    SW["Dell PowerSwitch S5224F-ON<br/>Top-of-Rack 25/100GbE"] --> AI
+    SW --> VIRT
+    SW --> NAS
+    SW --> WS
+    SUP["Dell / NVIDIA / TechCircle<br/>soporte, garantía, telemetría"] -.-> FW
+    AI["Dell PowerEdge R770 - ML/IA<br/>GPU NVIDIA efectiva<br/>Ubuntu + Docker<br/>runtime IA"] --> LAND
+    VIRT["Dell PowerEdge R770 - Virtualización<br/>VMs / servicios institucionales<br/>host final a confirmar por CEL/TI"] --> LAND
+    NAS["Dell PowerEdge R570 - NAS/File Server<br/>Windows Server 2025<br/>SMB/NFS / datasets / artefactos"] --> LAND
+    WS["Estaciones Dell Pro Max<br/>gestión / visualización"]
+    LAND["Landing Zone del piloto<br/>Mage + BDs + API + dashboard<br/>ubicación final a confirmar formalmente por CEL/TI"]
+    NOTE["Frontera de alcance:<br/>CEL/proveedor = infraestructura, red, soporte, administración.<br/>Consultora = stack funcional, validación y piloto."] -.-> LAND
