@@ -501,6 +501,114 @@ function NeedsReviewBadge({ note }: { note?: string } = {}) {
   );
 }
 
+function InfraStackDiagram() {
+  const layers = [
+    {
+      id: "F3",
+      anchor: "infra-f3",
+      label: "F3 · Servicio",
+      sub: "API + dashboard al usuario CEL",
+      icon: Activity,
+    },
+    {
+      id: "F2",
+      anchor: "infra-f2",
+      label: "F2 · Modelado",
+      sub: "Pronósticos hidrológicos con IA",
+      icon: BrainCircuit,
+    },
+    {
+      id: "F1",
+      anchor: "infra-f1",
+      label: "F1 · Datos",
+      sub: "Ingesta, limpieza y almacenamiento",
+      icon: Database,
+    },
+    {
+      id: "fisica",
+      anchor: "infra-fisica",
+      label: "Infra física / cómputo",
+      sub: "Silo on-premise: servidores, GPU y red",
+      icon: HardDrive,
+    },
+  ];
+  return (
+    <figure
+      className="flex gap-3 sm:gap-4 m-0"
+      aria-labelledby="infra-stack-caption"
+    >
+      <figcaption id="infra-stack-caption" className="sr-only">
+        Diagrama de capas de la infraestructura del piloto: usuario CEL en la cima, luego F3
+        servicio, F2 modelado, F1 datos, y la infraestructura física on-premise como base. Cada
+        capa es un enlace a su subsección.
+      </figcaption>
+      <div
+        aria-hidden="true"
+        className="flex flex-col items-center pt-1 pb-1 shrink-0"
+      >
+        <div className="text-[10px] font-semibold uppercase tracking-wider text-primary text-center leading-tight">
+          Usuario
+          <br />
+          CEL
+        </div>
+        <div className="my-1 flex flex-col items-center">
+          <Users className="h-3.5 w-3.5 text-primary" />
+        </div>
+        <div className="relative w-0 flex-1 border-l-2 border-dashed border-primary/40 min-h-[80px]">
+          <span className="absolute -left-2 -top-1 block h-0 w-0 border-x-[6px] border-x-transparent border-b-[7px] border-b-primary/60" />
+        </div>
+        <div className="mt-1 text-[9px] font-medium uppercase tracking-wider text-muted-foreground writing-mode-vertical hidden sm:block [writing-mode:vertical-rl] rotate-180">
+          flujo de datos
+        </div>
+        <div className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground text-center leading-tight">
+          On-
+          <br />
+          premise
+        </div>
+      </div>
+
+      <ol className="flex-1 space-y-1.5 list-none">
+        {layers.map((l, i) => {
+          const Icon = l.icon;
+          const isBase = l.id === "fisica";
+          return (
+            <li key={l.id}>
+              <a
+                href={`#${l.anchor}`}
+                aria-label={`Ir a ${l.label}: ${l.sub}`}
+                className={[
+                  "group flex items-center gap-3 rounded-md border px-3 py-2.5 sm:py-3",
+                  "bg-background/70 border-primary/25 hover:bg-primary/10 hover:border-primary/50",
+                  "motion-safe:transition-all motion-safe:duration-200 motion-safe:hover:-translate-y-0.5",
+                  "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50",
+                  isBase ? "border-primary/40 bg-primary/[0.06]" : "",
+                ].join(" ")}
+                style={{
+                  marginLeft: `${i * 6}px`,
+                  marginRight: `${(layers.length - 1 - i) * 6}px`,
+                }}
+              >
+                <div className="h-8 w-8 rounded-md bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                  <Icon className="h-4 w-4" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-semibold text-foreground leading-tight">
+                    {l.label}
+                  </div>
+                  <div className="text-[11px] text-muted-foreground leading-snug mt-0.5">
+                    {l.sub}
+                  </div>
+                </div>
+                <ChevronRight className="h-4 w-4 text-primary/60 shrink-0 motion-safe:transition-transform group-hover:translate-x-0.5" />
+              </a>
+            </li>
+          );
+        })}
+      </ol>
+    </figure>
+  );
+}
+
 function InfraestructuraChapter() {
   return (
     <>
@@ -518,26 +626,7 @@ function InfraestructuraChapter() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-              {[
-                { id: "fisica", label: "Infra física / cómputo" },
-                { id: "F1", label: "F1 · Datos" },
-                { id: "F2", label: "F2 · Modelado" },
-                { id: "F3", label: "F3 · Servicio" },
-              ].map((s) => {
-                const Icon = INFRA_SUB_LABELS[s.id].icon;
-                return (
-                  <a
-                    key={s.id}
-                    href={`#infra-${s.id === "fisica" ? "fisica" : s.id.toLowerCase()}`}
-                    className="flex items-center gap-2 rounded-md border border-primary/20 bg-background/60 px-3 py-2 text-xs font-medium text-foreground hover:bg-primary/5 transition-colors"
-                  >
-                    <Icon className="h-3.5 w-3.5 text-primary shrink-0" />
-                    <span className="leading-snug">{s.label}</span>
-                  </a>
-                );
-              })}
-            </div>
+            <InfraStackDiagram />
           </CardContent>
         </Card>
       </section>
