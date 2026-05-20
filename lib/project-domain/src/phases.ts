@@ -70,7 +70,7 @@ export const PHASES: PhaseDefinition[] = [
     durationWeeks: 9,
     startWeek: 10,
     colorVar: "var(--chart-3)",
-    ownersRoles: ["pm_lead", "hydrology_lead_cel"],
+    ownersRoles: ["ml_engineer", "hydrology_lead_cel"],
     objective:
       "Producir un modelo de pronóstico de caudales con desempeño aceptable y validado por hidrología.",
     narrative:
@@ -96,7 +96,7 @@ export const PHASES: PhaseDefinition[] = [
     durationWeeks: 5,
     startWeek: 19,
     colorVar: "var(--chart-4)",
-    ownersRoles: ["pm_lead", "infra_devops", "data_engineer"],
+    ownersRoles: ["fullstack_dev", "infra_devops", "data_engineer"],
     objective:
       "Llevar el modelo al ambiente piloto con datos en tiempo real y un portal operativo funcional.",
     narrative:
@@ -121,7 +121,7 @@ export const PHASES: PhaseDefinition[] = [
     durationWeeks: 5,
     startWeek: 24,
     colorVar: "var(--chart-5)",
-    ownersRoles: ["pm_lead", "hydrology_lead_cel"],
+    ownersRoles: ["pm_lead", "qa_validation", "docs_training"],
     objective:
       "Validar el piloto en operación supervisada y dejar todo listo para una decisión de escalamiento.",
     narrative:

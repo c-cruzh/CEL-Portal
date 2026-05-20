@@ -34,6 +34,82 @@ import { PHASE_INVOLVEMENT } from "@/lib/phaseInvolvement";
 const WEEK_COL_WIDTH = 28;
 const LABEL_WIDTH = 320;
 
+type MarkerKind =
+  | "phase_milestone"
+  | "presentation"
+  | "deliverable"
+  | "workshop"
+  | "weekly_session";
+
+const PRIMARY_KINDS: MarkerKind[] = ["phase_milestone", "presentation"];
+const SECONDARY_KINDS: MarkerKind[] = ["deliverable", "workshop", "weekly_session"];
+
+const KIND_META: Record<
+  MarkerKind,
+  { label: string; shape: "diamond" | "square" | "circle" | "dot"; className: string }
+> = {
+  phase_milestone: {
+    label: "Hito de fase",
+    shape: "diamond",
+    className: "bg-card border-foreground/60",
+  },
+  presentation: {
+    label: "Presentación",
+    shape: "diamond",
+    className: "bg-purple-500 border-purple-700",
+  },
+  deliverable: {
+    label: "Entregable",
+    shape: "square",
+    className: "bg-emerald-500 border-emerald-700",
+  },
+  workshop: {
+    label: "Taller",
+    shape: "circle",
+    className: "bg-amber-500 border-amber-700",
+  },
+  weekly_session: {
+    label: "Sesión semanal",
+    shape: "dot",
+    className: "bg-slate-400 border-slate-600",
+  },
+};
+
+function MarkerShape({
+  kind,
+  size = 9,
+}: {
+  kind: MarkerKind;
+  size?: number;
+}) {
+  const meta = KIND_META[kind];
+  const base = `${meta.className} border shadow-sm`;
+  if (meta.shape === "diamond") {
+    return (
+      <div
+        className={`${base} border-2 rotate-45`}
+        style={{ width: size + 1, height: size + 1 }}
+      />
+    );
+  }
+  if (meta.shape === "square") {
+    return (
+      <div className={`${base} rounded-[1px]`} style={{ width: size, height: size }} />
+    );
+  }
+  if (meta.shape === "circle") {
+    return (
+      <div className={`${base} rounded-full`} style={{ width: size, height: size }} />
+    );
+  }
+  return (
+    <div
+      className={`${base} rounded-full`}
+      style={{ width: size - 3, height: size - 3 }}
+    />
+  );
+}
+
 export default function Cronograma() {
   const { data: config, isLoading } = useGetProjectConfig();
   const { data: teamSummary } = useGetTeamSummary();
@@ -114,17 +190,39 @@ export default function Cronograma() {
         decisions={decisions ?? []}
       />
 
-      <div className="flex flex-wrap gap-3">
-        {GANTT_PHASES.map((p) => (
-          <div key={p.id} className="flex items-center gap-2 text-xs text-muted-foreground">
-            <span
-              className="inline-block h-3 w-3 rounded-sm"
-              style={{ backgroundColor: p.color }}
-              aria-hidden="true"
-            />
-            <span>{p.label}</span>
-          </div>
-        ))}
+      <div className="space-y-2">
+        <div className="flex flex-wrap gap-3">
+          {GANTT_PHASES.map((p) => (
+            <div key={p.id} className="flex items-center gap-2 text-xs text-muted-foreground">
+              <span
+                className="inline-block h-3 w-3 rounded-sm"
+                style={{ backgroundColor: p.color }}
+                aria-hidden="true"
+              />
+              <span>{p.label}</span>
+            </div>
+          ))}
+        </div>
+        <div
+          className="flex flex-wrap gap-x-4 gap-y-2 pt-2 border-t border-border/40"
+          data-testid="gantt-marker-legend"
+        >
+          <span className="text-[11px] uppercase tracking-wider text-muted-foreground/80 font-medium">
+            Marcadores:
+          </span>
+          {([...PRIMARY_KINDS, ...SECONDARY_KINDS] as MarkerKind[]).map((kind) => (
+            <div
+              key={kind}
+              className="flex items-center gap-2 text-xs text-muted-foreground"
+              data-testid={`gantt-legend-${kind}`}
+            >
+              <span className="inline-flex items-center justify-center w-3 h-3">
+                <MarkerShape kind={kind} size={9} />
+              </span>
+              <span>{KIND_META[kind].label}</span>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Iterates ALL PHASES, including CONT (contingencia), so the buffer block
@@ -274,17 +372,57 @@ function WeeklyGantt({
   }, [decisions]);
 
   const milestonesByPhase = useMemo(() => {
-    const map = new Map<string, Milestone[]>();
+    const map = new Map<string, { primary: Milestone[]; secondary: Milestone[] }>();
+    const allKinds = new Set<string>([...PRIMARY_KINDS, ...SECONDARY_KINDS]);
     for (const m of milestones) {
-      if (m.kind !== "phase_milestone" && m.kind !== "presentation") continue;
+      if (!allKinds.has(m.kind)) continue;
       if (!m.phaseId) continue;
       if (m.weekOffset < 1 || m.weekOffset > GANTT_TOTAL_WEEKS) continue;
-      const list = map.get(m.phaseId) ?? [];
-      list.push(m);
-      map.set(m.phaseId, list);
+      const entry = map.get(m.phaseId) ?? { primary: [], secondary: [] };
+      if ((PRIMARY_KINDS as string[]).includes(m.kind)) {
+        entry.primary.push(m);
+      } else {
+        entry.secondary.push(m);
+      }
+      map.set(m.phaseId, entry);
     }
     return map;
   }, [milestones]);
+
+  const secondaryGroupsByPhase = useMemo(() => {
+    const out = new Map<
+      string,
+      Map<number, { items: Milestone[]; collidesWithPrimary: boolean }>
+    >();
+    for (const [phaseId, entry] of milestonesByPhase.entries()) {
+      const primaryWeeks = new Set<number>(
+        entry.primary.map((m) => m.weekOffset),
+      );
+      const byWeek = new Map<
+        number,
+        { items: Milestone[]; collidesWithPrimary: boolean }
+      >();
+      for (const m of entry.secondary) {
+        const slot = byWeek.get(m.weekOffset) ?? {
+          items: [],
+          collidesWithPrimary: primaryWeeks.has(m.weekOffset),
+        };
+        slot.items.push(m);
+        byWeek.set(m.weekOffset, slot);
+      }
+      // Stable kind ordering inside the same week so colors don't jump around.
+      const order: Record<string, number> = {
+        deliverable: 0,
+        workshop: 1,
+        weekly_session: 2,
+      };
+      for (const slot of byWeek.values()) {
+        slot.items.sort((a, b) => (order[a.kind] ?? 9) - (order[b.kind] ?? 9));
+      }
+      out.set(phaseId, byWeek);
+    }
+    return out;
+  }, [milestonesByPhase]);
 
   // Compute current week index (1-based) when a real T0 is set, so the
   // "Hoy" marker only appears in calendar mode and within range.
@@ -412,11 +550,12 @@ function WeeklyGantt({
                     }}
                     aria-hidden="true"
                   />
-                  {(milestonesByPhase.get(phase.id) ?? []).map((m) => {
+                  {(milestonesByPhase.get(phase.id)?.primary ?? []).map((m) => {
                     const blockers = blockersByMilestone.get(m.id) ?? [];
                     const hasBlockers = blockers.length > 0;
                     const left =
                       (m.weekOffset - 1) * WEEK_COL_WIDTH + WEEK_COL_WIDTH / 2;
+                    const meta = KIND_META[m.kind as MarkerKind];
                     return (
                       <Tooltip key={m.id}>
                         <TooltipTrigger asChild>
@@ -429,7 +568,7 @@ function WeeklyGantt({
                             className="absolute top-0 bottom-0 z-20 flex flex-col items-center -translate-x-1/2 group cursor-pointer"
                             style={{ left: `${left}px` }}
                             data-testid={`gantt-milestone-marker-${m.id}`}
-                            aria-label={`Hito: ${m.title}${
+                            aria-label={`${meta?.label ?? "Hito"}: ${m.title}${
                               hasBlockers
                                 ? ` (${blockers.length} decisión${blockers.length === 1 ? "" : "es"} bloqueante${blockers.length === 1 ? "" : "s"})`
                                 : ""
@@ -442,7 +581,7 @@ function WeeklyGantt({
                               className={`absolute top-1/2 -translate-y-1/2 rotate-45 ${
                                 hasBlockers
                                   ? "bg-destructive border-destructive"
-                                  : "bg-card border-foreground/60"
+                                  : meta?.className ?? "bg-card border-foreground/60"
                               } border-2 shadow-sm`}
                               style={{ width: 10, height: 10 }}
                             />
@@ -466,9 +605,8 @@ function WeeklyGantt({
                             </div>
                             <div className="text-[10px] opacity-80">
                               Semana {m.weekOffset}
-                              {m.kind === "presentation"
-                                ? " · Presentación"
-                                : " · Hito de fase"}
+                              {" · "}
+                              {meta?.label ?? "Hito"}
                             </div>
                             {hasBlockers ? (
                               <div className="pt-1 border-t border-border/60">
@@ -499,6 +637,109 @@ function WeeklyGantt({
                           </div>
                         </TooltipContent>
                       </Tooltip>
+                    );
+                  })}
+                  {Array.from(
+                    secondaryGroupsByPhase.get(phase.id)?.entries() ?? [],
+                  ).map(([week, slot]) => {
+                    const { items, collidesWithPrimary } = slot;
+                    // When a primary marker (phase_milestone / presentation)
+                    // sits in the same (phase, week), it draws a full-height
+                    // vertical line + centered diamond. Anchor the secondary
+                    // stack off-center to the right of the column so it never
+                    // overlaps that vertical line or the diamond.
+                    const center =
+                      (week - 1) * WEEK_COL_WIDTH + WEEK_COL_WIDTH / 2;
+                    const left = collidesWithPrimary
+                      ? center + 7
+                      : center;
+                    // Stack vertically inside the phase strip (top half), so a
+                    // dense week (e.g. weekly_session + workshop) does not
+                    // overlap. Each row is 10px tall; cap at 3 visible and roll
+                    // up the rest into a "+N" pill.
+                    const VISIBLE = 3;
+                    const visible = items.slice(0, VISIBLE);
+                    const overflow = items.length - visible.length;
+                    return (
+                      <div
+                        key={`sec-${phase.id}-${week}`}
+                        className={`absolute z-20 flex flex-col gap-[2px] ${
+                          collidesWithPrimary
+                            ? "items-start"
+                            : "items-center -translate-x-1/2"
+                        }`}
+                        style={{ left: `${left}px`, top: 1 }}
+                        data-testid={`gantt-secondary-group-${phase.id}-${week}`}
+                      >
+                        {visible.map((m) => {
+                          const meta = KIND_META[m.kind as MarkerKind];
+                          return (
+                            <Tooltip key={m.id}>
+                              <TooltipTrigger asChild>
+                                <Link
+                                  href="/portal/calendario"
+                                  className="flex items-center justify-center hover:scale-110 transition-transform cursor-pointer"
+                                  data-testid={`gantt-milestone-marker-${m.id}`}
+                                  aria-label={`${meta?.label ?? "Hito"}: ${m.title} (semana ${m.weekOffset})`}
+                                >
+                                  <MarkerShape kind={m.kind as MarkerKind} size={8} />
+                                </Link>
+                              </TooltipTrigger>
+                              <TooltipContent
+                                side="top"
+                                className="max-w-xs bg-popover text-popover-foreground border border-border"
+                              >
+                                <div className="space-y-1">
+                                  <div className="font-semibold text-xs">
+                                    {m.title}
+                                  </div>
+                                  <div className="text-[10px] opacity-80">
+                                    Semana {m.weekOffset} · {meta?.label ?? m.kind}
+                                  </div>
+                                </div>
+                              </TooltipContent>
+                            </Tooltip>
+                          );
+                        })}
+                        {overflow > 0 && (
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Link
+                                href="/portal/calendario"
+                                className="text-[8px] leading-none font-semibold text-muted-foreground bg-card border border-border rounded-full px-1 py-[1px] hover:bg-muted"
+                                data-testid={`gantt-secondary-overflow-${phase.id}-${week}`}
+                                aria-label={`${overflow} hitos adicionales en la semana ${week}`}
+                              >
+                                +{overflow}
+                              </Link>
+                            </TooltipTrigger>
+                            <TooltipContent
+                              side="top"
+                              className="max-w-xs bg-popover text-popover-foreground border border-border"
+                            >
+                              <div className="space-y-1">
+                                <div className="text-[10px] font-medium">
+                                  {overflow} hito{overflow === 1 ? "" : "s"} adicional
+                                  {overflow === 1 ? "" : "es"} en S{week}
+                                </div>
+                                <ul className="space-y-0.5">
+                                  {items.slice(VISIBLE).map((m) => (
+                                    <li
+                                      key={m.id}
+                                      className="text-[11px] leading-snug"
+                                    >
+                                      · {m.title}
+                                    </li>
+                                  ))}
+                                </ul>
+                                <div className="text-[10px] opacity-70 mt-1">
+                                  Click para abrir Calendario
+                                </div>
+                              </div>
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
+                      </div>
                     );
                   })}
                 </div>
