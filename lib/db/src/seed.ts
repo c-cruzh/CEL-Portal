@@ -47,8 +47,10 @@ const ROLES: Array<{
   { id: "qa_validation", label: "QA / Validación", description: "Pruebas fuera de muestra y validación del piloto.", sortOrder: 10 },
   { id: "docs_training", label: "Documentación / Capacitación", description: "POE, informes y talleres de transferencia.", sortOrder: 11 },
   { id: "stakeholder_cel", label: "Stakeholder CEL", description: "Revisión, retroalimentación y sesiones de avance.", sortOrder: 12 },
-  { id: "pm_director_cel", label: "Gerente de Proyecto (CEL)", description: "Gerente de Proyecto por parte de CEL. Por determinar por el Comité de Dirección de CEL.", sortOrder: 13 },
-  { id: "hydrology_ops_cel", label: "Hidrólogos Operativos (CEL)", description: "Hidrólogos operativos asignados por CEL al piloto. Por determinar por el Comité de Dirección de CEL.", sortOrder: 14 },
+  { id: "it_committee_lead", label: "Jefe de Unidad de Informática (CEL)", description: "Lidera el Comité de Informática de CEL. Aprueba, autoriza y permanece informada del piloto.", sortOrder: 13 },
+  { id: "it_committee", label: "Comité de Informática (CEL)", description: "Integrantes del Comité de Informática de CEL: redes, sistemas, bases de datos y ciberseguridad. Aprueban, delegan y entregan recursos al enlace DevOps.", sortOrder: 14 },
+  { id: "pm_director_cel", label: "Gerente de Proyecto (CEL)", description: "Gerente de Proyecto por parte de CEL. Por determinar por el Comité de Dirección de CEL.", sortOrder: 15 },
+  { id: "hydrology_ops_cel", label: "Hidrólogos Operativos (CEL)", description: "Hidrólogos operativos asignados por CEL al piloto. Por determinar por el Comité de Dirección de CEL.", sortOrder: 16 },
 ];
 
 type SeedMilestone = {
@@ -189,6 +191,13 @@ const ADMIN_ROLE_BOOTSTRAP: Array<{ email: string; roles: string[] }> = [
     roles: ["pm_lead", "ml_engineer", "data_engineer"],
   },
   { email: "kevin@c2labs.ai", roles: ["pm_lead"] },
+  { email: "jmherreram@cel.gob.sv", roles: ["pm_cel"] },
+  { email: "vialabi@cel.gob.sv", roles: ["hydrology_lead_cel"] },
+  { email: "fgaray@cel.gob.sv", roles: ["geospatial_expert_cel"] },
+  { email: "wjuarez@cel.gob.sv", roles: ["data_engineer"] },
+  { email: "jmguardado@cel.gob.sv", roles: ["infra_devops"] },
+  { email: "alpineda@cel.gob.sv", roles: ["it_committee_lead"] },
+  { email: "nfloresc@cel.gob.sv", roles: ["it_committee"] },
 ];
 
 async function bootstrapAdminRoles(): Promise<void> {

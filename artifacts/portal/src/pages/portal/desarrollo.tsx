@@ -52,6 +52,7 @@ import {
   TEAM_PROFILES,
   COMMITTEE_INTRO,
   COMMITTEE_MEMBERS,
+  GOVERNANCE_DIAGRAM,
   PHASE_TASKS,
   VISUALIZACION,
   RACI_ROLES,
@@ -102,7 +103,7 @@ const CHAPTERS: ChapterDef[] = [
   { id: "visualizacion", num: "8", shortLabel: "Visualización y alertas", title: "Visualización y alertas", Icon: Activity, Component: VisualizacionSection, toc: [{ id: "visualizacion-features", label: "Funcionalidades" }, { id: "visualizacion-alertas", label: "Sistema de alertas" }, { id: "visualizacion-integracion", label: "Integración con el portal" }, { id: "visualizacion-capacitacion", label: "Capacitación y ejercicios" }] },
   { id: "infraestructura", num: "9", shortLabel: "BOM final aprobado por CEL", title: "BOM final aprobado por CEL — Silo de IA", Icon: Server, Component: InfraSection, toc: [{ id: "infra-disclaimer", label: "Estado del BOM" }, { id: "infra-arquitectura", label: "Arquitectura" }, { id: "infra-hardware", label: "Hardware" }, { id: "infra-software", label: "Software" }, { id: "infra-comisionamiento", label: "Comisionamiento" }, { id: "infra-respaldo", label: "Respaldo y seguridad" }] },
   { id: "anexo-lempa", num: "10", shortLabel: "Anexo Lempa", title: "Anexo — Dinámicas hidrológicas y gobernanza trinacional del Lempa", Icon: MapIcon, Component: LempaSection, toc: [{ id: "lempa-geo", label: "Características geográficas" }, { id: "lempa-climate", label: "Cambio climático" }, { id: "lempa-governance", label: "Gobernanza trinacional" }, { id: "lempa-implications", label: "Implicaciones para la IA" }] },
-  { id: "raci", num: "11", shortLabel: "Equipo y RACI", title: "Equipo, FTE y matriz RACI", Icon: AlignLeft, Component: RaciSection, toc: [{ id: "raci-estructura", label: "Cómo está organizado el capítulo" }, { id: "raci-fte", label: "A.1 Estructura operativa y FTE" }, { id: "raci-comite", label: "A.2 Comité de Informática (CEL)" }, { id: "raci-perfiles", label: "A.3 Perfiles del equipo" }, { id: "raci-matriz", label: "B.1 Matriz RACI consolidada" }, { id: "raci-tareas", label: "B.2 Detalle de tareas por fase" }] },
+  { id: "raci", num: "11", shortLabel: "Equipo y RACI", title: "Equipo, FTE y matriz RACI", Icon: AlignLeft, Component: RaciSection, toc: [{ id: "raci-estructura", label: "Cómo está organizado el capítulo" }, { id: "raci-gobernanza", label: "Estructura de gobernanza del piloto" }, { id: "raci-fte", label: "A.1 Estructura operativa y FTE" }, { id: "raci-comite", label: "A.2 Comité de Informática (CEL)" }, { id: "raci-perfiles", label: "A.3 Perfiles del equipo" }, { id: "raci-matriz", label: "B.1 Matriz RACI consolidada" }, { id: "raci-tareas", label: "B.2 Detalle de tareas por fase" }] },
 ];
 
 const ANEXO_GROUPS: { id: string; title: string; chapters: ChapterId[] }[] = [
@@ -1162,6 +1163,17 @@ function RaciSection() {
         </Card>
       </div>
 
+      {/* Diagrama de gobernanza */}
+      <div id="raci-gobernanza" className="scroll-mt-24 space-y-2">
+        <h3 className="text-lg font-semibold text-foreground">Estructura de gobernanza del piloto</h3>
+        <p className="text-sm text-muted-foreground leading-relaxed">
+          Mapa visual de las personas y áreas que conforman el piloto: liderazgo C² Labs, Core
+          Pilot Team de CEL, validación operativa con las cinco centrales y Comité de Informática.
+          Cada caja muestra rol, persona, área y correo institucional.
+        </p>
+        <Mermaid chart={GOVERNANCE_DIAGRAM} caption="Estructura de gobernanza del piloto" />
+      </div>
+
       <div className="space-y-8">
         <h3 className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary border-b border-primary/20 pb-2">
           Bloque A — Quién lleva el piloto
@@ -1191,8 +1203,13 @@ function RaciSection() {
           <Card className="border-border">
             <CardContent className="p-0 divide-y divide-border">
               {COMMITTEE_MEMBERS.map((m) => (
-                <div key={m.name} className="p-4 grid grid-cols-1 md:grid-cols-[180px_220px_1fr] gap-3 items-baseline">
-                  <div className="font-semibold text-foreground">{m.name}</div>
+                <div key={m.name} className="p-4 grid grid-cols-1 md:grid-cols-[200px_220px_1fr] gap-3 items-baseline">
+                  <div>
+                    <div className="font-semibold text-foreground">{m.name}</div>
+                    {m.email && (
+                      <div className="text-xs text-muted-foreground mt-0.5 break-all">{m.email}</div>
+                    )}
+                  </div>
                   <div className="text-sm text-primary">{m.area}</div>
                   <div className="text-sm text-muted-foreground leading-relaxed">{m.responsibility}</div>
                 </div>

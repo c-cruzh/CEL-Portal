@@ -1118,6 +1118,7 @@ export const TEAM_PROFILES: TeamProfile[] = [
 
 export interface CommitteeMember {
   name: string;
+  email?: string;
   area: string;
   responsibility: string;
 }
@@ -1127,42 +1128,348 @@ export const COMMITTEE_INTRO =
 
 export const COMMITTEE_MEMBERS: CommitteeMember[] = [
   {
-    name: "Lorena",
-    area: "Gobernanza y Autorizaciones",
+    name: "Lic. Lorena Pineda",
+    email: "alpineda@cel.gob.sv",
+    area: "Jefa de Unidad de Informática — Gobernanza y Autorizaciones",
     responsibility:
-      "Toma de decisiones de alto nivel, asignación de personal y enlace entre dependencias de CEL. Principal stakeholder no operativo.",
+      "Lidera el Comité de Informática. Autoridad final: aprueba o no aprueba, autoriza o no autoriza y permanece informada. Owner de infraestructura y continuidad del piloto como producto interno de CEL.",
   },
   {
-    name: "Nelson",
-    area: "Jefatura de DB y Redes",
+    name: "Nelson Flores",
+    email: "nfloresc@cel.gob.sv",
+    area: "Jefe de Área de Administración de Redes e Informática",
     responsibility:
-      "Aprueba accesos y sistemas; dicta lineamientos sobre cómo alojar la solución a nivel de servidores y redes internas.",
+      "Reporta a Lorena Pineda. Puede aprobar, autorizar, delegar y manejar recursos. Facilitador core del enlace DevOps y mecanismo operativo de escalamiento dentro del Comité.",
   },
   {
-    name: "José Manuel",
-    area: "Administración de OS y Aplicaciones",
+    name: "Ing. José Manuel Guardado",
+    email: "jmguardado@cel.gob.sv",
+    area: "Administrador de Sistemas / Ingeniero DevOps (enlace operativo)",
     responsibility:
-      "Lineamientos sobre sistemas operativos y aplicaciones que correrán en el AI Silo; aprobación de stacks de software.",
+      "Embebido operativamente en el Core Pilot Team. Enlace directo entre el piloto y el Comité de Informática: ejecuta la implementación técnica siguiendo los lineamientos del Comité.",
   },
   {
     name: "Carlos Sánchez",
-    area: "DBA — Bases de datos",
+    area: "Administrador de Base de Datos (DBA)",
     responsibility:
-      "Define la gobernanza de las bases de datos del piloto (topografía, DEMs, GIS). Interdependencia crítica con los Ingenieros de Datos para replicación y accesos al ground truth.",
+      "Rol delegado / consultado por Nelson. Define la gobernanza de las bases de datos del piloto (topografía, DEMs, GIS) y entrega recursos al enlace DevOps. Interdependencia crítica con los Ingenieros de Datos para replicación y accesos al ground truth.",
   },
   {
-    name: "Adrián",
-    area: "Redes e Infraestructura",
+    name: "Adrián Miranda",
+    area: "Administrador de Sistemas y Redes",
     responsibility:
-      "Configuración de entornos: VLANs, túneles VPN, listas blancas de IPs. Pre-auditorías de red antes del pase a producción.",
+      "Rol delegado / consultado por Nelson. Configura entornos (VLANs, túneles VPN, listas blancas de IPs) y entrega recursos al enlace DevOps. Realiza pre-auditorías de red antes del pase a producción.",
   },
   {
     name: "Miladis",
-    area: "Ciberseguridad",
+    area: "Especialista de Ciberseguridad",
     responsibility:
-      "Lineamientos de seguridad y pre-auditorías de ciberseguridad de la solución antes del pase a producción.",
+      "Rol delegado / consultado por Nelson. Lineamientos de seguridad y pre-auditorías de ciberseguridad de la solución antes del pase a producción. Entrega recursos al enlace DevOps.",
   },
 ];
+
+export const GOVERNANCE_DIAGRAM = `%%{init: {"theme": "base", "themeVariables": {"fontFamily": "Inter, Arial", "lineColor": "#9CA3AF"}}}%%
+
+flowchart TB
+
+%% =========================
+%% C2 PROJECT LEADERSHIP
+%% =========================
+
+subgraph C2Group["C² Labs Project Leadership"]
+direction TB
+
+Camila["\`**Líder de Proyecto**
+
+Camila Cruz
+CEO & Founder
+Correo: camila@c2labs.ai
+
+Orquesta, gobierna y delega.
+Owner de la relación completa.\`"]:::c2Lead
+
+Kevin["\`**Project Manager PM**
+
+Kevin Centeno
+Área: Operaciones
+Correo: kevin@c2labs.ai
+
+Coordina ejecución, seguimiento
+y operación PM del piloto.\`"]:::c2
+
+Camila <-->|dirección, PM execution y coordinación interna| Kevin
+
+end
+
+
+%% =========================
+%% CEL CORE PILOT TEAM
+%% =========================
+
+subgraph CELCore["CEL Core Pilot Team"]
+direction TB
+
+Mauricio["\`**PM / Líder de Proyecto CEL**
+**Administración del Contrato**
+
+Ing. José Mauricio Herrera Mercado
+Área: Gerencia de Producción
+Correo: jmherreram@cel.gob.sv
+
+Responsable CEL de coordinación,
+contrato y relación operativa.\`"]:::celLead
+
+Victor["\`**Líder Técnico en Hidrología**
+
+Ing. Víctor Alabí
+Área: Gerencia de Producción
+Correo: vialabi@cel.gob.sv
+
+Lidera análisis hidrológico.
+Liaison técnico directo con centrales.\`"]:::cel
+
+Fernando["\`**Especialista SIG / Teledetección**
+
+Ing. Fernando Garay
+Área: Departamento de Catastro GIS
+Correo: fgaray@cel.gob.sv
+
+Apoya validación espacial,
+SIG y teledetección.\`"]:::cel
+
+William["\`**Ingeniero de Datos y Backend**
+
+Ing. William Juárez
+Área: Gerencia Comercial
+Correo: wjuarez@cel.gob.sv
+
+Apoya datos, backend,
+integraciones y estructura técnica.\`"]:::cel
+
+JoseDevOps["\`**Administrador de Sistemas / Ingeniero DevOps**
+
+Ing. José Manuel Guardado
+Área: Unidad de Informática
+Correo: jmguardado@cel.gob.sv
+
+Embebido operativamente en el piloto.
+Link entre Core Pilot Team
+y Comité de Informática.\`"]:::cel
+
+end
+
+
+%% =========================
+%% TOP COORDINATION
+%% =========================
+
+Camila <-->|owner relación global / alineación estratégica| Mauricio
+Kevin <-->|cadencia PM / seguimiento operativo| Mauricio
+
+Camila --> GovHub
+
+GovHub["\`**Gobernanza global del proyecto**
+
+Camila mantiene relación con todos los frentes:
+CEL PM, equipo técnico, validación,
+DevOps y Comité de Informática.
+
+Orquesta, gobierna, delega
+y escala cuando corresponde.\`"]:::governance
+
+GovHub -.-> Kevin
+GovHub -.-> Mauricio
+GovHub -.-> Victor
+GovHub -.-> Fernando
+GovHub -.-> William
+GovHub -.-> JoseDevOps
+
+
+%% =========================
+%% CEL INTERNAL OPERATING MODEL
+%% =========================
+
+Mauricio <-->|trabajan de la mano| Victor
+
+Mauricio -->|coordina operatividad del piloto| William
+Mauricio -->|coordina operatividad del piloto| Fernando
+Mauricio -->|coordina necesidades infra / deployment| JoseDevOps
+
+Victor <-->|requerimientos hidrológicos y validación técnica| William
+Victor <-->|validación espacial / SIG / teledetección| Fernando
+JoseDevOps <-->|infraestructura, despliegue y continuidad técnica| William
+
+
+%% =========================
+%% HYDRO PLANTS / VALIDATION
+%% =========================
+
+HydroLiaison["\`**Leads analysis and liaises with centrales**
+
+Víctor lidera la relación técnica directa
+con las cinco centrales para análisis,
+validación y alineación hidrológica.\`"]:::hub
+
+Victor --> HydroLiaison
+
+subgraph PlantsGroup["Centrales Hidroeléctricas"]
+direction LR
+
+P15["\`**Central Hidroeléctrica**
+15 de Septiembre\`"]:::plant
+
+P5N["\`**Central Hidroeléctrica**
+5 de Noviembre\`"]:::plant
+
+PCG["\`**Central Hidroeléctrica**
+Cerrón Grande\`"]:::plant
+
+P3F["\`**Central Hidroeléctrica**
+3 de Febrero\`"]:::plant
+
+PGU["\`**Central Hidroeléctrica**
+Guajoyo\`"]:::plant
+
+end
+
+HydroLiaison --> P15
+HydroLiaison --> P5N
+HydroLiaison --> PCG
+HydroLiaison --> P3F
+HydroLiaison --> PGU
+
+ValidationInput["\`**Input de validación de centrales**
+
+Las centrales son consultadas
+para proveer criterio operativo,
+validación y alineación en fases core.\`"]:::note
+
+P15 --> ValidationInput
+P5N --> ValidationInput
+PCG --> ValidationInput
+P3F --> ValidationInput
+PGU --> ValidationInput
+
+ValidationInput -->|input para validación| Camila
+ValidationInput -->|input para seguimiento PM| Kevin
+ValidationInput -->|input para contrato / coordinación CEL| Mauricio
+ValidationInput -->|input técnico hidrológico| Victor
+ValidationInput -->|input SIG / teledetección| Fernando
+
+
+%% =========================
+%% COMITÉ DE INFORMÁTICA
+%% =========================
+
+subgraph ITCommittee["Comité de Informática"]
+direction TB
+
+Lorena["\`**Jefe de Unidad de Informática**
+
+Lic. Lorena Pineda
+Área: Unidad de Informática
+Correo: alpineda@cel.gob.sv
+
+Lidera el Comité de Informática.
+Rol de autoridad.
+
+Aprueba o no aprueba.
+Autoriza o no autoriza.
+Permanece informada siempre.
+
+Owner de infraestructura
+y continuidad del piloto
+como producto interno de CEL.\`"]:::itLead
+
+Nelson["\`**Jefe de Área de Administración de Redes e Informática**
+
+Nelson Flores
+Área: Unidad de Informática
+Correo: nfloresc@cel.gob.sv
+
+Managed by Lorena Pineda.
+
+Puede aprobar, autorizar,
+delegar y manejar recursos.
+
+Facilitador core para DevOps.
+Mecanismo operativo de escalamiento.\`"]:::it
+
+Adrian["\`**Administrador de Sistemas y Redes**
+
+Adrián Miranda
+
+Rol delegado / consultado.
+Ejecuta y entrega recursos
+para necesidades DevOps.\`"]:::delegated
+
+Carlos["\`**Administrador de Base de Datos**
+
+Carlos Sánchez
+
+Rol delegado / consultado.
+Ejecuta y entrega recursos
+para necesidades DevOps.\`"]:::delegated
+
+Miladis["\`**Especialista de Ciberseguridad**
+
+Miladis
+
+Rol delegado / consultado.
+Ejecuta y entrega recursos
+para necesidades DevOps.\`"]:::delegated
+
+end
+
+
+%% =========================
+%% DEVOPS / IT COMMITTEE DYNAMICS
+%% =========================
+
+GovHub -.-> Lorena
+GovHub -.-> Nelson
+GovHub -.-> Adrian
+GovHub -.-> Carlos
+GovHub -.-> Miladis
+
+JoseDevOps <-->|liaison operativo Core Pilot Team / Comité| Lorena
+JoseDevOps <-->|se aboca, coordina y escala operativamente| Nelson
+
+Lorena -->|lidera comité / autoridad final / manages| Nelson
+
+Nelson -->|delegates / manages / obtains resources| Adrian
+Nelson -->|delegates / manages / obtains resources| Carlos
+Nelson -->|delegates / manages / obtains resources| Miladis
+
+Adrian -->|executes and delivers resources to DevOps| JoseDevOps
+Carlos -->|executes and delivers resources to DevOps| JoseDevOps
+Miladis -->|executes and delivers resources to DevOps| JoseDevOps
+
+
+%% =========================
+%% STYLES
+%% =========================
+
+classDef c2Lead fill:#FF8F95,stroke:#D85C63,stroke-width:1.5px,color:#111827;
+classDef c2 fill:#FFA8AD,stroke:#D85C63,stroke-width:1px,color:#111827;
+
+classDef celLead fill:#FFF176,stroke:#D6C945,stroke-width:1.5px,color:#111827;
+classDef cel fill:#FFF59D,stroke:#D6C945,stroke-width:1px,color:#111827;
+
+classDef plant fill:#61D987,stroke:#40B96B,stroke-width:1px,color:#111827;
+
+classDef itLead fill:#6FE1DA,stroke:#30AAA4,stroke-width:1.5px,color:#111827;
+classDef it fill:#8BE6E0,stroke:#30AAA4,stroke-width:1px,color:#111827;
+classDef delegated fill:#B9F3EF,stroke:#30AAA4,stroke-width:1px,color:#111827;
+
+classDef governance fill:#FFFFFF,stroke:#111827,stroke-width:1.5px,color:#111827;
+classDef hub fill:#FFFFFF,stroke:#9CA3AF,stroke-width:1px,stroke-dasharray:5 5,color:#374151;
+classDef note fill:#FFFFFF,stroke:#D1D5DB,stroke-width:1px,color:#374151;
+
+style C2Group fill:#FFF5F5,stroke:#FF8F95,stroke-width:1px;
+style CELCore fill:#FFFDE7,stroke:#D6C945,stroke-width:1px;
+style PlantsGroup fill:#F0FFF4,stroke:#40B96B,stroke-width:1px;
+style ITCommittee fill:#ECFEFF,stroke:#30AAA4,stroke-width:1px;`;
 
 export interface PhaseTask {
   task: string;

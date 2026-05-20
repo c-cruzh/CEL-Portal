@@ -11,6 +11,8 @@ export const ROLES = [
   { id: "qa_validation", label: "QA / Validación", description: "Pruebas fuera de muestra y validación del piloto." },
   { id: "docs_training", label: "Documentación / Capacitación", description: "POE, informes y talleres de transferencia." },
   { id: "stakeholder_cel", label: "Stakeholder CEL", description: "Revisión, retroalimentación y sesiones de avance." },
+  { id: "it_committee_lead", label: "Jefe de Unidad de Informática (CEL)", description: "Lidera el Comité de Informática de CEL. Aprueba, autoriza y permanece informada del piloto." },
+  { id: "it_committee", label: "Comité de Informática (CEL)", description: "Integrantes del Comité de Informática de CEL: redes, sistemas, bases de datos y ciberseguridad. Aprueban, delegan y entregan recursos al enlace DevOps." },
   { id: "pm_director_cel", label: "Gerente de Proyecto (CEL)", description: "Gerente de Proyecto por parte de CEL. Por determinar por el Comité de Dirección de CEL." },
   { id: "hydrology_ops_cel", label: "Hidrólogos Operativos (CEL)", description: "Hidrólogos operativos asignados por CEL al piloto. Por determinar por el Comité de Dirección de CEL." }
 ];
