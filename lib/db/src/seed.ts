@@ -201,6 +201,124 @@ const ADMIN_ROLE_BOOTSTRAP: Array<{ email: string; roles: string[] }> = [
   { email: "ravila@cel.gob.sv", roles: ["direccion_member"] },
 ];
 
+// "Placeholder" titular users — pre-seeded so the canonical titulares appear
+// in Equipo / Cronograma / RACI BEFORE they have logged in via Google SSO.
+// On their first real Clerk login, `requireAuth.ts` reconciles the placeholder
+// row with the real Clerk identity (see reconcilePlaceholderUser there).
+// IDs use the `placeholder_` prefix so the reconciliation routine can detect
+// them safely without needing a schema column.
+const SEED_PLACEHOLDER_USERS: Array<{
+  email: string;
+  displayName: string;
+  orgPosition: string | null;
+  roles: string[];
+}> = [
+  {
+    email: "kevin@c2labs.ai",
+    displayName: "Kevin Centeno",
+    orgPosition: "Project Manager (C2 Labs)",
+    roles: ["pm_lead"],
+  },
+  {
+    email: "jmherreram@cel.gob.sv",
+    displayName: "Ing. José Mauricio Herrera Mercado",
+    orgPosition: "Gerencia de Producción (CEL) — PM CEL + Adm. del Contrato",
+    roles: ["pm_cel"],
+  },
+  {
+    email: "vialabi@cel.gob.sv",
+    displayName: "Ing. Víctor Alabí",
+    orgPosition: "Gerencia de Producción (CEL) — Líder Técnico en Hidrología",
+    roles: ["hydrology_lead_cel"],
+  },
+  {
+    email: "fgaray@cel.gob.sv",
+    displayName: "Ing. Fernando Garay",
+    orgPosition: "Catastro GIS (CEL) — Especialista SIG / Teledetección",
+    roles: ["geospatial_expert_cel"],
+  },
+  {
+    email: "wjuarez@cel.gob.sv",
+    displayName: "Ing. William Juárez",
+    orgPosition: "Gerencia Comercial (CEL) — Ingeniero de Datos y Backend",
+    roles: ["data_engineer"],
+  },
+  {
+    email: "jmguardado@cel.gob.sv",
+    displayName: "Ing. José Manuel Guardado",
+    orgPosition: "Unidad de Informática (CEL) — Adm. de Sistemas / DevOps",
+    roles: ["infra_devops"],
+  },
+  {
+    email: "alpineda@cel.gob.sv",
+    displayName: "Lic. Lorena Pineda",
+    orgPosition: "Unidad de Informática (CEL) — Jefa de Unidad",
+    roles: ["it_committee_lead"],
+  },
+  {
+    email: "nfloresc@cel.gob.sv",
+    displayName: "Nelson Flores",
+    orgPosition: "Unidad de Informática (CEL) — Jefe de Adm. de Redes",
+    roles: ["it_committee_networks"],
+  },
+  {
+    email: "ravila@cel.gob.sv",
+    displayName: "Ing. Rigoberto Ávila",
+    orgPosition: "Equipo de Dirección del Piloto (CEL)",
+    roles: ["direccion_member"],
+  },
+];
+
+function placeholderIdFor(email: string): string {
+  return `placeholder_${email.toLowerCase().replace(/[^a-z0-9]/g, "_")}`;
+}
+
+async function seedPlaceholderUsers(): Promise<void> {
+  for (const u of SEED_PLACEHOLDER_USERS) {
+    const emailLower = u.email.toLowerCase();
+    // Skip if a real (non-placeholder) user already exists with this email
+    // (e.g. the titular already signed in via Clerk).
+    const existing = await db.execute(
+      sql`SELECT id FROM users WHERE lower(email) = ${emailLower} LIMIT 1`,
+    );
+    const existingId = (existing.rows[0] as { id?: string } | undefined)?.id;
+    if (existingId && !existingId.startsWith("placeholder_")) {
+      continue;
+    }
+    const id = placeholderIdFor(u.email);
+    await db
+      .insert(usersTable)
+      .values({
+        id,
+        email: emailLower,
+        displayName: u.displayName,
+        orgPosition: u.orgPosition,
+        status: "active",
+        statusChangedBy: "seed-placeholder",
+      })
+      .onConflictDoNothing();
+    // Keep org_position fresh if it changed in the seed source.
+    await db.execute(
+      sql`UPDATE users SET display_name = ${u.displayName},
+                            org_position = ${u.orgPosition},
+                            status = 'active'
+          WHERE id = ${id}`,
+    );
+    for (const roleId of u.roles) {
+      await db
+        .insert(userRolesTable)
+        .values({ userId: id, roleId })
+        .onConflictDoNothing();
+      // If the canonical titular slot for this role is still vacant,
+      // assign the placeholder so Equipo / RACI render it as titular.
+      await db.execute(
+        sql`UPDATE roles SET titular_user_id = ${id}
+            WHERE id = ${roleId} AND titular_user_id IS NULL`,
+      );
+    }
+  }
+}
+
 // Hard allowlist of portal admins (mirrors ADMIN_EMAILS in the api-server
 // `requireAdmin` middleware). These two principals must never get stuck in
 // the `pending` approval queue — otherwise the only people who CAN approve
@@ -222,6 +340,13 @@ async function bootstrapAdminRoles(): Promise<void> {
         .insert(userRolesTable)
         .values({ userId, roleId })
         .onConflictDoNothing();
+      // Claim titular slot if vacant. Mirrors seedPlaceholderUsers — runs
+      // BEFORE placeholders so a real user (e.g. Camila) wins the pm_lead
+      // titular over Kevin's placeholder when both have the same role.
+      await db.execute(
+        sql`UPDATE roles SET titular_user_id = ${userId}
+            WHERE id = ${roleId} AND titular_user_id IS NULL`,
+      );
     }
   }
 
@@ -499,6 +624,7 @@ async function main(): Promise<void> {
   }
 
   await bootstrapAdminRoles();
+  await seedPlaceholderUsers();
 
   await seedDecisions();
 

@@ -1,7 +1,13 @@
 import { type Request, type Response, type NextFunction } from "express";
 import { getAuth, clerkClient } from "@clerk/express";
-import { eq } from "drizzle-orm";
-import { db, usersTable, userRolesTable, invitationsTable } from "@workspace/db";
+import { eq, sql } from "drizzle-orm";
+import {
+  db,
+  usersTable,
+  userRolesTable,
+  invitationsTable,
+  rolesTable,
+} from "@workspace/db";
 import { notifyAsync } from "../lib/notifications";
 import { logAdminActionAsync } from "../lib/audit";
 import {
@@ -196,6 +202,146 @@ export async function requireAuth(
         primaryEmail.split("@")[0];
 
       const emailLower = email!.toLowerCase();
+
+      // Reconciliation: if a pre-seeded "placeholder_*" user already owns this
+      // canonical email (titulares pre-cargados antes del primer login), swap
+      // its id for the real Clerk identity instead of failing on the email
+      // unique constraint. Roles + titularidad se transfieren al usuario real.
+      const [placeholderRow] = await db
+        .select()
+        .from(usersTable)
+        .where(eq(usersTable.email, emailLower))
+        .limit(1);
+      if (placeholderRow && placeholderRow.id.startsWith("placeholder_")) {
+        const placeholderId = placeholderRow.id;
+
+        const reconciled = await db.transaction(async (tx) => {
+          // Lock the placeholder row first to serialize concurrent first-login
+          // requests for the same email (e.g. user clicking twice).
+          const locked = await tx.execute(
+            sql`SELECT id, org_position FROM users WHERE id = ${placeholderId} FOR UPDATE`,
+          );
+          if (locked.rows.length === 0) {
+            // Another request already reconciled this placeholder.
+            return { alreadyReconciled: true } as const;
+          }
+
+          const transferredRoles = (
+            await tx
+              .select({ roleId: userRolesTable.roleId })
+              .from(userRolesTable)
+              .where(eq(userRolesTable.userId, placeholderId))
+          ).map((r) => r.roleId);
+          const titularSlots = (
+            await tx
+              .select({ id: rolesTable.id })
+              .from(rolesTable)
+              .where(eq(rolesTable.titularUserId, placeholderId))
+          ).map((r) => r.id);
+
+          // Free up FK refs that would block deletion of the placeholder.
+          await tx
+            .update(rolesTable)
+            .set({ titularUserId: null })
+            .where(eq(rolesTable.titularUserId, placeholderId));
+          // Free up the canonical email so the Clerk-id row can take it.
+          await tx.execute(
+            sql`UPDATE users SET email = ${`__archived__${placeholderId}@portal.invalid`}
+                WHERE id = ${placeholderId}`,
+          );
+          await tx
+            .insert(usersTable)
+            .values({
+              id: clerkUserId,
+              email: emailLower,
+              displayName: displayName!,
+              orgPosition: placeholderRow.orgPosition,
+              status: "active",
+              statusChangedBy: "placeholder-reconciled",
+            });
+          for (const roleId of transferredRoles) {
+            await tx
+              .insert(userRolesTable)
+              .values({ userId: clerkUserId, roleId })
+              .onConflictDoNothing();
+          }
+          for (const roleSlotId of titularSlots) {
+            await tx
+              .update(rolesTable)
+              .set({ titularUserId: clerkUserId })
+              .where(eq(rolesTable.id, roleSlotId));
+          }
+          // Reassign every other FK that points to the placeholder so we
+          // (a) don't lose attribution (decisions, kanban) on the SET NULL
+          // cascade and (b) don't get blocked by RESTRICT (documents).
+          await tx.execute(
+            sql`UPDATE decisions SET owner_user_id = ${clerkUserId} WHERE owner_user_id = ${placeholderId}`,
+          );
+          await tx.execute(
+            sql`UPDATE decisions SET resolved_by = ${clerkUserId} WHERE resolved_by = ${placeholderId}`,
+          );
+          await tx.execute(
+            sql`UPDATE decisions SET decided_by_user_id = ${clerkUserId} WHERE decided_by_user_id = ${placeholderId}`,
+          );
+          await tx.execute(
+            sql`UPDATE decisions SET created_by = ${clerkUserId} WHERE created_by = ${placeholderId}`,
+          );
+          await tx.execute(
+            sql`UPDATE kanban_cards SET owner_user_id = ${clerkUserId} WHERE owner_user_id = ${placeholderId}`,
+          );
+          await tx.execute(
+            sql`UPDATE documents SET uploaded_by = ${clerkUserId} WHERE uploaded_by = ${placeholderId}`,
+          );
+          await tx.execute(
+            sql`UPDATE invitations SET accepted_user_id = ${clerkUserId} WHERE accepted_user_id = ${placeholderId}`,
+          );
+          // Cascades drop user_roles + cvs for the placeholder; everything
+          // else was reassigned above.
+          await tx.delete(usersTable).where(eq(usersTable.id, placeholderId));
+          return {
+            alreadyReconciled: false,
+            transferredRoles,
+            titularSlots,
+          } as const;
+        });
+
+        if (reconciled.alreadyReconciled) {
+          // The competing request already promoted this user; treat as the
+          // normal "existing user" path.
+          req.userId = clerkUserId;
+          req.userEmail = email;
+          void touchLastActivity(clerkUserId);
+          next();
+          return;
+        }
+
+        logAdminActionAsync({
+          actorId: clerkUserId,
+          actorEmail: emailLower,
+          action: "user.placeholder_reconciled",
+          targetType: "user",
+          targetId: clerkUserId,
+          payload: {
+            placeholderId,
+            transferredRoles,
+            titularSlots,
+          },
+        });
+        notifyAsync({
+          kind: "member_joined",
+          actor: {
+            id: clerkUserId,
+            email: email!,
+            displayName: displayName!,
+          },
+        });
+
+        req.userId = clerkUserId;
+        req.userEmail = email;
+        void touchLastActivity(clerkUserId);
+        next();
+        return;
+      }
 
       // Decide initial approval status. Admins / PM bootstrap leads are
       // auto-approved (otherwise the first PM can never get in). Anyone
