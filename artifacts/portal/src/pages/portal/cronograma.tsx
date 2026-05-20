@@ -17,6 +17,11 @@ import { PHASES } from "@/lib/projectContent";
 import { GANTT_PHASES, GANTT_TOTAL_WEEKS } from "@/lib/ganttContent";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { addWeeks, format, parseISO, differenceInDays } from "date-fns";
 import { es } from "date-fns/locale";
 import { useEffect, useMemo, useState } from "react";
@@ -98,7 +103,11 @@ export default function Cronograma() {
         </CardContent>
       </Card>
 
-      <WeeklyGantt startDate={startDate} />
+      <WeeklyGantt
+        startDate={startDate}
+        milestones={milestones ?? []}
+        decisions={decisions ?? []}
+      />
 
       <BlockingDecisionsByMilestone
         milestones={milestones ?? []}
@@ -241,8 +250,41 @@ function BlockingDecisionsByMilestone({
   );
 }
 
-function WeeklyGantt({ startDate }: { startDate: Date | null }) {
+function WeeklyGantt({
+  startDate,
+  milestones,
+  decisions,
+}: {
+  startDate: Date | null;
+  milestones: Milestone[];
+  decisions: Decision[];
+}) {
   const totalWidth = LABEL_WIDTH + WEEK_COL_WIDTH * GANTT_TOTAL_WEEKS;
+
+  const blockersByMilestone = useMemo(() => {
+    const map = new Map<string, Decision[]>();
+    for (const d of decisions) {
+      if (!d.blocksMilestoneId) continue;
+      if (d.status === "resolved" || d.status === "cancelled") continue;
+      const list = map.get(d.blocksMilestoneId) ?? [];
+      list.push(d);
+      map.set(d.blocksMilestoneId, list);
+    }
+    return map;
+  }, [decisions]);
+
+  const milestonesByPhase = useMemo(() => {
+    const map = new Map<string, Milestone[]>();
+    for (const m of milestones) {
+      if (m.kind !== "phase_milestone" && m.kind !== "presentation") continue;
+      if (!m.phaseId) continue;
+      if (m.weekOffset < 1 || m.weekOffset > GANTT_TOTAL_WEEKS) continue;
+      const list = map.get(m.phaseId) ?? [];
+      list.push(m);
+      map.set(m.phaseId, list);
+    }
+    return map;
+  }, [milestones]);
 
   // Compute current week index (1-based) when a real T0 is set, so the
   // "Hoy" marker only appears in calendar mode and within range.
@@ -370,6 +412,95 @@ function WeeklyGantt({ startDate }: { startDate: Date | null }) {
                     }}
                     aria-hidden="true"
                   />
+                  {(milestonesByPhase.get(phase.id) ?? []).map((m) => {
+                    const blockers = blockersByMilestone.get(m.id) ?? [];
+                    const hasBlockers = blockers.length > 0;
+                    const left =
+                      (m.weekOffset - 1) * WEEK_COL_WIDTH + WEEK_COL_WIDTH / 2;
+                    return (
+                      <Tooltip key={m.id}>
+                        <TooltipTrigger asChild>
+                          <Link
+                            href={
+                              hasBlockers
+                                ? "/portal/decisiones"
+                                : "/portal/calendario"
+                            }
+                            className="absolute top-0 bottom-0 z-20 flex flex-col items-center -translate-x-1/2 group cursor-pointer"
+                            style={{ left: `${left}px` }}
+                            data-testid={`gantt-milestone-marker-${m.id}`}
+                            aria-label={`Hito: ${m.title}${
+                              hasBlockers
+                                ? ` (${blockers.length} decisión${blockers.length === 1 ? "" : "es"} bloqueante${blockers.length === 1 ? "" : "s"})`
+                                : ""
+                            }`}
+                          >
+                            <div
+                              className={`w-px h-full ${hasBlockers ? "bg-destructive/70" : "bg-foreground/40"} group-hover:bg-foreground/80`}
+                            />
+                            <div
+                              className={`absolute top-1/2 -translate-y-1/2 rotate-45 ${
+                                hasBlockers
+                                  ? "bg-destructive border-destructive"
+                                  : "bg-card border-foreground/60"
+                              } border-2 shadow-sm`}
+                              style={{ width: 10, height: 10 }}
+                            />
+                            {hasBlockers && (
+                              <span
+                                className="absolute top-0 left-1/2 translate-x-1 bg-destructive text-destructive-foreground text-[9px] font-bold rounded-full min-w-[14px] h-[14px] px-1 leading-[14px] text-center shadow"
+                                data-testid={`gantt-milestone-blocker-badge-${m.id}`}
+                              >
+                                {blockers.length}
+                              </span>
+                            )}
+                          </Link>
+                        </TooltipTrigger>
+                        <TooltipContent
+                          side="top"
+                          className="max-w-xs bg-popover text-popover-foreground border border-border"
+                        >
+                          <div className="space-y-1.5">
+                            <div className="font-semibold text-xs">
+                              {m.title}
+                            </div>
+                            <div className="text-[10px] opacity-80">
+                              Semana {m.weekOffset}
+                              {m.kind === "presentation"
+                                ? " · Presentación"
+                                : " · Hito de fase"}
+                            </div>
+                            {hasBlockers ? (
+                              <div className="pt-1 border-t border-border/60">
+                                <div className="text-[10px] font-medium text-destructive mb-1">
+                                  {blockers.length} decisión
+                                  {blockers.length === 1 ? "" : "es"} bloqueante
+                                  {blockers.length === 1 ? "" : "s"}:
+                                </div>
+                                <ul className="space-y-0.5">
+                                  {blockers.map((d) => (
+                                    <li
+                                      key={d.id}
+                                      className="text-[11px] leading-snug"
+                                    >
+                                      · {d.title}
+                                    </li>
+                                  ))}
+                                </ul>
+                                <div className="text-[10px] opacity-70 mt-1">
+                                  Click para abrir Decisiones
+                                </div>
+                              </div>
+                            ) : (
+                              <div className="text-[10px] opacity-70">
+                                Sin decisiones bloqueantes
+                              </div>
+                            )}
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    );
+                  })}
                 </div>
               </div>
 
