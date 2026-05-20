@@ -16,6 +16,7 @@ import calendarRouter from "./calendar";
 import adminRouter from "./admin";
 import adminAllowedDomainsRouter from "./adminAllowedDomains";
 import adminApprovalsRouter from "./adminApprovals";
+import paqueteFase0Router from "./paqueteFase0";
 
 const router: IRouter = Router();
 
@@ -36,5 +37,6 @@ router.use(calendarRouter);
 router.use(adminRouter);
 router.use(adminAllowedDomainsRouter);
 router.use(adminApprovalsRouter);
+router.use(paqueteFase0Router);
 
 export default router;

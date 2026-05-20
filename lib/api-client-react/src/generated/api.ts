@@ -41,6 +41,7 @@ import type {
   DecisionReopenInput,
   DecisionResolveInput,
   DecisionUpdate,
+  DeletePaqueteFase0OverrideParams,
   DisplayNameInput,
   Document,
   DocumentDownloadUrl,
@@ -70,6 +71,8 @@ import type {
   NotificationPrefsInput,
   NotificationRecipient,
   NotificationRecipientInput,
+  PaqueteFase0Override,
+  PaqueteFase0OverrideInput,
   PendingUser,
   ProjectConfig,
   ProjectConfigUpdate,
@@ -4877,6 +4880,231 @@ export const useRejectUser = <TError = ErrorType<ErrorResponse>,
         TContext
       > => {
       return useMutation(getRejectUserMutationOptions(options));
+    }
+
+export const getListPaqueteFase0OverridesUrl = () => {
+
+
+
+
+  return `/api/paquete-fase0/overrides`
+}
+
+/**
+ * @summary List runtime swaps of Paquete Fase 0 assets (with fresh signed download URLs)
+ */
+export const listPaqueteFase0Overrides = async ( options?: RequestInit): Promise<PaqueteFase0Override[]> => {
+
+  return customFetch<PaqueteFase0Override[]>(getListPaqueteFase0OverridesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListPaqueteFase0OverridesQueryKey = () => {
+    return [
+    `/api/paquete-fase0/overrides`
+    ] as const;
+    }
+
+
+export const getListPaqueteFase0OverridesQueryOptions = <TData = Awaited<ReturnType<typeof listPaqueteFase0Overrides>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPaqueteFase0Overrides>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPaqueteFase0OverridesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPaqueteFase0Overrides>>> = ({ signal }) => listPaqueteFase0Overrides({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPaqueteFase0Overrides>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListPaqueteFase0OverridesQueryResult = NonNullable<Awaited<ReturnType<typeof listPaqueteFase0Overrides>>>
+export type ListPaqueteFase0OverridesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List runtime swaps of Paquete Fase 0 assets (with fresh signed download URLs)
+ */
+
+export function useListPaqueteFase0Overrides<TData = Awaited<ReturnType<typeof listPaqueteFase0Overrides>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPaqueteFase0Overrides>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListPaqueteFase0OverridesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getUpsertPaqueteFase0OverrideUrl = () => {
+
+
+
+
+  return `/api/paquete-fase0/overrides`
+}
+
+/**
+ * @summary Replace a Paquete Fase 0 asset with an uploaded file (PM only)
+ */
+export const upsertPaqueteFase0Override = async (paqueteFase0OverrideInput: PaqueteFase0OverrideInput, options?: RequestInit): Promise<PaqueteFase0Override> => {
+
+  return customFetch<PaqueteFase0Override>(getUpsertPaqueteFase0OverrideUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      paqueteFase0OverrideInput,)
+  }
+);}
+
+
+
+
+export const getUpsertPaqueteFase0OverrideMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof upsertPaqueteFase0Override>>, TError,{data: BodyType<PaqueteFase0OverrideInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof upsertPaqueteFase0Override>>, TError,{data: BodyType<PaqueteFase0OverrideInput>}, TContext> => {
+
+const mutationKey = ['upsertPaqueteFase0Override'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof upsertPaqueteFase0Override>>, {data: BodyType<PaqueteFase0OverrideInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  upsertPaqueteFase0Override(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpsertPaqueteFase0OverrideMutationResult = NonNullable<Awaited<ReturnType<typeof upsertPaqueteFase0Override>>>
+    export type UpsertPaqueteFase0OverrideMutationBody = BodyType<PaqueteFase0OverrideInput>
+    export type UpsertPaqueteFase0OverrideMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Replace a Paquete Fase 0 asset with an uploaded file (PM only)
+ */
+export const useUpsertPaqueteFase0Override = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof upsertPaqueteFase0Override>>, TError,{data: BodyType<PaqueteFase0OverrideInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof upsertPaqueteFase0Override>>,
+        TError,
+        {data: BodyType<PaqueteFase0OverrideInput>},
+        TContext
+      > => {
+      return useMutation(getUpsertPaqueteFase0OverrideMutationOptions(options));
+    }
+
+export const getDeletePaqueteFase0OverrideUrl = (params: DeletePaqueteFase0OverrideParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : value.toString())
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/paquete-fase0/overrides/by-asset?${stringifiedParams}` : `/api/paquete-fase0/overrides/by-asset`
+}
+
+/**
+ * @summary Revert a Paquete Fase 0 asset to the bundled original (PM only)
+ */
+export const deletePaqueteFase0Override = async (params: DeletePaqueteFase0OverrideParams, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getDeletePaqueteFase0OverrideUrl(params),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getDeletePaqueteFase0OverrideMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePaqueteFase0Override>>, TError,{params: DeletePaqueteFase0OverrideParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof deletePaqueteFase0Override>>, TError,{params: DeletePaqueteFase0OverrideParams}, TContext> => {
+
+const mutationKey = ['deletePaqueteFase0Override'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof deletePaqueteFase0Override>>, {params: DeletePaqueteFase0OverrideParams}> = (props) => {
+          const {params} = props ?? {};
+
+          return  deletePaqueteFase0Override(params,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DeletePaqueteFase0OverrideMutationResult = NonNullable<Awaited<ReturnType<typeof deletePaqueteFase0Override>>>
+
+    export type DeletePaqueteFase0OverrideMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Revert a Paquete Fase 0 asset to the bundled original (PM only)
+ */
+export const useDeletePaqueteFase0Override = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof deletePaqueteFase0Override>>, TError,{params: DeletePaqueteFase0OverrideParams}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof deletePaqueteFase0Override>>,
+        TError,
+        {params: DeletePaqueteFase0OverrideParams},
+        TContext
+      > => {
+      return useMutation(getDeletePaqueteFase0OverrideMutationOptions(options));
     }
 
 export const getRequestUploadUrlUrl = () => {

@@ -1531,6 +1531,63 @@ export const RejectUserResponse = zod.object({
 
 
 /**
+ * @summary List runtime swaps of Paquete Fase 0 assets (with fresh signed download URLs)
+ */
+export const ListPaqueteFase0OverridesResponseItem = zod.object({
+  "assetPath": zod.string().describe('Bundled-asset relative path that this override replaces (e.g. \"paquete-fase0\/documentos\/01_Carta_...pdf\")'),
+  "originalFilename": zod.string(),
+  "contentType": zod.string(),
+  "sizeBytes": zod.number(),
+  "replacedBy": zod.string(),
+  "replacedByName": zod.string(),
+  "replacedAt": zod.coerce.date(),
+  "downloadUrl": zod.string().describe('Short-lived signed URL pointing at the replacement file in object storage'),
+  "downloadUrlExpiresAt": zod.coerce.date()
+})
+export const ListPaqueteFase0OverridesResponse = zod.array(ListPaqueteFase0OverridesResponseItem)
+
+
+/**
+ * @summary Replace a Paquete Fase 0 asset with an uploaded file (PM only)
+ */
+
+
+
+
+export const upsertPaqueteFase0OverrideBodySizeBytesMin = 0;
+
+
+
+export const UpsertPaqueteFase0OverrideBody = zod.object({
+  "assetPath": zod.string().min(1),
+  "objectPath": zod.string().min(1).describe('\/objects\/uploads\/<id> returned by the upload-url flow'),
+  "contentType": zod.string().min(1),
+  "fileName": zod.string().min(1),
+  "sizeBytes": zod.number().min(upsertPaqueteFase0OverrideBodySizeBytesMin)
+})
+
+export const UpsertPaqueteFase0OverrideResponse = zod.object({
+  "assetPath": zod.string().describe('Bundled-asset relative path that this override replaces (e.g. \"paquete-fase0\/documentos\/01_Carta_...pdf\")'),
+  "originalFilename": zod.string(),
+  "contentType": zod.string(),
+  "sizeBytes": zod.number(),
+  "replacedBy": zod.string(),
+  "replacedByName": zod.string(),
+  "replacedAt": zod.coerce.date(),
+  "downloadUrl": zod.string().describe('Short-lived signed URL pointing at the replacement file in object storage'),
+  "downloadUrlExpiresAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Revert a Paquete Fase 0 asset to the bundled original (PM only)
+ */
+export const DeletePaqueteFase0OverrideQueryParams = zod.object({
+  "assetPath": zod.coerce.string()
+})
+
+
+/**
  * @summary Request a presigned URL to upload a file to object storage
  */
 export const RequestUploadUrlBody = zod.object({

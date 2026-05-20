@@ -1472,6 +1472,71 @@ paths:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
 
+  /paquete-fase0/overrides:
+    get:
+      operationId: listPaqueteFase0Overrides
+      tags: [paqueteFase0]
+      summary: List runtime swaps of Paquete Fase 0 assets (with fresh signed download URLs)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/PaqueteFase0Override"
+    put:
+      operationId: upsertPaqueteFase0Override
+      tags: [paqueteFase0]
+      summary: Replace a Paquete Fase 0 asset with an uploaded file (PM only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/PaqueteFase0OverrideInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaqueteFase0Override"
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /paquete-fase0/overrides/by-asset:
+    delete:
+      operationId: deletePaqueteFase0Override
+      tags: [paqueteFase0]
+      summary: Revert a Paquete Fase 0 asset to the bundled original (PM only)
+      parameters:
+        - name: assetPath
+          in: query
+          required: true
+          schema:
+            type: string
+      responses:
+        "204":
+          description: No content
+        "403":
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /storage/uploads/request-url:
     post:
       operationId: requestUploadUrl
@@ -2718,3 +2783,62 @@ components:
           type: string
         objectPath:
           type: string
+
+    PaqueteFase0Override:
+      type: object
+      required:
+        [
+          assetPath,
+          originalFilename,
+          contentType,
+          sizeBytes,
+          replacedBy,
+          replacedByName,
+          replacedAt,
+          downloadUrl,
+          downloadUrlExpiresAt,
+        ]
+      properties:
+        assetPath:
+          type: string
+          description: Bundled-asset relative path that this override replaces (e.g. "paquete-fase0/documentos/01_Carta_...pdf")
+        originalFilename:
+          type: string
+        contentType:
+          type: string
+        sizeBytes:
+          type: integer
+        replacedBy:
+          type: string
+        replacedByName:
+          type: string
+        replacedAt:
+          type: string
+          format: date-time
+        downloadUrl:
+          type: string
+          description: Short-lived signed URL pointing at the replacement file in object storage
+        downloadUrlExpiresAt:
+          type: string
+          format: date-time
+
+    PaqueteFase0OverrideInput:
+      type: object
+      required: [assetPath, objectPath, contentType, fileName, sizeBytes]
+      properties:
+        assetPath:
+          type: string
+          minLength: 1
+        objectPath:
+          type: string
+          minLength: 1
+          description: "/objects/uploads/<id> returned by the upload-url flow"
+        contentType:
+          type: string
+          minLength: 1
+        fileName:
+          type: string
+          minLength: 1
+        sizeBytes:
+          type: integer
+          minimum: 0

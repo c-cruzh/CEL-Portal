@@ -1002,6 +1002,36 @@ export interface UploadUrl {
   objectPath: string;
 }
 
+export interface PaqueteFase0Override {
+  /** Bundled-asset relative path that this override replaces (e.g. "paquete-fase0/documentos/01_Carta_...pdf") */
+  assetPath: string;
+  originalFilename: string;
+  contentType: string;
+  sizeBytes: number;
+  replacedBy: string;
+  replacedByName: string;
+  replacedAt: string;
+  /** Short-lived signed URL pointing at the replacement file in object storage */
+  downloadUrl: string;
+  downloadUrlExpiresAt: string;
+}
+
+export interface PaqueteFase0OverrideInput {
+  /** @minLength 1 */
+  assetPath: string;
+  /**
+     * /objects/uploads/<id> returned by the upload-url flow
+     * @minLength 1
+     */
+  objectPath: string;
+  /** @minLength 1 */
+  contentType: string;
+  /** @minLength 1 */
+  fileName: string;
+  /** @minimum 0 */
+  sizeBytes: number;
+}
+
 export type BatchImportMilestonesBodyTwo = {
   /** CSV file with header row. Recognised columns: kind, title, description, weekOffset, dateOverride (YYYY-MM-DD), durationMinutes, location, notes, phaseId, ownersRoles (separated by `|` or `;`). */
   file: Blob;
@@ -1045,5 +1075,9 @@ export type BatchImportDecisionsBodyTwo = {
 export type ListAdminAuditLogParams = {
 action?: string;
 actor?: string;
+};
+
+export type DeletePaqueteFase0OverrideParams = {
+assetPath: string;
 };
 
