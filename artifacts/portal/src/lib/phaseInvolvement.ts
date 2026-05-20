@@ -97,7 +97,7 @@ export const PHASE_INVOLVEMENT: PhaseInvolvement[] = [
                 description:
                   "Racking, conexión eléctrica y de red de la plataforma adquirida (Dell PowerEdge R770 IA, R770 virtualización, R570 NAS y switch S5224F-ON) según las especificaciones del Paquete Maestro §8.2.",
                 responsible: ["infra_devops"],
-                consulted: ["ml_engineer", "data_engineer"],
+                consulted: ["pm_lead", "data_engineer"],
                 informed: ["pm_lead", "pm_cel"],
                 raciSourceTasks: [
                   "Montaje físico de servidores e infraestructura (AI Silo) y configuración de red",
@@ -123,7 +123,7 @@ export const PHASE_INVOLVEMENT: PhaseInvolvement[] = [
                 description:
                   "Instalación y configuración de orquestador Mage, bases de datos y entornos Python para los pipelines.",
                 responsible: ["infra_devops", "data_engineer"],
-                consulted: ["ml_engineer"],
+                consulted: ["pm_lead"],
                 informed: ["pm_lead"],
                 raciSourceTasks: [
                   "Instalación de Mage, GitLab y entorno base de orquestación",
@@ -135,8 +135,8 @@ export const PHASE_INVOLVEMENT: PhaseInvolvement[] = [
                 name: "Validación y benchmark (GPU / I/O / Red)",
                 description:
                   "Pruebas de rendimiento de GPU, almacenamiento y enlaces de red contra los criterios de aceptación.",
-                responsible: ["infra_devops", "ml_engineer"],
-                consulted: ["qa_validation"],
+                responsible: ["infra_devops", "pm_lead"],
+                consulted: ["hydrology_lead_cel"],
                 informed: ["pm_lead", "pm_cel"],
                 raciSourceTasks: [
                   "Diseño del entorno técnico y arquitectura general",
@@ -182,7 +182,7 @@ export const PHASE_INVOLVEMENT: PhaseInvolvement[] = [
                 name: "Canal meteorológico (ERA5 / GPM / CHIRPS)",
                 description:
                   "Descarga y normalización de productos meteorológicos; cálculo de precipitación areal y evapotranspiración por subcuenca.",
-                responsible: ["data_engineer", "meteo_expert"],
+                responsible: ["data_engineer"],
                 consulted: ["hydrology_lead_cel"],
                 raciSourceTasks: [
                   "Desarrollo de flujos ETL en Python usando Mage",
@@ -206,8 +206,8 @@ export const PHASE_INVOLVEMENT: PhaseInvolvement[] = [
                 name: "QC y documentación (dataset listo)",
                 description:
                   "Aserciones automáticas, registro de excepciones y documentación del dataset entregado para modelado.",
-                responsible: ["data_engineer", "qa_validation"],
-                consulted: ["hydrology_lead_cel", "docs_training"],
+                responsible: ["data_engineer", "hydrology_lead_cel"],
+                consulted: ["hydrology_lead_cel", "pm_lead"],
                 informed: ["pm_lead", "pm_cel"],
                 raciSourceTasks: [
                   "Pruebas de integración de pipelines con fuentes internas",
@@ -240,7 +240,7 @@ export const PHASE_INVOLVEMENT: PhaseInvolvement[] = [
                 name: "Implementación LSTM (NeuralHydrology)",
                 description:
                   "Configuración de la arquitectura LSTM sobre PyTorch/NeuralHydrology y preparación del entorno de entrenamiento en GPU.",
-                responsible: ["ml_engineer"],
+                responsible: ["pm_lead"],
                 consulted: ["hydrology_lead_cel"],
                 raciSourceTasks: [
                   "Desarrollo e implementación del modelo LSTM",
@@ -252,7 +252,7 @@ export const PHASE_INVOLVEMENT: PhaseInvolvement[] = [
                 name: "Optimización bayesiana (secuencia / hidden / LR)",
                 description:
                   "Búsqueda bayesiana de hiperparámetros (Optuna) sobre longitud de secuencia, unidades ocultas y tasa de aprendizaje.",
-                responsible: ["ml_engineer"],
+                responsible: ["pm_lead"],
                 consulted: ["hydrology_lead_cel"],
                 raciSourceTasks: ["Selección y justificación de variables de entrada"],
               },
@@ -261,7 +261,7 @@ export const PHASE_INVOLVEMENT: PhaseInvolvement[] = [
                 name: "Validación con origen rodante (rolling-origin)",
                 description:
                   "Evaluación cronológica con varios folds y reserva de un conjunto out-of-sample para prueba ciega final.",
-                responsible: ["ml_engineer", "qa_validation"],
+                responsible: ["pm_lead", "hydrology_lead_cel"],
                 consulted: ["hydrology_lead_cel"],
                 raciSourceTasks: ["Entrenamiento y validación cruzada del modelo"],
               },
@@ -270,9 +270,9 @@ export const PHASE_INVOLVEMENT: PhaseInvolvement[] = [
                 name: "Informe de desempeño",
                 description:
                   "Reporte con métricas hidrológicas (NSE, RMSE, POD/FAR) y comparativa cuantitativa frente al baseline operativo.",
-                responsible: ["ml_engineer", "docs_training"],
+                responsible: ["pm_lead"],
                 consulted: ["hydrology_lead_cel"],
-                informed: ["pm_lead", "pm_cel", "stakeholder_cel"],
+                informed: ["pm_lead", "pm_cel", "direccion_member"],
                 raciSourceTasks: ["Documentación del modelo y resultados de validación"],
               },
             ],
@@ -302,7 +302,7 @@ export const PHASE_INVOLVEMENT: PhaseInvolvement[] = [
                 description:
                   "Orquestación en Mage de la descarga ECMWF/GPM, preprocesamiento, inferencia LSTM y carga en bases operativas.",
                 responsible: ["data_engineer", "infra_devops"],
-                consulted: ["ml_engineer"],
+                consulted: ["pm_lead"],
                 informed: ["pm_lead"],
                 raciSourceTasks: ["Desarrollo de flujos ETL en Python usando Mage"],
               },
@@ -311,7 +311,7 @@ export const PHASE_INVOLVEMENT: PhaseInvolvement[] = [
                 name: "Tableros web CEL",
                 description:
                   "Dashboard React con mapa interactivo, hidrogramas pronosticados y tablas de estado por sitio.",
-                responsible: ["fullstack_dev"],
+                responsible: ["pm_lead"],
                 consulted: ["hydrology_lead_cel", "geospatial_expert_cel"],
                 informed: ["pm_cel"],
                 raciSourceTasks: [
@@ -325,18 +325,18 @@ export const PHASE_INVOLVEMENT: PhaseInvolvement[] = [
                 name: "Alertas SMS y correo",
                 description:
                   "Definición de umbrales por sitio y envío automático de notificaciones a las listas de destinatarios pertinentes.",
-                responsible: ["fullstack_dev", "infra_devops"],
+                responsible: ["pm_lead", "infra_devops"],
                 consulted: ["pm_cel", "hydrology_lead_cel"],
-                informed: ["pm_lead", "stakeholder_cel"],
+                informed: ["pm_lead", "direccion_member"],
               },
               {
                 id: "f3-a4",
                 name: "Integración con sistemas y APIs de CEL",
                 description:
                   "Conexión segura a las bases productivas (solo lectura) y exposición de endpoints en intranet, coordinada con la Unidad de Informática de CEL (Jefatura, Redes, DevOps).",
-                responsible: ["fullstack_dev", "infra_devops"],
+                responsible: ["pm_lead", "infra_devops"],
                 consulted: ["pm_cel", "geospatial_expert_cel"],
-                informed: ["pm_lead", "stakeholder_cel"],
+                informed: ["pm_lead", "direccion_member"],
               },
             ],
           },
@@ -364,9 +364,9 @@ export const PHASE_INVOLVEMENT: PhaseInvolvement[] = [
                 name: "Pruebas fuera de muestra (OOS)",
                 description:
                   "Evaluación ciega del modelo sobre el conjunto reservado y un evento extremo histórico.",
-                responsible: ["qa_validation", "ml_engineer"],
+                responsible: ["hydrology_lead_cel", "pm_lead"],
                 consulted: ["hydrology_lead_cel"],
-                informed: ["pm_lead", "stakeholder_cel"],
+                informed: ["pm_lead", "direccion_member"],
                 raciSourceTasks: [
                   "Validación funcional y operativa del sistema",
                   "Validación operacional",
@@ -385,18 +385,18 @@ export const PHASE_INVOLVEMENT: PhaseInvolvement[] = [
                 name: "Capacitación al equipo CEL",
                 description:
                   "Talleres internos sobre el modelo, los pipelines y la operación diaria del portal.",
-                responsible: ["docs_training"],
-                consulted: ["ml_engineer", "hydrology_lead_cel"],
-                informed: ["pm_cel", "stakeholder_cel"],
+                responsible: ["pm_lead"],
+                consulted: ["pm_lead", "hydrology_lead_cel"],
+                informed: ["pm_cel", "direccion_member"],
               },
               {
                 id: "f4-a3",
                 name: "Documentación final (POE y reportes)",
                 description:
                   "Procedimiento Operativo Estándar, manuales de mantenimiento y reporte ejecutivo final.",
-                responsible: ["docs_training"],
-                consulted: ["pm_lead", "ml_engineer", "hydrology_lead_cel"],
-                informed: ["stakeholder_cel"],
+                responsible: ["pm_lead"],
+                consulted: ["hydrology_lead_cel"],
+                informed: ["direccion_member"],
               },
             ],
           },
@@ -426,15 +426,15 @@ export const PHASE_INVOLVEMENT: PhaseInvolvement[] = [
                   "Revisión conjunta de los riesgos que se materializaron en la semana, re-priorización del backlog y comunicación del nuevo plan al equipo y a la dirección de CEL.",
                 responsible: ["pm_lead", "pm_cel"],
                 consulted: ["hydrology_lead_cel"],
-                informed: ["stakeholder_cel"],
+                informed: ["direccion_member"],
               },
               {
                 id: "cont-a2",
                 name: "Retrabajos técnicos puntuales (datos / modelo / pipeline)",
                 description:
                   "Corrección de hallazgos específicos surgidos en QA u operación supervisada: ajustes de pipeline ETL, reentrenamiento parcial del modelo o parches en el portal.",
-                responsible: ["data_engineer", "ml_engineer", "fullstack_dev"],
-                consulted: ["qa_validation", "hydrology_lead_cel"],
+                responsible: ["data_engineer", "pm_lead"],
+                consulted: ["hydrology_lead_cel"],
                 informed: ["pm_lead", "pm_cel"],
               },
               {
@@ -442,9 +442,9 @@ export const PHASE_INVOLVEMENT: PhaseInvolvement[] = [
                 name: "Validación adicional con CEL ante hallazgos OOS",
                 description:
                   "Sesiones extra de validación con el equipo de hidrología de CEL si las pruebas fuera de muestra revelan desviaciones que requieran segunda opinión o ajuste de criterios.",
-                responsible: ["qa_validation", "hydrology_lead_cel"],
-                consulted: ["ml_engineer"],
-                informed: ["pm_lead", "pm_cel", "stakeholder_cel"],
+                responsible: ["hydrology_lead_cel"],
+                consulted: ["pm_lead"],
+                informed: ["pm_lead", "pm_cel", "direccion_member"],
               },
             ],
           },

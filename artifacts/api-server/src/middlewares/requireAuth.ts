@@ -29,7 +29,7 @@ const AUTO_PM_EMAILS = new Set<string>([
 // Multi-role bootstrap for known C2Labs leads. Camila wears multiple hats on
 // this pilot; Kevin is currently PM-only. Idempotent — applied on first login.
 const AUTO_MULTI_ROLES: Record<string, string[]> = {
-  "camila@c2labs.ai": ["pm_lead", "ml_engineer", "data_engineer"],
+  "camila@c2labs.ai": ["pm_lead"],
   "kevin@c2labs.ai": ["pm_lead"],
 };
 

@@ -57,7 +57,7 @@ const CSV_TEMPLATE =
   "\n" +
   [
     "workshop,Taller de validación de datos hidrológicos,4,,120,CEL Oficina Central,Llevar laptops y acceso VPN,F1,hydrology_lead_cel|geospatial_expert_cel,Sesión de validación con CEL",
-    "presentation,Demo intermedia LSTM,12,2026-09-15,90,Sala virtual,Demo con stakeholders,F3,ml_engineer|pm_lead,Avance del modelo",
+    "presentation,Demo intermedia LSTM,12,2026-09-15,90,Sala virtual,Demo con stakeholders,F3,pm_lead|hydrology_lead_cel,Avance del modelo",
   ].join("\n") +
   "\n";
 

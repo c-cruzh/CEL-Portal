@@ -81,21 +81,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 
-// Mapping uncertainty against the original RACI in the project PRD. The
-// original document groups responsibilities by a smaller, broader set of
-// archetypes (Consultora IA, Líder Hidrología/PM, DevOps, Data/Backend,
-// SIG, Hidrólogo Operativo, Stakeholder). The 12 portal roles split some
-// of those archetypes into finer-grained labels, so a human (Kevin) needs
-// to confirm each split before we treat the mapping as authoritative.
-const ROLES_REQUIRING_HUMAN_VALIDATION = new Set<string>([
-  "ml_engineer",
-  "data_engineer",
-  "fullstack_dev",
-  "qa_validation",
-  "docs_training",
-  "meteo_expert",
-  "geospatial_expert_cel",
-]);
+// Roles canónicos del organigrama de gobernanza (estructura_roles_y_gobernanza.md
+// + Diagrama_Gobernanza_Organizacional.mmd). Todos los roles del portal
+// están alineados 1:1 con el documento aprobado — no se requiere validación
+// humana adicional sobre la asignación RACI.
+const ROLES_REQUIRING_HUMAN_VALIDATION = new Set<string>([]);
 
 function describeError(err: unknown): string {
   if (err instanceof ApiError) {

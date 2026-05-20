@@ -6,7 +6,7 @@ Portal web privado para coordinar el piloto de pronóstico hidrológico CEL × C
 
 - **Cualquier integrante** (cualquiera con un correo permitido y sesión activa en Clerk) tiene acceso de lectura a las 8 pestañas operativas y puede editar lo que le corresponde por rol.
 - **Admins (PM Portal)**: Camila Cruz (`camila@c2labs.ai`) y Kevin Centeno (`kevin@c2labs.ai`). Tienen acceso a Configuración y a los flujos de batch upload / edición de miembros. El admin se decide por correo (no por rol asignado) — ver `ADMIN_GUIDE.md`.
-- **Multi‑rol**: una persona puede tener N roles asignados (p. ej. PM Lead + ML Engineer + Data Engineer). Un rol puede tener N personas. La asignación canónica de personas reales vive en `lib/db/src/governance.ts` y se muestra en Equipo y Cronograma.
+- **Multi‑rol**: una persona puede tener N roles asignados (p. ej. PM Lead (C2 Labs)). Un rol puede tener N personas. La asignación canónica de personas reales vive en `lib/db/src/governance.ts` y se muestra en Equipo y Cronograma.
 
 ## Las 9 pestañas
 

@@ -6,16 +6,16 @@
 
 # Test info
 
-- Name: api.admin.spec.ts >> admin allowlist >> invalid domain shape is rejected with structured error
-- Location: tests/api.admin.spec.ts:35:3
+- Name: api.admin.spec.ts >> admin notification recipients >> add → list → test → delete a recipient
+- Location: tests/api.admin.spec.ts:46:3
 
 # Error details
 
 ```
-Error: expect(received).toBe(expected) // Object.is equality
+Error: expect(received).toContain(expected) // indexOf
 
-Expected: 400
-Received: 500
+Expected value: 500
+Received array: [200, 201]
 ```
 
 # Test source
@@ -60,8 +60,7 @@ Received: 500
   37 |     const res = await api.post("/api/admin/allowed-domains", {
   38 |       data: { domain: "  @notadomain  " },
   39 |     });
-> 40 |     expect(res.status()).toBe(400);
-     |                          ^ Error: expect(received).toBe(expected) // Object.is equality
+  40 |     expect(res.status()).toBe(400);
   41 |     await api.dispose();
   42 |   });
   43 | });
@@ -75,7 +74,8 @@ Received: 500
   51 |     const addRes = await api.post("/api/admin/notification-recipients", {
   52 |       data: { email },
   53 |     });
-  54 |     expect([200, 201]).toContain(addRes.status());
+> 54 |     expect([200, 201]).toContain(addRes.status());
+     |                        ^ Error: expect(received).toContain(expected) // indexOf
   55 | 
   56 |     const list = await (
   57 |       await api.get("/api/admin/notification-recipients")

@@ -37,26 +37,20 @@ const ROLES: Array<{
   description: string;
   sortOrder: number;
 }> = [
-  { id: "pm_lead", label: "PM / Líder de Proyecto", description: "Liderazgo general del piloto, planificación y coordinación con CEL. Puede ser asumido por más de una persona.", sortOrder: 1 },
-  { id: "pm_cel", label: "PM / Contraparte CEL", description: "Contraparte de gestión por parte de CEL: agenda, accesos y stakeholders internos.", sortOrder: 2 },
-  { id: "hydrology_lead_cel", label: "Líder Hidrología (CEL)", description: "Validación de patrones, ground-truth y evaluación de pronósticos.", sortOrder: 3 },
-  { id: "geospatial_expert_cel", label: "Experto Geoespacial (CEL)", description: "MDE, HydroATLAS, cobertura de suelos y delimitación de cuencas.", sortOrder: 4 },
-  { id: "meteo_expert", label: "Experto Meteorológico", description: "ERA5, GPM, CHIRPS, precipitación y evapotranspiración.", sortOrder: 5 },
-  { id: "ml_engineer", label: "ML Engineer", description: "LSTM, NeuralHydrology, hiperparámetros y validación rodante.", sortOrder: 6 },
-  { id: "data_engineer", label: "Data Engineer (ETL / Mage)", description: "Canalizaciones de datos, ingesta automática y orquestación.", sortOrder: 7 },
-  { id: "infra_devops", label: "Infraestructura / DevOps", description: "Entorno, redes, VPN, bases de datos y stack de software.", sortOrder: 8 },
-  { id: "fullstack_dev", label: "Frontend / Backend Dev", description: "Web app, dashboards operativos y alertas.", sortOrder: 9 },
-  { id: "qa_validation", label: "QA / Validación", description: "Pruebas fuera de muestra y validación del piloto.", sortOrder: 10 },
-  { id: "docs_training", label: "Documentación / Capacitación", description: "POE, informes y talleres de transferencia.", sortOrder: 11 },
-  { id: "stakeholder_cel", label: "Stakeholder CEL", description: "Revisión, retroalimentación y sesiones de avance.", sortOrder: 12 },
-  { id: "it_committee_lead", label: "Jefa de Unidad de Informática (CEL)", description: "Lidera el Comité de Informática de CEL. Autoridad final: aprueba, autoriza y permanece informada del piloto. Autorización exclusiva para exposición de servicios al exterior.", sortOrder: 13 },
-  { id: "it_committee_networks", label: "Jefe de Redes e Informática (CEL)", description: "Comité de Informática — Jefatura de Administración de Redes e Informática. Aprueba, delega y maneja recursos. Mecanismo operativo de escalamiento para el enlace DevOps.", sortOrder: 14 },
-  { id: "it_committee_sysadmin", label: "Administrador de Sistemas y Redes (CEL)", description: "Comité de Informática — Configura entornos (VLANs, túneles VPN, listas blancas de IPs) y entrega recursos al enlace DevOps. Realiza pre-auditorías de red antes del pase a producción.", sortOrder: 15 },
-  { id: "it_committee_dba", label: "Administrador de Base de Datos (CEL)", description: "Comité de Informática — DBA. Gobierna las bases de datos del piloto (acceso, replicación, ground truth) y entrega recursos al enlace DevOps.", sortOrder: 16 },
-  { id: "it_committee_security", label: "Especialista de Ciberseguridad (CEL)", description: "Comité de Informática — Lineamientos de seguridad y pre-auditorías de ciberseguridad antes del pase a producción. Entrega recursos al enlace DevOps.", sortOrder: 17 },
-  { id: "pm_director_cel", label: "Gerente de Proyecto (CEL)", description: "Gerente de Proyecto por parte de CEL. Por determinar por el Comité de Dirección de CEL.", sortOrder: 18 },
-  { id: "hydrology_ops_cel", label: "Hidrólogos Operativos (CEL)", description: "Hidrólogos operativos asignados por CEL al piloto. Por determinar por el Comité de Dirección de CEL.", sortOrder: 19 },
-  { id: "direccion_member", label: "Equipo de Dirección del Piloto (CEL)", description: "Integrantes del Equipo de Dirección del piloto por parte de CEL. Rol e involucramiento por definir por etapa, conforme al DSP.", sortOrder: 20 },
+  { id: "pm_lead", label: "PM / Líder de Proyecto (C2 Labs)", description: "Liderazgo y PM del piloto por parte de C2 Labs. Camila Cruz dirige y gobierna la relación global; Kevin Centeno coordina la ejecución, seguimiento y operación PM del piloto.", sortOrder: 1 },
+  { id: "pm_cel", label: "PM / Líder de Proyecto + Adm. del Contrato (CEL)", description: "Contraparte de proyecto y administración del contrato por parte de CEL. Coordina el Core Pilot Team, la cadencia con C2 Labs y la operatividad con el equipo CEL.", sortOrder: 2 },
+  { id: "hydrology_lead_cel", label: "Líder Técnico en Hidrología (CEL)", description: "Liderazgo técnico hidrológico del piloto. Define requerimientos, valida modelos y lidera la relación técnica directa con las cinco centrales (15 de Septiembre, 5 de Noviembre, Cerrón Grande, 3 de Febrero, Guajoyo).", sortOrder: 3 },
+  { id: "geospatial_expert_cel", label: "Especialista SIG / Teledetección (CEL)", description: "Departamento de Catastro GIS. MDE, HydroATLAS, cobertura de suelos, delimitación de cuencas y validación SIG.", sortOrder: 4 },
+  { id: "data_engineer", label: "Ingeniero de Datos y Backend (CEL)", description: "Ingesta de datos, pipelines y backend del piloto desde CEL. Trabaja con el Líder Técnico de Hidrología en requerimientos y con DevOps en infraestructura y despliegue.", sortOrder: 5 },
+  { id: "infra_devops", label: "Adm. de Sistemas / Ingeniero DevOps (CEL)", description: "Unidad de Informática — enlace operativo entre el Core Pilot Team y el Comité de Informática. Coordina infraestructura, redes, despliegue y autorización de acciones técnicas.", sortOrder: 6 },
+  { id: "it_committee_lead", label: "Jefa de Unidad de Informática (CEL)", description: "Lidera el Comité de Informática de CEL. Autoridad final: aprueba, autoriza y permanece informada del piloto. Owner de infraestructura. Autorización exclusiva para exposición de servicios al exterior.", sortOrder: 7 },
+  { id: "it_committee_networks", label: "Jefe de Adm. de Redes e Informática (CEL)", description: "Comité de Informática — Jefatura de Administración de Redes e Informática. Aprueba, autoriza, delega y maneja recursos. Mecanismo operativo de escalamiento para el enlace DevOps.", sortOrder: 8 },
+  { id: "it_committee_sysadmin", label: "Administrador de Sistemas y Redes (CEL)", description: "Comité de Informática — Configura entornos (VLANs, túneles VPN, listas blancas de IPs) y entrega recursos al enlace DevOps. Realiza pre-auditorías de red antes del pase a producción.", sortOrder: 9 },
+  { id: "it_committee_dba", label: "Administrador de Base de Datos (CEL)", description: "Comité de Informática — DBA. Gobierna las bases de datos del piloto (acceso, replicación, ground truth) y entrega recursos al enlace DevOps.", sortOrder: 10 },
+  { id: "it_committee_security", label: "Especialista de Ciberseguridad (CEL)", description: "Comité de Informática — Lineamientos de seguridad y pre-auditorías de ciberseguridad antes del pase a producción. Entrega recursos al enlace DevOps.", sortOrder: 11 },
+  { id: "pm_director_cel", label: "Gerente de Proyecto (CEL)", description: "Gerente de Proyecto por parte de CEL. Por determinar por el Comité de Dirección de CEL.", sortOrder: 12 },
+  { id: "hydrology_ops_cel", label: "Hidrólogos Operativos (CEL)", description: "Hidrólogos operativos asignados por CEL al piloto. Por determinar por el Comité de Dirección de CEL.", sortOrder: 13 },
+  { id: "direccion_member", label: "Equipo de Dirección del Piloto (CEL)", description: "Integrantes del Equipo de Dirección del piloto por parte de CEL. Rol e involucramiento por definir por etapa, conforme al DSP.", sortOrder: 14 },
 ];
 
 type SeedMilestone = {
@@ -117,7 +111,7 @@ function buildSeedMilestones(): SeedMilestone[] {
       kind: "presentation",
       weekOffset: endWeek,
       phaseId: p.id,
-      ownersRoles: ["pm_lead", "pm_cel", "stakeholder_cel"],
+      ownersRoles: ["pm_lead", "pm_cel", "direccion_member"],
     });
   }
 
@@ -135,7 +129,7 @@ function buildSeedMilestones(): SeedMilestone[] {
     kind: "workshop",
     weekOffset: 27,
     phaseId: "F4",
-    ownersRoles: ["docs_training", "hydrology_lead_cel"],
+    ownersRoles: ["pm_lead", "hydrology_lead_cel"],
   });
 
   return items;
@@ -194,7 +188,7 @@ async function seedMilestones(): Promise<number> {
 const ADMIN_ROLE_BOOTSTRAP: Array<{ email: string; roles: string[] }> = [
   {
     email: "camila@c2labs.ai",
-    roles: ["pm_lead", "ml_engineer", "data_engineer"],
+    roles: ["pm_lead"],
   },
   { email: "kevin@c2labs.ai", roles: ["pm_lead"] },
   { email: "jmherreram@cel.gob.sv", roles: ["pm_cel"] },

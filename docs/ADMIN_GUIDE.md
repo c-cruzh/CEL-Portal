@@ -39,7 +39,7 @@ Además, en otros tabs aparecen acciones reservadas:
 2. Clic editar.
 3. Pueden cambiar:
    - **Nombre para mostrar**
-   - **Roles** asignados (multi-rol; ejemplo: Camila tiene PM Lead + ML Engineer + Data Engineer)
+   - **Roles** asignados (multi-rol; ejemplo: Camila tiene PM Lead (C2 Labs))
    - **CV** — opción "Quitar CV" si el archivo es viejo o erróneo
 4. Confirmar. La acción queda registrada en **Auditoría** con la acción `member.update`.
 

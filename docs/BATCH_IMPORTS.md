@@ -9,7 +9,7 @@ Tres flujos de batch upload, todos **admin only**, todos con el mismo patrón:
 - Errores devueltos por fila con línea + razón.
 - Cada importación registra una entrada en **Auditoría** (`batch.upload / <tipo>`).
 
-> Los separadores aceptados dentro de celdas CSV para campos tipo array son `|` y `;`. Ejemplo: `pm_lead|ml_engineer`.
+> Los separadores aceptados dentro de celdas CSV para campos tipo array son `|` y `;`. Ejemplo: `pm_lead|hydrology_lead_cel`.
 
 ## 1. Sesiones / hitos al Calendario
 
@@ -42,7 +42,7 @@ Endpoint: `POST /admin/milestones/batch`.
 kind,title,weekOffset,dateOverride,durationMinutes,location,notes,phaseId,ownersRoles,description
 weekly_session,Sesión semanal 1,1,,60,Sala virtual,Primera sesión post-T0,F1,pm_lead,Sync semanal con CEL
 committee,Comité de avance Q1,,2026-07-15,90,Oficinas CEL,Revisión trimestral,F1,pm_lead|pm_cel,Avance del piloto
-workshop,Taller de modelado,4,,180,Sala C2 Labs,Hands-on LSTM,F2,ml_engineer|data_engineer,
+workshop,Taller de modelado,4,,180,Sala C2 Labs,Hands-on LSTM,F2,pm_lead|hydrology_lead_cel,
 ```
 
 ### Reglas de validación
@@ -57,7 +57,7 @@ workshop,Taller de modelado,4,,180,Sala C2 Labs,Hands-on LSTM,F2,ml_engineer|dat
 | `location` | string ≤200 | opcional | |
 | `notes` | string ≤2000 | opcional | |
 | `phaseId` | `F0..F4 | CONT` | opcional | Valida contra `PHASES`. |
-| `ownersRoles` | array | opcional | Cada item debe ser id de rol existente (`pm_lead`, `ml_engineer`, etc.). En CSV separador `|` o `;`. |
+| `ownersRoles` | array | opcional | Cada item debe ser id de rol existente (`pm_lead`, `pm_cel`, `hydrology_lead_cel`, etc.). En CSV separador `|` o `;`. |
 | `description` | string ≤2000 | opcional | |
 
 **Restricción dura**: si `weekOffset` y `dateOverride` son ambos null, la fila falla con `missing_date_basis`.
@@ -130,7 +130,7 @@ Endpoint: `POST /admin/decisions/batch`.
       "context": "ERA5 vs GPM vs CHIRPS — necesitamos elegir fuente principal",
       "optionsConsidered": "1) ERA5: alta resolución, latencia 5d\n2) GPM: tiempo real, menor resolución\n3) CHIRPS: regional, gratuito",
       "phase": "F1",
-      "ownerRole": "meteo_expert",
+      "ownerRole": "data_engineer",
       "dueDate": "2026-07-01"
     }
   ]
@@ -141,8 +141,8 @@ Endpoint: `POST /admin/decisions/batch`.
 
 ```csv
 title,context,optionsConsidered,phase,ownerUserId,ownerRole,dueDate
-Selección de proveedor meteo,ERA5 vs GPM vs CHIRPS,1) ERA5...|2) GPM...|3) CHIRPS...,F1,,meteo_expert,2026-07-01
-Esquema de alertas SMS,Twilio vs proveedor local,Twilio: estable global|Local: menor costo,F3,,fullstack_dev,2026-08-15
+Selección de proveedor meteo,ERA5 vs GPM vs CHIRPS,1) ERA5...|2) GPM...|3) CHIRPS...,F1,,data_engineer,2026-07-01
+Esquema de alertas SMS,Twilio vs proveedor local,Twilio: estable global|Local: menor costo,F3,,infra_devops,2026-08-15
 ```
 
 ### Reglas de validación

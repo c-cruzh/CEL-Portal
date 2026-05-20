@@ -24,7 +24,7 @@ Canonical catalog of pilot roles. Seeded with 14 entries.
 
 | Column | Type | Notes |
 |---|---|---|
-| `id` | text PK | e.g. `pm_lead`, `ml_engineer`, `pm_director_cel` |
+| `id` | text PK | e.g. `pm_lead`, `pm_cel`, `pm_director_cel` |
 | `label` | text | Human label (Spanish) |
 | `description` | text | Shown in Equipo and Configuración |
 | `sort_order` | int | Display order |

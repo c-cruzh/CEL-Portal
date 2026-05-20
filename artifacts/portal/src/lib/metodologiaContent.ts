@@ -226,7 +226,7 @@ export const METODOLOGIA_PHASES: MetodologiaPhase[] = [
       "Catálogo de features y reporte exploratorio por subcuenca.",
       "Pipelines de ETL en Mage en producción, conectados a las fuentes de CEL.",
     ],
-    roles: ["data_engineer", "meteo_expert", "geospatial_expert_cel", "hydrology_lead_cel"],
+    roles: ["data_engineer", "geospatial_expert_cel", "hydrology_lead_cel"],
   },
   {
     id: "F2",
@@ -259,7 +259,7 @@ export const METODOLOGIA_PHASES: MetodologiaPhase[] = [
       "Reporte de validación cruzada y comparativa cuantitativa vs. baseline operativo.",
       "Bitácora de calibración con hidrología.",
     ],
-    roles: ["ml_engineer", "hydrology_lead_cel", "data_engineer"],
+    roles: ["pm_lead", "hydrology_lead_cel", "data_engineer"],
   },
   {
     id: "F3",
@@ -296,7 +296,7 @@ export const METODOLOGIA_PHASES: MetodologiaPhase[] = [
       "Sistema de alertas tempranas configurado y probado.",
       "Reporte de pruebas integradas E2E.",
     ],
-    roles: ["fullstack_dev", "infra_devops", "data_engineer", "hydrology_lead_cel"],
+    roles: ["pm_lead", "infra_devops", "data_engineer", "hydrology_lead_cel"],
   },
   {
     id: "F4",
@@ -332,7 +332,7 @@ export const METODOLOGIA_PHASES: MetodologiaPhase[] = [
       "Capacitación impartida al equipo de CEL.",
       "Recomendaciones formales de escalamiento.",
     ],
-    roles: ["pm_lead", "qa_validation", "docs_training", "hydrology_lead_cel", "stakeholder_cel"],
+    roles: ["pm_lead", "hydrology_lead_cel", "pm_lead", "hydrology_lead_cel", "direccion_member"],
   },
 ];
 
