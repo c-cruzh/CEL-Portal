@@ -11,6 +11,7 @@ import {
   useListAdminAuditLog,
   useListAdminRoles,
   useUpdateRole,
+  useSetRoleTitular,
   useListAllowedDomains,
   useAddAllowedDomain,
   useRemoveAllowedDomain,
@@ -72,6 +73,13 @@ import {
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
 import { DocsViewer } from "@/components/DocsViewer";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 // Mapping uncertainty against the original RACI in the project PRD. The
 // original document groups responsibilities by a smaller, broader set of
@@ -351,9 +359,13 @@ function MemberRow({ member }: { member: Member }) {
   );
 }
 
+const PHONE_REGEX = /^[\d+()\-\s]{6,30}$/;
+
 function AdminEditMemberDialog({ member }: { member: Member }) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(member.displayName || "");
+  const [orgPosition, setOrgPosition] = useState(member.orgPosition ?? "");
+  const [phone, setPhone] = useState(member.phone ?? "");
   const [selectedRoles, setSelectedRoles] = useState<string[]>(
     member.roles || [],
   );
@@ -371,11 +383,22 @@ function AdminEditMemberDialog({ member }: { member: Member }) {
   };
 
   const handleSave = async () => {
+    const trimmedPhone = phone.trim();
+    if (trimmedPhone && !PHONE_REGEX.test(trimmedPhone)) {
+      toast({
+        title: "Teléfono inválido",
+        description: "Usa solo dígitos, espacios, + ( ) y - (6 a 30 caracteres).",
+        variant: "destructive",
+      });
+      return;
+    }
     try {
       await adminUpdate.mutateAsync({
         userId: member.id,
         data: {
           displayName: name,
+          orgPosition: orgPosition.trim() ? orgPosition.trim() : null,
+          phone: trimmedPhone ? trimmedPhone : null,
           roles: selectedRoles,
           ...(clearCv ? { clearCv: true } : {}),
         },
@@ -415,6 +438,8 @@ function AdminEditMemberDialog({ member }: { member: Member }) {
         setOpen(o);
         if (o) {
           setName(member.displayName || "");
+          setOrgPosition(member.orgPosition ?? "");
+          setPhone(member.phone ?? "");
           setSelectedRoles(member.roles || []);
           setClearCv(false);
         }
@@ -441,6 +466,26 @@ function AdminEditMemberDialog({ member }: { member: Member }) {
           <div className="space-y-2">
             <Label>Nombre a mostrar</Label>
             <Input value={name} onChange={(e) => setName(e.target.value)} />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label>Cargo en la organización</Label>
+              <Input
+                value={orgPosition}
+                onChange={(e) => setOrgPosition(e.target.value)}
+                placeholder="Ej. Jefe de Hidrología"
+                maxLength={200}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Teléfono de contacto</Label>
+              <Input
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="Ej. +503 7777 7777"
+                maxLength={40}
+              />
+            </div>
           </div>
           <div className="space-y-3">
             <Label>Roles asignados</Label>
@@ -780,21 +825,31 @@ function InvitationStatusBadge({ status }: { status: Invitation["status"] }) {
 
 function RolesSection() {
   const { data: roles, isLoading } = useListAdminRoles();
+  const { data: members } = useListTeamMembers();
   const sorted = useMemo(
     () => (roles ?? []).slice().sort((a, b) => a.sortOrder - b.sortOrder),
     [roles],
   );
+  const assignedCount = sorted.filter((r) => !!r.titularUserId).length;
+  const total = sorted.length;
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Catálogo de roles</CardTitle>
-        <CardDescription>
-          12 roles del piloto, comparados con la matriz RACI original del
-          PRD. Los roles marcados como <em>requiere validación humana
-          (Kevin)</em> son splits del documento original que aún deben
-          confirmarse. Usa las flechas para cambiar el orden de
-          presentación.
-        </CardDescription>
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div className="space-y-1.5">
+            <CardTitle>Catálogo de roles</CardTitle>
+            <CardDescription>
+              Cada rol es un puesto único con un titular. Asigna a una
+              persona aprobada o déjalo como <em>Vacante</em>. Las flechas
+              cambian el orden de presentación.
+            </CardDescription>
+          </div>
+          {!isLoading && total > 0 && (
+            <Badge variant="secondary" className="text-xs whitespace-nowrap">
+              {assignedCount} de {total} roles asignados
+            </Badge>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="space-y-3">
         {isLoading && (
@@ -808,6 +863,7 @@ function RolesSection() {
             <RoleRow
               key={role.id}
               role={role}
+              members={members ?? []}
               prev={idx > 0 ? sorted[idx - 1] : undefined}
               next={idx < sorted.length - 1 ? sorted[idx + 1] : undefined}
             />
@@ -819,19 +875,46 @@ function RolesSection() {
 
 function RoleRow({
   role,
+  members,
   prev,
   next,
 }: {
   role: AdminRole;
+  members: Member[];
   prev?: AdminRole;
   next?: AdminRole;
 }) {
   const [editing, setEditing] = useState(false);
   const [desc, setDesc] = useState(role.description);
   const updateMut = useUpdateRole();
+  const titularMut = useSetRoleTitular();
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const needsValidation = ROLES_REQUIRING_HUMAN_VALIDATION.has(role.id);
+  const isAssigned = !!role.titularUserId;
+
+  const handleTitularChange = async (value: string) => {
+    const userId = value === "__vacante__" ? null : value;
+    try {
+      await titularMut.mutateAsync({ id: role.id, data: { userId } });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: getListAdminRolesQueryKey() }),
+        queryClient.invalidateQueries({ queryKey: getListTeamMembersQueryKey() }),
+        queryClient.invalidateQueries({ queryKey: getGetTeamSummaryQueryKey() }),
+        queryClient.invalidateQueries({ queryKey: getListAdminAuditLogQueryKey() }),
+      ]);
+      toast({
+        title: userId ? "Titular asignado" : "Rol marcado como Vacante",
+        description: role.label,
+      });
+    } catch (err) {
+      toast({
+        title: "No se pudo actualizar el titular",
+        description: describeError(err),
+        variant: "destructive",
+      });
+    }
+  };
 
   const swapWith = async (other: AdminRole) => {
     try {
@@ -891,9 +974,15 @@ function RoleRow({
         <div className="space-y-1">
           <div className="flex items-center gap-2 flex-wrap">
             <span className="font-medium text-sm">{role.label}</span>
-            <Badge variant="secondary" className="text-[10px]">
-              {role.memberCount} asignad{role.memberCount === 1 ? "o" : "os"}
-            </Badge>
+            {isAssigned ? (
+              <Badge className="text-[10px] bg-emerald-600 hover:bg-emerald-600 text-white">
+                Asignado
+              </Badge>
+            ) : (
+              <Badge variant="outline" className="text-[10px] border-amber-500 text-amber-700">
+                Vacante
+              </Badge>
+            )}
             {needsValidation && (
               <Badge
                 variant="outline"
@@ -950,6 +1039,36 @@ function RoleRow({
       ) : (
         <p className="text-sm text-muted-foreground">{role.description}</p>
       )}
+      <div className="pt-2 border-t space-y-2">
+        <Label className="text-xs">Titular del rol</Label>
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+          <Select
+            value={role.titularUserId ?? "__vacante__"}
+            onValueChange={handleTitularChange}
+            disabled={titularMut.isPending}
+          >
+            <SelectTrigger className="sm:max-w-xs">
+              <SelectValue placeholder="Seleccionar titular" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__vacante__">— Vacante —</SelectItem>
+              {members.map((m) => (
+                <SelectItem key={m.id} value={m.id}>
+                  {m.displayName || m.email}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {role.titular && (
+            <div className="text-xs text-muted-foreground space-y-0.5">
+              {role.titular.orgPosition && (
+                <p>{role.titular.orgPosition}</p>
+              )}
+              <p>{role.titular.email}{role.titular.phone ? ` · ${role.titular.phone}` : ""}</p>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

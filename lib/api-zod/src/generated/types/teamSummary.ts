@@ -10,7 +10,14 @@ import type { RoleCoverage } from './roleCoverage';
 export interface TeamSummary {
   memberCount: number;
   cvCount: number;
+  /** DEPRECATED, kept for compatibility. Equals `assignedRoles` under the
+  new "un titular por rol" model.
+   */
   rolesFilled: number;
   totalRoles: number;
+  /** Roles del proyecto que tienen un titular designado. */
+  assignedRoles: number;
+  /** Roles del proyecto que están vacantes (sin titular). */
+  vacantRoles: number;
   coverage: RoleCoverage[];
 }

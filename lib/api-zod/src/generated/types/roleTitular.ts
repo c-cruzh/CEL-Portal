@@ -7,23 +7,14 @@
  */
 import type { Cv } from './cv';
 
-export interface Member {
+export interface RoleTitular {
   id: string;
-  email: string;
   displayName: string;
-  /**
-     * Cargo en la organización (texto libre).
-     * @nullable
-     */
+  email: string;
+  /** @nullable */
   orgPosition?: string | null;
-  /**
-     * Teléfono de contacto.
-     * @nullable
-     */
+  /** @nullable */
   phone?: string | null;
-  roles: string[];
-  joinedAt: Date;
-  lastActivityAt: Date;
   hasCv: boolean;
   cv?: Cv | null;
 }

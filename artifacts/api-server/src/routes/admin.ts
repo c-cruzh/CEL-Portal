@@ -7,6 +7,7 @@ import {
   rolesTable,
   userRolesTable,
   usersTable,
+  userCvsTable,
 } from "@workspace/db";
 import {
   ListInvitationsResponse,
@@ -16,6 +17,8 @@ import {
   ListAdminRolesResponse,
   ListAdminRolesResponseItem as AdminRoleResponse,
   UpdateRoleBody,
+  SetRoleTitularBody,
+  SetRoleTitularResponse,
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
 import { requireAdmin } from "../middlewares/requireAdmin";
@@ -376,17 +379,203 @@ router.get(
     const counts = new Map<string, number>();
     for (const a of assignments)
       counts.set(a.roleId, (counts.get(a.roleId) ?? 0) + 1);
-    res.json(
-      ListAdminRolesResponse.parse(
-        roles.map((r) => ({
-          id: r.id,
-          label: r.label,
-          description: r.description,
-          sortOrder: r.sortOrder,
-          memberCount: counts.get(r.id) ?? 0,
-        })),
+
+    const titularIds = Array.from(
+      new Set(
+        roles
+          .map((r) => r.titularUserId)
+          .filter((v): v is string => typeof v === "string" && v.length > 0),
       ),
     );
+    const users = titularIds.length ? await db.select().from(usersTable) : [];
+    const userById = new Map(
+      users.filter((u) => titularIds.includes(u.id)).map((u) => [u.id, u]),
+    );
+    const cvs = titularIds.length ? await db.select().from(userCvsTable) : [];
+    const cvByUser = new Map(
+      cvs.filter((c) => titularIds.includes(c.userId)).map((c) => [c.userId, c]),
+    );
+
+    res.json(
+      ListAdminRolesResponse.parse(
+        roles.map((r) => {
+          const u = r.titularUserId ? userById.get(r.titularUserId) : undefined;
+          const cv = r.titularUserId ? cvByUser.get(r.titularUserId) : undefined;
+          return {
+            id: r.id,
+            label: r.label,
+            description: r.description,
+            sortOrder: r.sortOrder,
+            memberCount: counts.get(r.id) ?? 0,
+            titularUserId: r.titularUserId ?? null,
+            titular: u
+              ? {
+                  id: u.id,
+                  displayName: u.displayName,
+                  email: u.email,
+                  orgPosition: u.orgPosition ?? null,
+                  phone: u.phone ?? null,
+                  hasCv: !!cv,
+                  cv: cv
+                    ? {
+                        fileName: cv.fileName,
+                        contentType: cv.contentType,
+                        objectPath: cv.objectPath,
+                        sizeBytes: cv.sizeBytes,
+                        uploadedAt: cv.uploadedAt,
+                      }
+                    : null,
+                }
+              : null,
+          };
+        }),
+      ),
+    );
+  },
+);
+
+async function buildAdminRoleResponse(roleId: string) {
+  const [r] = await db
+    .select()
+    .from(rolesTable)
+    .where(eq(rolesTable.id, roleId))
+    .limit(1);
+  if (!r) return null;
+  const memberCountRows = await db
+    .select({ userId: userRolesTable.userId })
+    .from(userRolesTable)
+    .where(eq(userRolesTable.roleId, roleId));
+  let titular: Record<string, unknown> | null = null;
+  if (r.titularUserId) {
+    const [u] = await db
+      .select()
+      .from(usersTable)
+      .where(eq(usersTable.id, r.titularUserId))
+      .limit(1);
+    const [cv] = await db
+      .select()
+      .from(userCvsTable)
+      .where(eq(userCvsTable.userId, r.titularUserId))
+      .limit(1);
+    if (u) {
+      titular = {
+        id: u.id,
+        displayName: u.displayName,
+        email: u.email,
+        orgPosition: u.orgPosition ?? null,
+        phone: u.phone ?? null,
+        hasCv: !!cv,
+        cv: cv
+          ? {
+              fileName: cv.fileName,
+              contentType: cv.contentType,
+              objectPath: cv.objectPath,
+              sizeBytes: cv.sizeBytes,
+              uploadedAt: cv.uploadedAt,
+            }
+          : null,
+      };
+    }
+  }
+  return {
+    id: r.id,
+    label: r.label,
+    description: r.description,
+    sortOrder: r.sortOrder,
+    memberCount: memberCountRows.length,
+    titularUserId: r.titularUserId ?? null,
+    titular,
+  };
+}
+
+router.put(
+  "/admin/roles/:id/titular",
+  requireAuth,
+  requireAdmin,
+  async (req, res): Promise<void> => {
+    const idRaw = req.params.id;
+    const roleId = Array.isArray(idRaw) ? idRaw[0] : idRaw;
+    if (!roleId) {
+      res.status(400).json({ error: "id requerido" });
+      return;
+    }
+    const parsed = SetRoleTitularBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+    const [role] = await db
+      .select()
+      .from(rolesTable)
+      .where(eq(rolesTable.id, roleId))
+      .limit(1);
+    if (!role) {
+      res.status(404).json({ error: "Rol no encontrado" });
+      return;
+    }
+    const previousTitularId = role.titularUserId ?? null;
+    const nextTitularId = parsed.data.userId ?? null;
+
+    if (nextTitularId) {
+      const [u] = await db
+        .select()
+        .from(usersTable)
+        .where(eq(usersTable.id, nextTitularId))
+        .limit(1);
+      if (!u) {
+        res.status(404).json({ error: "Usuario no encontrado" });
+        return;
+      }
+      if (u.status !== "active") {
+        res.status(400).json({
+          error: "El titular debe ser un miembro aprobado del piloto.",
+        });
+        return;
+      }
+    }
+
+    await db.transaction(async (tx) => {
+      await tx
+        .update(rolesTable)
+        .set({ titularUserId: nextTitularId })
+        .where(eq(rolesTable.id, roleId));
+
+      if (nextTitularId) {
+        // Asegurar la entrada en user_roles para que las demás vistas
+        // (Cronograma, Kanban, Decisiones) sigan resolviendo asignaciones.
+        await tx
+          .insert(userRolesTable)
+          .values({ userId: nextTitularId, roleId })
+          .onConflictDoNothing();
+      } else if (previousTitularId) {
+        // Si se quita el titular sin reemplazo, limpiamos la entrada del
+        // user_roles del titular previo para que el rol quede realmente
+        // vacante (no aparece como asignado en otras vistas).
+        await tx
+          .delete(userRolesTable)
+          .where(
+            and(
+              eq(userRolesTable.roleId, roleId),
+              eq(userRolesTable.userId, previousTitularId),
+            ),
+          );
+      }
+    });
+
+    await logAdminAction({
+      actorId: req.userId ?? null,
+      actorEmail: req.userEmail ?? null,
+      action: "role.titular.set",
+      targetType: "role",
+      targetId: roleId,
+      payload: {
+        previousTitularId,
+        nextTitularId,
+      },
+    });
+
+    const body = await buildAdminRoleResponse(roleId);
+    res.json(SetRoleTitularResponse.parse(body));
   },
 );
 

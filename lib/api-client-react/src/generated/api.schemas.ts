@@ -13,18 +13,31 @@ export interface ErrorResponse {
   error: string;
 }
 
-export interface RoleDefinition {
-  id: string;
-  label: string;
-  description: string;
-}
-
 export interface Cv {
   fileName: string;
   contentType: string;
   objectPath: string;
   sizeBytes: number;
   uploadedAt: string;
+}
+
+export interface RoleTitular {
+  id: string;
+  displayName: string;
+  email: string;
+  /** @nullable */
+  orgPosition?: string | null;
+  /** @nullable */
+  phone?: string | null;
+  hasCv: boolean;
+  cv?: Cv | null;
+}
+
+export interface RoleDefinition {
+  id: string;
+  label: string;
+  description: string;
+  titular?: RoleTitular | null;
 }
 
 export interface CvInput {
@@ -42,6 +55,16 @@ export interface Member {
   id: string;
   email: string;
   displayName: string;
+  /**
+     * Cargo en la organización (texto libre).
+     * @nullable
+     */
+  orgPosition?: string | null;
+  /**
+     * Teléfono de contacto.
+     * @nullable
+     */
+  phone?: string | null;
   roles: string[];
   joinedAt: string;
   lastActivityAt: string;
@@ -53,6 +76,10 @@ export interface MemberMe {
   id: string;
   email: string;
   displayName: string;
+  /** @nullable */
+  orgPosition?: string | null;
+  /** @nullable */
+  phone?: string | null;
   roles: string[];
   joinedAt: string;
   hasCv: boolean;
@@ -84,9 +111,48 @@ export interface MemberAdminInput {
      * @maxLength 120
      */
   displayName?: string;
+  /**
+     * @maxLength 200
+     * @nullable
+     */
+  orgPosition?: string | null;
+  /**
+     * @maxLength 40
+     * @nullable
+     */
+  phone?: string | null;
   roles?: string[];
   /** When true, remove the member's CV (PM-only admin action). */
   clearCv?: boolean;
+}
+
+/**
+ * Update one or more of my profile fields (name, cargo, teléfono).
+ */
+export interface MyProfileInput {
+  /**
+     * @minLength 1
+     * @maxLength 120
+     */
+  displayName?: string;
+  /**
+     * @maxLength 200
+     * @nullable
+     */
+  orgPosition?: string | null;
+  /**
+     * @maxLength 40
+     * @nullable
+     */
+  phone?: string | null;
+}
+
+/**
+ * Set, change or clear the titular of a role. Send userId=null to mark the role as Vacante.
+ */
+export interface RoleTitularInput {
+  /** @nullable */
+  userId: string | null;
 }
 
 export interface RoleCoverage {
@@ -114,8 +180,15 @@ export interface RoleCoverage {
 export interface TeamSummary {
   memberCount: number;
   cvCount: number;
+  /** DEPRECATED, kept for compatibility. Equals `assignedRoles` under the
+  new "un titular por rol" model.
+   */
   rolesFilled: number;
   totalRoles: number;
+  /** Roles del proyecto que tienen un titular designado. */
+  assignedRoles: number;
+  /** Roles del proyecto que están vacantes (sin titular). */
+  vacantRoles: number;
   coverage: RoleCoverage[];
 }
 
@@ -858,6 +931,9 @@ export interface AdminRole {
   description: string;
   sortOrder: number;
   memberCount: number;
+  /** @nullable */
+  titularUserId?: string | null;
+  titular?: RoleTitular | null;
 }
 
 export interface RoleUpdateInput {

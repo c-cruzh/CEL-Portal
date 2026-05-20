@@ -10,6 +10,8 @@ import {
   GetMeResponse,
   UpdateMyDisplayNameBody,
   UpdateMyDisplayNameResponse,
+  UpdateMyProfileBody,
+  UpdateMyProfileResponse,
   SetMyRolesBody,
   SetMyRolesResponse,
   GetMyRolesResponse,
@@ -48,6 +50,8 @@ async function buildMe(userId: string) {
     id: user.id,
     email: user.email,
     displayName: user.displayName,
+    orgPosition: user.orgPosition ?? null,
+    phone: user.phone ?? null,
     roles: roles.map((r) => r.roleId),
     joinedAt: user.createdAt,
     hasCv: !!cv,
@@ -90,6 +94,56 @@ router.patch(
 
     const me = await buildMe(req.userId!);
     res.json(UpdateMyDisplayNameResponse.parse(me));
+  },
+);
+
+// Basic phone validation: 6-30 chars, digits / spaces / + - ( ) only.
+const PHONE_REGEX = /^[\d+()\-\s]{6,30}$/;
+
+router.patch(
+  "/me/profile",
+  requireAuth,
+  async (req, res): Promise<void> => {
+    const parsed = UpdateMyProfileBody.safeParse(req.body);
+    if (!parsed.success) {
+      res.status(400).json({ error: parsed.error.message });
+      return;
+    }
+
+    const update: Partial<typeof usersTable.$inferInsert> = {};
+    if (parsed.data.displayName !== undefined) {
+      const name = parsed.data.displayName.trim();
+      if (!name) {
+        res.status(400).json({ error: "El nombre no puede estar vacío." });
+        return;
+      }
+      update.displayName = name;
+    }
+    if (parsed.data.orgPosition !== undefined) {
+      const v = parsed.data.orgPosition?.trim() ?? null;
+      update.orgPosition = v && v.length > 0 ? v : null;
+    }
+    if (parsed.data.phone !== undefined) {
+      const v = parsed.data.phone?.trim() ?? null;
+      if (v && !PHONE_REGEX.test(v)) {
+        res.status(400).json({
+          error:
+            "Teléfono inválido. Usa solo dígitos, espacios y los símbolos + - ( ).",
+        });
+        return;
+      }
+      update.phone = v && v.length > 0 ? v : null;
+    }
+
+    if (Object.keys(update).length > 0) {
+      await db
+        .update(usersTable)
+        .set(update)
+        .where(eq(usersTable.id, req.userId!));
+    }
+
+    const me = await buildMe(req.userId!);
+    res.json(UpdateMyProfileResponse.parse(me));
   },
 );
 

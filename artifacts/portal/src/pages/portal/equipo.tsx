@@ -1,4 +1,4 @@
-import { useGetTeamSummary, useListTeamMembers, useGetMe, useUpdateMyDisplayName, useSetMyRoles, useSetMyCv, getGetMeQueryKey, getListTeamMembersQueryKey, getGetTeamSummaryQueryKey, useRequestUploadUrl, useUpdateMyNotificationPrefs } from "@workspace/api-client-react";
+import { useGetTeamSummary, useListTeamMembers, useGetMe, useUpdateMyProfile, useSetMyRoles, useSetMyCv, getGetMeQueryKey, getListTeamMembersQueryKey, getGetTeamSummaryQueryKey, useRequestUploadUrl, useUpdateMyNotificationPrefs, useListAvailableRoles, getListAvailableRolesQueryKey } from "@workspace/api-client-react";
 import { ROLES } from "@/lib/projectContent";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,8 +18,9 @@ export default function Equipo() {
   const { data: me, isLoading: isLoadingMe } = useGetMe();
   const { data: members, isLoading: isLoadingMembers } = useListTeamMembers();
   const { data: summary, isLoading: isLoadingSummary } = useGetTeamSummary();
+  const { data: roleDefs, isLoading: isLoadingRoles } = useListAvailableRoles();
 
-  if (isLoadingMe || isLoadingMembers || isLoadingSummary) {
+  if (isLoadingMe || isLoadingMembers || isLoadingSummary || isLoadingRoles) {
     return <EquipoSkeleton />;
   }
 
@@ -50,14 +51,14 @@ export default function Equipo() {
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-2xl">{summary?.rolesFilled || 0}</CardTitle>
+            <CardTitle className="text-2xl">{summary?.assignedRoles ?? summary?.rolesFilled ?? 0}</CardTitle>
             <CardDescription>Roles Asignados</CardDescription>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-2xl">{ROLES.length}</CardTitle>
-            <CardDescription>Roles Totales</CardDescription>
+            <CardTitle className="text-2xl">{summary?.vacantRoles ?? 0}</CardTitle>
+            <CardDescription>Roles Vacantes</CardDescription>
           </CardHeader>
         </Card>
       </div>
@@ -84,74 +85,53 @@ export default function Equipo() {
           </p>
           <Card>
             <CardContent className="p-0 divide-y divide-border">
-              {ROLES.map(role => {
-                const coverage = summary?.coverage?.find(c => c.roleId === role.id);
-                const assignees = coverage?.assignees ?? [];
-                const count = assignees.length;
-                const shared = count > 1;
-                const tbd = !!coverage?.tbd;
-                const pendingOnCommittee = !!coverage?.pendingOnCommittee;
-                const pendingPerPhase = !!coverage?.pendingPerPhase;
-                const holders = assignees.map((name) => {
-                  const m = members?.find((mm) => mm.displayName === name);
-                  return { name, email: m?.email };
-                });
+              {(roleDefs ?? []).map((role) => {
+                const titular = role.titular;
                 return (
-                  <div
-                    key={role.id}
-                    className={`p-4 flex flex-col gap-2 ${shared ? "bg-primary/5" : ""}`}
-                  >
+                  <div key={role.id} className="p-4 flex flex-col gap-2">
                     <div className="flex items-center justify-between gap-2">
                       <span className="font-medium text-sm">{role.label}</span>
-                      <Badge variant={count > 0 ? (shared ? "default" : "secondary") : tbd ? "secondary" : "outline"}>
-                        {count === 0
-                          ? tbd
-                            ? "Por determinar (TBD)"
-                            : "Sin asignar"
-                          : shared
-                            ? `Compartido · ${count}`
-                            : "1 persona"}
-                      </Badge>
+                      {titular ? (
+                        <Badge className="bg-emerald-600 hover:bg-emerald-600 text-white">Asignado</Badge>
+                      ) : (
+                        <Badge variant="outline" className="border-amber-500 text-amber-700">Vacante</Badge>
+                      )}
                     </div>
-                    {count > 0 ? (
-                      <div className="flex flex-wrap items-center gap-2 pt-1">
-                        {holders.map((h, idx) => (
-                          <div
-                            key={`${role.id}-${idx}-${h.name}`}
-                            className="flex items-center gap-1.5 bg-background border border-border rounded-full pl-1 pr-2.5 py-0.5"
-                            title={h.email}
-                          >
-                            <Avatar className="h-5 w-5">
-                              <AvatarFallback className="bg-primary/15 text-primary text-[9px] font-medium">
-                                {h.name ? h.name.substring(0, 2).toUpperCase() : "?"}
-                              </AvatarFallback>
-                            </Avatar>
-                            <span className="text-xs">{h.name}</span>
-                          </div>
-                        ))}
+                    {titular ? (
+                      <div className="flex items-start gap-3 pt-1">
+                        <Avatar className="h-9 w-9 border border-border">
+                          <AvatarFallback className="bg-primary/15 text-primary text-xs font-medium">
+                            {(titular.displayName || titular.email).substring(0, 2).toUpperCase()}
+                          </AvatarFallback>
+                        </Avatar>
+                        <div className="flex-1 min-w-0 text-xs space-y-0.5">
+                          <p className="font-medium text-sm text-foreground truncate">
+                            {titular.displayName || titular.email}
+                          </p>
+                          {titular.orgPosition && (
+                            <p className="text-muted-foreground truncate">{titular.orgPosition}</p>
+                          )}
+                          <p className="text-muted-foreground truncate">{titular.email}</p>
+                          {titular.phone && (
+                            <p className="text-muted-foreground">{titular.phone}</p>
+                          )}
+                          {titular.hasCv && titular.cv?.objectPath && (
+                            <a
+                              href={`/api/storage${titular.cv.objectPath}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="inline-flex items-center gap-1 text-primary hover:underline pt-1"
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M10.4 12.6a2 2 0 1 1 3 3L8 21l-4 1 1-4Z"/><path d="M18 21v-8a2 2 0 0 0-2-2h-4"/></svg>
+                              Descargar CV
+                            </a>
+                          )}
+                        </div>
                       </div>
-                    ) : tbd ? (
-                      <p className="text-xs text-muted-foreground italic">
-                        Por determinar (TBD)
-                      </p>
                     ) : (
-                      <p className="text-xs text-muted-foreground italic">Sin asignar</p>
-                    )}
-                    {pendingOnCommittee && (
-                      <Badge
-                        variant="outline"
-                        className="self-start text-[10px] border-amber-500/40 text-amber-700 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/30"
-                      >
-                        Pendiente Comité de Dirección CEL
-                      </Badge>
-                    )}
-                    {pendingPerPhase && (
-                      <Badge
-                        variant="outline"
-                        className="self-start text-[10px] border-sky-500/40 text-sky-700 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/30"
-                      >
-                        Pendiente por etapa
-                      </Badge>
+                      <p className="text-xs text-muted-foreground italic">
+                        Puesto vacante — pendiente de designar titular.
+                      </p>
                     )}
                   </div>
                 );
@@ -180,7 +160,13 @@ function MemberCard({ member }: { member: Member }) {
             <div className="flex items-start justify-between gap-2">
               <div className="min-w-0">
                 <p className="font-semibold text-sm truncate">{member.displayName || "Usuario sin nombre"}</p>
+                {member.orgPosition && (
+                  <p className="text-xs text-muted-foreground truncate">{member.orgPosition}</p>
+                )}
                 <p className="text-xs text-muted-foreground truncate">{member.email}</p>
+                {member.phone && (
+                  <p className="text-xs text-muted-foreground truncate">{member.phone}</p>
+                )}
               </div>
             </div>
             <div className="mt-3 flex flex-wrap gap-1.5">
@@ -213,14 +199,18 @@ function MemberCard({ member }: { member: Member }) {
   );
 }
 
+const PHONE_REGEX = /^[\d+()\-\s]{6,30}$/;
+
 function MyProfileDialog({ me }: { me: MemberMe }) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState(me?.displayName || "");
+  const [orgPosition, setOrgPosition] = useState(me?.orgPosition ?? "");
+  const [phone, setPhone] = useState(me?.phone ?? "");
   const [selectedRoles, setSelectedRoles] = useState<string[]>(me?.roles || []);
   const [file, setFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   
-  const updateName = useUpdateMyDisplayName();
+  const updateProfile = useUpdateMyProfile();
   const setRoles = useSetMyRoles();
   const setCv = useSetMyCv();
   const requestUrl = useRequestUploadUrl();
@@ -255,11 +245,28 @@ function MyProfileDialog({ me }: { me: MemberMe }) {
   };
 
   const handleSave = async () => {
+    const trimmedPhone = phone.trim();
+    if (trimmedPhone && !PHONE_REGEX.test(trimmedPhone)) {
+      toast({
+        title: "Teléfono inválido",
+        description: "Usa solo dígitos, espacios, + ( ) y - (6 a 30 caracteres).",
+        variant: "destructive",
+      });
+      return;
+    }
     try {
-      if (name !== me?.displayName) {
-        await updateName.mutateAsync({ data: { displayName: name } });
+      const profilePatch: { displayName?: string; orgPosition?: string | null; phone?: string | null } = {};
+      if (name !== me?.displayName) profilePatch.displayName = name;
+      if ((orgPosition.trim() || null) !== (me?.orgPosition ?? null)) {
+        profilePatch.orgPosition = orgPosition.trim() ? orgPosition.trim() : null;
       }
-      
+      if ((trimmedPhone || null) !== (me?.phone ?? null)) {
+        profilePatch.phone = trimmedPhone ? trimmedPhone : null;
+      }
+      if (Object.keys(profilePatch).length > 0) {
+        await updateProfile.mutateAsync({ data: profilePatch });
+      }
+
       const rolesChanged = selectedRoles.length !== (me?.roles?.length || 0) || 
         !selectedRoles.every(r => me?.roles?.includes(r));
         
@@ -302,7 +309,8 @@ function MyProfileDialog({ me }: { me: MemberMe }) {
       queryClient.invalidateQueries({ queryKey: getGetMeQueryKey() });
       queryClient.invalidateQueries({ queryKey: getListTeamMembersQueryKey() });
       queryClient.invalidateQueries({ queryKey: getGetTeamSummaryQueryKey() });
-      
+      queryClient.invalidateQueries({ queryKey: getListAvailableRolesQueryKey() });
+
       toast({ title: "Perfil actualizado", description: "Tus datos se han guardado correctamente." });
       setOpen(false);
     } catch (err) {
@@ -335,6 +343,27 @@ function MyProfileDialog({ me }: { me: MemberMe }) {
           <div className="space-y-2">
             <Label>Nombre a mostrar</Label>
             <Input value={name} onChange={e => setName(e.target.value)} placeholder="Ej. Carlos Martínez" />
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label>Cargo en la organización</Label>
+              <Input
+                value={orgPosition}
+                onChange={(e) => setOrgPosition(e.target.value)}
+                placeholder="Ej. Jefe de Hidrología"
+                maxLength={200}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Teléfono de contacto</Label>
+              <Input
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="Ej. +503 7777 7777"
+                maxLength={40}
+              />
+            </div>
           </div>
 
           <div className="space-y-3">

@@ -11,6 +11,10 @@ export interface MemberMe {
   id: string;
   email: string;
   displayName: string;
+  /** @nullable */
+  orgPosition?: string | null;
+  /** @nullable */
+  phone?: string | null;
   roles: string[];
   joinedAt: Date;
   hasCv: boolean;

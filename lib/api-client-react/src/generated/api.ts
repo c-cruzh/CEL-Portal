@@ -65,6 +65,7 @@ import type {
   MemberMe,
   Milestone,
   MilestoneInput,
+  MyProfileInput,
   NotificationLogEntry,
   NotificationPrefsInput,
   NotificationRecipient,
@@ -74,6 +75,7 @@ import type {
   ProjectConfigUpdate,
   RegenerateWeekliesResult,
   RoleDefinition,
+  RoleTitularInput,
   RoleUpdateInput,
   RolesInput,
   TeamSummary,
@@ -317,6 +319,77 @@ export const useUpdateMyDisplayName = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getUpdateMyDisplayNameMutationOptions(options));
+    }
+
+export const getUpdateMyProfileUrl = () => {
+
+
+
+
+  return `/api/me/profile`
+}
+
+/**
+ * @summary Update my profile (name, cargo en la organización, teléfono)
+ */
+export const updateMyProfile = async (myProfileInput: MyProfileInput, options?: RequestInit): Promise<MemberMe> => {
+
+  return customFetch<MemberMe>(getUpdateMyProfileUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      myProfileInput,)
+  }
+);}
+
+
+
+
+export const getUpdateMyProfileMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMyProfile>>, TError,{data: BodyType<MyProfileInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateMyProfile>>, TError,{data: BodyType<MyProfileInput>}, TContext> => {
+
+const mutationKey = ['updateMyProfile'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateMyProfile>>, {data: BodyType<MyProfileInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateMyProfile(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateMyProfileMutationResult = NonNullable<Awaited<ReturnType<typeof updateMyProfile>>>
+    export type UpdateMyProfileMutationBody = BodyType<MyProfileInput>
+    export type UpdateMyProfileMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Update my profile (name, cargo en la organización, teléfono)
+ */
+export const useUpdateMyProfile = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateMyProfile>>, TError,{data: BodyType<MyProfileInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateMyProfile>>,
+        TError,
+        {data: BodyType<MyProfileInput>},
+        TContext
+      > => {
+      return useMutation(getUpdateMyProfileMutationOptions(options));
     }
 
 export const getUpdateMyNotificationPrefsUrl = () => {
@@ -4226,6 +4299,78 @@ export function useListAdminRoles<TData = Awaited<ReturnType<typeof listAdminRol
 
 
 
+
+export const getSetRoleTitularUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/roles/${id}/titular`
+}
+
+/**
+ * @summary Set, change or clear the titular of a role (PM only)
+ */
+export const setRoleTitular = async (id: string,
+    roleTitularInput: RoleTitularInput, options?: RequestInit): Promise<AdminRole> => {
+
+  return customFetch<AdminRole>(getSetRoleTitularUrl(id),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      roleTitularInput,)
+  }
+);}
+
+
+
+
+export const getSetRoleTitularMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setRoleTitular>>, TError,{id: string;data: BodyType<RoleTitularInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof setRoleTitular>>, TError,{id: string;data: BodyType<RoleTitularInput>}, TContext> => {
+
+const mutationKey = ['setRoleTitular'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof setRoleTitular>>, {id: string;data: BodyType<RoleTitularInput>}> = (props) => {
+          const {id,data} = props ?? {};
+
+          return  setRoleTitular(id,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type SetRoleTitularMutationResult = NonNullable<Awaited<ReturnType<typeof setRoleTitular>>>
+    export type SetRoleTitularMutationBody = BodyType<RoleTitularInput>
+    export type SetRoleTitularMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Set, change or clear the titular of a role (PM only)
+ */
+export const useSetRoleTitular = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof setRoleTitular>>, TError,{id: string;data: BodyType<RoleTitularInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof setRoleTitular>>,
+        TError,
+        {id: string;data: BodyType<RoleTitularInput>},
+        TContext
+      > => {
+      return useMutation(getSetRoleTitularMutationOptions(options));
+    }
 
 export const getUpdateRoleUrl = (id: string,) => {
 

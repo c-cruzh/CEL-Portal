@@ -16,12 +16,14 @@ import {
   AdminUpdateMemberResponse,
 } from "@workspace/api-zod";
 import { requireAuth } from "../middlewares/requireAuth";
-import { requirePM } from "../middlewares/requirePM";
 import { requireAdmin } from "../middlewares/requireAdmin";
 import { notifyAsync } from "../lib/notifications";
 import { logAdminAction } from "../lib/audit";
 
 const router: IRouter = Router();
+
+// Basic phone validation: 6-30 chars, digits / spaces / + - ( ) only.
+const PHONE_REGEX = /^[\d+()\-\s]{6,30}$/;
 
 router.get(
   "/team/members",
@@ -55,6 +57,8 @@ router.get(
         id: u.id,
         email: u.email,
         displayName: u.displayName,
+        orgPosition: u.orgPosition ?? null,
+        phone: u.phone ?? null,
         roles: rolesByUser.get(u.id) ?? [],
         joinedAt: u.createdAt,
         lastActivityAt: u.lastActivityAt,
@@ -83,13 +87,60 @@ router.get(
       .select()
       .from(rolesTable)
       .orderBy(asc(rolesTable.sortOrder));
+
+    const titularIds = Array.from(
+      new Set(
+        rows
+          .map((r) => r.titularUserId)
+          .filter((v): v is string => typeof v === "string" && v.length > 0),
+      ),
+    );
+    const titularUsers = titularIds.length
+      ? await db.select().from(usersTable)
+      : [];
+    const userById = new Map(
+      titularUsers
+        .filter((u) => titularIds.includes(u.id))
+        .map((u) => [u.id, u]),
+    );
+    const cvByUser = titularIds.length
+      ? new Map(
+          (await db.select().from(userCvsTable))
+            .filter((c) => titularIds.includes(c.userId))
+            .map((c) => [c.userId, c]),
+        )
+      : new Map();
+
     res.json(
       ListAvailableRolesResponse.parse(
-        rows.map((r) => ({
-          id: r.id,
-          label: r.label,
-          description: r.description,
-        })),
+        rows.map((r) => {
+          const u = r.titularUserId ? userById.get(r.titularUserId) : undefined;
+          const cv = r.titularUserId ? cvByUser.get(r.titularUserId) : undefined;
+          return {
+            id: r.id,
+            label: r.label,
+            description: r.description,
+            titular: u
+              ? {
+                  id: u.id,
+                  displayName: u.displayName,
+                  email: u.email,
+                  orgPosition: u.orgPosition ?? null,
+                  phone: u.phone ?? null,
+                  hasCv: !!cv,
+                  cv: cv
+                    ? {
+                        fileName: cv.fileName,
+                        contentType: cv.contentType,
+                        objectPath: cv.objectPath,
+                        sizeBytes: cv.sizeBytes,
+                        uploadedAt: cv.uploadedAt,
+                      }
+                    : null,
+                }
+              : null,
+          };
+        }),
       ),
     );
   },
@@ -143,14 +194,17 @@ router.get(
       };
     });
 
-    const rolesFilled = coverage.filter((c) => c.count > 0).length;
+    const assignedRoles = roles.filter((r) => !!r.titularUserId).length;
+    const vacantRoles = roles.length - assignedRoles;
 
     res.json(
       GetTeamSummaryResponse.parse({
         memberCount: users.length,
         cvCount: cvs.length,
-        rolesFilled,
+        rolesFilled: assignedRoles,
         totalRoles: roles.length,
+        assignedRoles,
+        vacantRoles,
         coverage,
       }),
     );
@@ -190,11 +244,34 @@ router.patch(
       .where(eq(userRolesTable.userId, userId));
     const previousRoles = previousRoleRows.map((r) => r.roleId).sort();
 
+    if (parsed.data.phone !== undefined && parsed.data.phone !== null) {
+      const v = parsed.data.phone.trim();
+      if (v && !PHONE_REGEX.test(v)) {
+        res.status(400).json({
+          error:
+            "Teléfono inválido. Usa solo dígitos, espacios y los símbolos + - ( ).",
+        });
+        return;
+      }
+    }
+
     await db.transaction(async (tx) => {
+      const userUpdate: Partial<typeof usersTable.$inferInsert> = {};
       if (parsed.data.displayName !== undefined) {
+        userUpdate.displayName = parsed.data.displayName.trim();
+      }
+      if (parsed.data.orgPosition !== undefined) {
+        const v = parsed.data.orgPosition?.trim() ?? null;
+        userUpdate.orgPosition = v && v.length > 0 ? v : null;
+      }
+      if (parsed.data.phone !== undefined) {
+        const v = parsed.data.phone?.trim() ?? null;
+        userUpdate.phone = v && v.length > 0 ? v : null;
+      }
+      if (Object.keys(userUpdate).length > 0) {
         await tx
           .update(usersTable)
-          .set({ displayName: parsed.data.displayName.trim() })
+          .set(userUpdate)
           .where(eq(usersTable.id, userId));
       }
       if (parsed.data.roles !== undefined) {
@@ -224,6 +301,8 @@ router.patch(
       targetId: userId,
       payload: {
         displayName: parsed.data.displayName,
+        orgPosition: parsed.data.orgPosition,
+        phone: parsed.data.phone,
         roles: parsed.data.roles,
         previousRoles,
         clearCv: parsed.data.clearCv === true ? true : undefined,
@@ -276,6 +355,8 @@ router.patch(
         id: user!.id,
         email: user!.email,
         displayName: user!.displayName,
+        orgPosition: user!.orgPosition ?? null,
+        phone: user!.phone ?? null,
         roles: roleRows.map((r) => r.roleId),
         joinedAt: user!.createdAt,
         lastActivityAt: user!.lastActivityAt,

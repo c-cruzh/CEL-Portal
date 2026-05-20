@@ -80,6 +80,31 @@ paths:
               schema:
                 $ref: "#/components/schemas/MemberMe"
 
+  /me/profile:
+    patch:
+      operationId: updateMyProfile
+      tags: [me]
+      summary: Update my profile (name, cargo en la organización, teléfono)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MyProfileInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MemberMe"
+        "400":
+          description: Validation failed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /me/notifications:
     patch:
       operationId: updateMyNotificationPrefs
@@ -1242,6 +1267,42 @@ paths:
                 items:
                   $ref: "#/components/schemas/AdminRole"
 
+  /admin/roles/{id}/titular:
+    put:
+      operationId: setRoleTitular
+      tags: [admin]
+      summary: Set, change or clear the titular of a role (PM only)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RoleTitularInput"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminRole"
+        "400":
+          description: Invalid request
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: Role or user not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /admin/roles/{id}:
     patch:
       operationId: updateRole
@@ -1456,6 +1517,10 @@ components:
           type: string
         description:
           type: string
+        titular:
+          oneOf:
+            - $ref: "#/components/schemas/RoleTitular"
+            - type: "null"
 
     Cv:
       type: object
@@ -1500,6 +1565,12 @@ components:
           type: string
         displayName:
           type: string
+        orgPosition:
+          type: ["string", "null"]
+          description: Cargo en la organización (texto libre).
+        phone:
+          type: ["string", "null"]
+          description: Teléfono de contacto.
         roles:
           type: array
           items:
@@ -1528,6 +1599,10 @@ components:
           type: string
         displayName:
           type: string
+        orgPosition:
+          type: ["string", "null"]
+        phone:
+          type: ["string", "null"]
         roles:
           type: array
           items:
@@ -1579,6 +1654,12 @@ components:
           type: string
           minLength: 1
           maxLength: 120
+        orgPosition:
+          type: ["string", "null"]
+          maxLength: 200
+        phone:
+          type: ["string", "null"]
+          maxLength: 40
         roles:
           type: array
           items:
@@ -1586,6 +1667,50 @@ components:
         clearCv:
           type: boolean
           description: When true, remove the member's CV (PM-only admin action).
+
+    MyProfileInput:
+      type: object
+      description: Update one or more of my profile fields (name, cargo, teléfono).
+      properties:
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 120
+        orgPosition:
+          type: ["string", "null"]
+          maxLength: 200
+        phone:
+          type: ["string", "null"]
+          maxLength: 40
+
+    RoleTitularInput:
+      type: object
+      description: "Set, change or clear the titular of a role. Send userId=null to mark the role as Vacante."
+      required: [userId]
+      properties:
+        userId:
+          type: ["string", "null"]
+
+    RoleTitular:
+      type: object
+      required: [id, displayName, email, hasCv]
+      properties:
+        id:
+          type: string
+        displayName:
+          type: string
+        email:
+          type: string
+        orgPosition:
+          type: ["string", "null"]
+        phone:
+          type: ["string", "null"]
+        hasCv:
+          type: boolean
+        cv:
+          oneOf:
+            - $ref: "#/components/schemas/Cv"
+            - type: "null"
 
     RoleCoverage:
       type: object
@@ -1622,7 +1747,8 @@ components:
 
     TeamSummary:
       type: object
-      required: [memberCount, cvCount, rolesFilled, totalRoles, coverage]
+      required:
+        [memberCount, cvCount, rolesFilled, totalRoles, assignedRoles, vacantRoles, coverage]
       properties:
         memberCount:
           type: integer
@@ -1630,8 +1756,17 @@ components:
           type: integer
         rolesFilled:
           type: integer
+          description: |
+            DEPRECATED, kept for compatibility. Equals `assignedRoles` under the
+            new "un titular por rol" model.
         totalRoles:
           type: integer
+        assignedRoles:
+          type: integer
+          description: Roles del proyecto que tienen un titular designado.
+        vacantRoles:
+          type: integer
+          description: Roles del proyecto que están vacantes (sin titular).
         coverage:
           type: array
           items:
@@ -2492,6 +2627,12 @@ components:
           type: integer
         memberCount:
           type: integer
+        titularUserId:
+          type: ["string", "null"]
+        titular:
+          oneOf:
+            - $ref: "#/components/schemas/RoleTitular"
+            - type: "null"
 
     RoleUpdateInput:
       type: object

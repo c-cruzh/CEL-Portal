@@ -5,6 +5,7 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { RoleTitular } from './roleTitular';
 
 export interface AdminRole {
   id: string;
@@ -12,4 +13,7 @@ export interface AdminRole {
   description: string;
   sortOrder: number;
   memberCount: number;
+  /** @nullable */
+  titularUserId?: string | null;
+  titular?: RoleTitular | null;
 }

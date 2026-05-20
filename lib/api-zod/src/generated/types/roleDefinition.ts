@@ -5,9 +5,11 @@
  * API specification
  * OpenAPI spec version: 0.1.0
  */
+import type { RoleTitular } from './roleTitular';
 
 export interface RoleDefinition {
   id: string;
   label: string;
   description: string;
+  titular?: RoleTitular | null;
 }

@@ -6,7 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface MemberAdminInput {
+/**
+ * Update one or more of my profile fields (name, cargo, teléfono).
+ */
+export interface MyProfileInput {
   /**
      * @minLength 1
      * @maxLength 120
@@ -22,7 +25,4 @@ export interface MemberAdminInput {
      * @nullable
      */
   phone?: string | null;
-  roles?: string[];
-  /** When true, remove the member's CV (PM-only admin action). */
-  clearCv?: boolean;
 }

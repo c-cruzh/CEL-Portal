@@ -4,6 +4,8 @@ export const usersTable = pgTable("users", {
   id: text("id").primaryKey(),
   email: text("email").notNull().unique(),
   displayName: text("display_name").notNull(),
+  orgPosition: text("org_position"),
+  phone: text("phone"),
   emailNotificationsOptOut: boolean("email_notifications_opt_out")
     .notNull()
     .default(false),

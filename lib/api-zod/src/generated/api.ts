@@ -23,6 +23,8 @@ export const GetMeResponse = zod.object({
   "id": zod.string(),
   "email": zod.string(),
   "displayName": zod.string(),
+  "orgPosition": zod.string().nullish(),
+  "phone": zod.string().nullish(),
   "roles": zod.array(zod.string()),
   "joinedAt": zod.coerce.date(),
   "hasCv": zod.boolean(),
@@ -53,6 +55,46 @@ export const UpdateMyDisplayNameResponse = zod.object({
   "id": zod.string(),
   "email": zod.string(),
   "displayName": zod.string(),
+  "orgPosition": zod.string().nullish(),
+  "phone": zod.string().nullish(),
+  "roles": zod.array(zod.string()),
+  "joinedAt": zod.coerce.date(),
+  "hasCv": zod.boolean(),
+  "cv": zod.union([zod.object({
+  "fileName": zod.string(),
+  "contentType": zod.string(),
+  "objectPath": zod.string(),
+  "sizeBytes": zod.number(),
+  "uploadedAt": zod.coerce.date()
+}),zod.null()]).optional(),
+  "emailNotificationsOptOut": zod.boolean(),
+  "isAdmin": zod.boolean().describe('True only for the hard-coded admin principals (Camila, Kevin).')
+})
+
+
+/**
+ * @summary Update my profile (name, cargo en la organización, teléfono)
+ */
+export const updateMyProfileBodyDisplayNameMax = 120;
+
+export const updateMyProfileBodyOrgPositionMax = 200;
+
+export const updateMyProfileBodyPhoneMax = 40;
+
+
+
+export const UpdateMyProfileBody = zod.object({
+  "displayName": zod.string().min(1).max(updateMyProfileBodyDisplayNameMax).optional(),
+  "orgPosition": zod.string().max(updateMyProfileBodyOrgPositionMax).nullish(),
+  "phone": zod.string().max(updateMyProfileBodyPhoneMax).nullish()
+}).describe('Update one or more of my profile fields (name, cargo, teléfono).')
+
+export const UpdateMyProfileResponse = zod.object({
+  "id": zod.string(),
+  "email": zod.string(),
+  "displayName": zod.string(),
+  "orgPosition": zod.string().nullish(),
+  "phone": zod.string().nullish(),
   "roles": zod.array(zod.string()),
   "joinedAt": zod.coerce.date(),
   "hasCv": zod.boolean(),
@@ -79,6 +121,8 @@ export const UpdateMyNotificationPrefsResponse = zod.object({
   "id": zod.string(),
   "email": zod.string(),
   "displayName": zod.string(),
+  "orgPosition": zod.string().nullish(),
+  "phone": zod.string().nullish(),
   "roles": zod.array(zod.string()),
   "joinedAt": zod.coerce.date(),
   "hasCv": zod.boolean(),
@@ -157,6 +201,8 @@ export const ListTeamMembersResponseItem = zod.object({
   "id": zod.string(),
   "email": zod.string(),
   "displayName": zod.string(),
+  "orgPosition": zod.string().nullish().describe('Cargo en la organización (texto libre).'),
+  "phone": zod.string().nullish().describe('Teléfono de contacto.'),
   "roles": zod.array(zod.string()),
   "joinedAt": zod.coerce.date(),
   "lastActivityAt": zod.coerce.date(),
@@ -181,10 +227,16 @@ export const AdminUpdateMemberParams = zod.object({
 
 export const adminUpdateMemberBodyDisplayNameMax = 120;
 
+export const adminUpdateMemberBodyOrgPositionMax = 200;
+
+export const adminUpdateMemberBodyPhoneMax = 40;
+
 
 
 export const AdminUpdateMemberBody = zod.object({
   "displayName": zod.string().min(1).max(adminUpdateMemberBodyDisplayNameMax).optional(),
+  "orgPosition": zod.string().max(adminUpdateMemberBodyOrgPositionMax).nullish(),
+  "phone": zod.string().max(adminUpdateMemberBodyPhoneMax).nullish(),
   "roles": zod.array(zod.string()).optional(),
   "clearCv": zod.boolean().optional().describe('When true, remove the member\'s CV (PM-only admin action).')
 })
@@ -193,6 +245,8 @@ export const AdminUpdateMemberResponse = zod.object({
   "id": zod.string(),
   "email": zod.string(),
   "displayName": zod.string(),
+  "orgPosition": zod.string().nullish().describe('Cargo en la organización (texto libre).'),
+  "phone": zod.string().nullish().describe('Teléfono de contacto.'),
   "roles": zod.array(zod.string()),
   "joinedAt": zod.coerce.date(),
   "lastActivityAt": zod.coerce.date(),
@@ -213,7 +267,22 @@ export const AdminUpdateMemberResponse = zod.object({
 export const ListAvailableRolesResponseItem = zod.object({
   "id": zod.string(),
   "label": zod.string(),
-  "description": zod.string()
+  "description": zod.string(),
+  "titular": zod.union([zod.object({
+  "id": zod.string(),
+  "displayName": zod.string(),
+  "email": zod.string(),
+  "orgPosition": zod.string().nullish(),
+  "phone": zod.string().nullish(),
+  "hasCv": zod.boolean(),
+  "cv": zod.union([zod.object({
+  "fileName": zod.string(),
+  "contentType": zod.string(),
+  "objectPath": zod.string(),
+  "sizeBytes": zod.number(),
+  "uploadedAt": zod.coerce.date()
+}),zod.null()]).optional()
+}),zod.null()]).optional()
 })
 export const ListAvailableRolesResponse = zod.array(ListAvailableRolesResponseItem)
 
@@ -224,8 +293,10 @@ export const ListAvailableRolesResponse = zod.array(ListAvailableRolesResponseIt
 export const GetTeamSummaryResponse = zod.object({
   "memberCount": zod.number(),
   "cvCount": zod.number(),
-  "rolesFilled": zod.number(),
+  "rolesFilled": zod.number().describe('DEPRECATED, kept for compatibility. Equals `assignedRoles` under the\nnew \"un titular por rol\" model.\n'),
   "totalRoles": zod.number(),
+  "assignedRoles": zod.number().describe('Roles del proyecto que tienen un titular designado.'),
+  "vacantRoles": zod.number().describe('Roles del proyecto que están vacantes (sin titular).'),
   "coverage": zod.array(zod.object({
   "roleId": zod.string(),
   "label": zod.string(),
@@ -1264,9 +1335,61 @@ export const ListAdminRolesResponseItem = zod.object({
   "label": zod.string(),
   "description": zod.string(),
   "sortOrder": zod.number(),
-  "memberCount": zod.number()
+  "memberCount": zod.number(),
+  "titularUserId": zod.string().nullish(),
+  "titular": zod.union([zod.object({
+  "id": zod.string(),
+  "displayName": zod.string(),
+  "email": zod.string(),
+  "orgPosition": zod.string().nullish(),
+  "phone": zod.string().nullish(),
+  "hasCv": zod.boolean(),
+  "cv": zod.union([zod.object({
+  "fileName": zod.string(),
+  "contentType": zod.string(),
+  "objectPath": zod.string(),
+  "sizeBytes": zod.number(),
+  "uploadedAt": zod.coerce.date()
+}),zod.null()]).optional()
+}),zod.null()]).optional()
 })
 export const ListAdminRolesResponse = zod.array(ListAdminRolesResponseItem)
+
+
+/**
+ * @summary Set, change or clear the titular of a role (PM only)
+ */
+export const SetRoleTitularParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const SetRoleTitularBody = zod.object({
+  "userId": zod.string().nullable()
+}).describe('Set, change or clear the titular of a role. Send userId=null to mark the role as Vacante.')
+
+export const SetRoleTitularResponse = zod.object({
+  "id": zod.string(),
+  "label": zod.string(),
+  "description": zod.string(),
+  "sortOrder": zod.number(),
+  "memberCount": zod.number(),
+  "titularUserId": zod.string().nullish(),
+  "titular": zod.union([zod.object({
+  "id": zod.string(),
+  "displayName": zod.string(),
+  "email": zod.string(),
+  "orgPosition": zod.string().nullish(),
+  "phone": zod.string().nullish(),
+  "hasCv": zod.boolean(),
+  "cv": zod.union([zod.object({
+  "fileName": zod.string(),
+  "contentType": zod.string(),
+  "objectPath": zod.string(),
+  "sizeBytes": zod.number(),
+  "uploadedAt": zod.coerce.date()
+}),zod.null()]).optional()
+}),zod.null()]).optional()
+})
 
 
 /**
@@ -1293,7 +1416,23 @@ export const UpdateRoleResponse = zod.object({
   "label": zod.string(),
   "description": zod.string(),
   "sortOrder": zod.number(),
-  "memberCount": zod.number()
+  "memberCount": zod.number(),
+  "titularUserId": zod.string().nullish(),
+  "titular": zod.union([zod.object({
+  "id": zod.string(),
+  "displayName": zod.string(),
+  "email": zod.string(),
+  "orgPosition": zod.string().nullish(),
+  "phone": zod.string().nullish(),
+  "hasCv": zod.boolean(),
+  "cv": zod.union([zod.object({
+  "fileName": zod.string(),
+  "contentType": zod.string(),
+  "objectPath": zod.string(),
+  "sizeBytes": zod.number(),
+  "uploadedAt": zod.coerce.date()
+}),zod.null()]).optional()
+}),zod.null()]).optional()
 })
 
 
