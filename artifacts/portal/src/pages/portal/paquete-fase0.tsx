@@ -491,7 +491,11 @@ export default function PaqueteFase0() {
         </CardContent>
       </Card>
 
-      <section id="correo-de-remision" className="space-y-4 scroll-mt-20">
+      <section
+        id="correo-de-remision"
+        tabIndex={-1}
+        className="space-y-4 scroll-mt-20 rounded-md target:ring-2 target:ring-primary/50 target:ring-offset-2 target:ring-offset-background focus:outline-none transition-shadow"
+      >
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <Mail className="h-5 w-5 text-primary" />
@@ -564,7 +568,11 @@ export default function PaqueteFase0() {
         </Card>
       </section>
 
-      <section id="documentos-finales" className="space-y-4 scroll-mt-20">
+      <section
+        id="documentos-finales"
+        tabIndex={-1}
+        className="space-y-4 scroll-mt-20 rounded-md target:ring-2 target:ring-primary/50 target:ring-offset-2 target:ring-offset-background focus:outline-none transition-shadow"
+      >
         <div className="flex items-center gap-2">
           <FileText className="h-5 w-5 text-primary" />
           <h2 className="text-xl font-semibold text-foreground">
@@ -632,7 +640,11 @@ export default function PaqueteFase0() {
         </div>
       </section>
 
-      <section id="deck-ejecutivo" className="space-y-4 scroll-mt-20">
+      <section
+        id="deck-ejecutivo"
+        tabIndex={-1}
+        className="space-y-4 scroll-mt-20 rounded-md target:ring-2 target:ring-primary/50 target:ring-offset-2 target:ring-offset-background focus:outline-none transition-shadow"
+      >
         <div className="flex items-center gap-2">
           <Presentation className="h-5 w-5 text-primary" />
           <h2 className="text-xl font-semibold text-foreground">
@@ -691,7 +703,11 @@ export default function PaqueteFase0() {
         </Card>
       </section>
 
-      <section id="diagramas" className="space-y-4 scroll-mt-20">
+      <section
+        id="diagramas"
+        tabIndex={-1}
+        className="space-y-4 scroll-mt-20 rounded-md target:ring-2 target:ring-primary/50 target:ring-offset-2 target:ring-offset-background focus:outline-none transition-shadow"
+      >
         <div className="flex items-center gap-2">
           <Workflow className="h-5 w-5 text-primary" />
           <h2 className="text-xl font-semibold text-foreground">Diagramas</h2>
