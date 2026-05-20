@@ -61,6 +61,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
+import { DocsViewer } from "@/components/DocsViewer";
 
 // Mapping uncertainty against the original RACI in the project PRD. The
 // original document groups responsibilities by a smaller, broader set of
@@ -141,6 +142,7 @@ export default function Configuracion() {
           <TabsTrigger value="roles">Roles</TabsTrigger>
           <TabsTrigger value="notificaciones">Notificaciones</TabsTrigger>
           <TabsTrigger value="auditoria">Auditoría</TabsTrigger>
+          <TabsTrigger value="documentacion">Documentación</TabsTrigger>
         </TabsList>
 
         <TabsContent value="miembros" className="space-y-6">
@@ -158,6 +160,9 @@ export default function Configuracion() {
         </TabsContent>
         <TabsContent value="auditoria" className="space-y-6">
           <AuditLogSection />
+        </TabsContent>
+        <TabsContent value="documentacion" className="space-y-6">
+          <DocsViewer />
         </TabsContent>
       </Tabs>
     </div>
