@@ -37,7 +37,8 @@ const ROLES: Array<{
   description: string;
   sortOrder: number;
 }> = [
-  { id: "pm_lead", label: "PM / Líder de Proyecto", description: "Liderazgo general del piloto, planificación y coordinación con CEL. Puede ser asumido por más de una persona.", sortOrder: 1 },
+  { id: "project_lead", label: "Líder de Proyecto", description: "Liderazgo general del piloto. Owner de la relación completa con CEL: orquesta, gobierna y delega. Autoridad final del lado C2 Labs.", sortOrder: 0 },
+  { id: "pm_lead", label: "Project Manager (C2 Labs)", description: "Coordinación ejecutiva del piloto: seguimiento, operación PM, agenda con CEL y delegación interna. Reporta al Líder de Proyecto.", sortOrder: 1 },
   { id: "pm_cel", label: "PM / Contraparte CEL", description: "Contraparte de gestión por parte de CEL: agenda, accesos y stakeholders internos.", sortOrder: 2 },
   { id: "hydrology_lead_cel", label: "Líder Hidrología (CEL)", description: "Validación de patrones, ground-truth y evaluación de pronósticos.", sortOrder: 3 },
   { id: "geospatial_expert_cel", label: "Experto Geoespacial (CEL)", description: "MDE, HydroATLAS, cobertura de suelos y delimitación de cuencas.", sortOrder: 4 },
@@ -194,7 +195,7 @@ async function seedMilestones(): Promise<number> {
 const ADMIN_ROLE_BOOTSTRAP: Array<{ email: string; roles: string[] }> = [
   {
     email: "camila@c2labs.ai",
-    roles: ["pm_lead", "ml_engineer", "data_engineer"],
+    roles: ["project_lead", "ml_engineer", "data_engineer"],
   },
   { email: "kevin@c2labs.ai", roles: ["pm_lead"] },
   { email: "jmherreram@cel.gob.sv", roles: ["pm_cel"] },
@@ -222,7 +223,7 @@ const SEED_PLACEHOLDER_USERS: Array<{
   {
     email: "kevin@c2labs.ai",
     displayName: "Kevin Centeno",
-    orgPosition: "Project Manager (C2 Labs)",
+    orgPosition: "Project Manager (C2 Labs) — Operaciones",
     roles: ["pm_lead"],
   },
   {

@@ -17,7 +17,7 @@ import { notifyAsync, notifyDecisionAssignedAsync } from "../lib/notifications";
 
 const router: IRouter = Router();
 
-const PM_ROLE_IDS = new Set(["pm_lead", "pm_cel"]);
+const PM_ROLE_IDS = new Set(["project_lead", "pm_lead", "pm_cel"]);
 
 async function getUserRoles(userId: string): Promise<string[]> {
   const rows = await db

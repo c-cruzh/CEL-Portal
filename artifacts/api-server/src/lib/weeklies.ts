@@ -62,7 +62,7 @@ export async function ensureSystemWeeklies(
         kind: "weekly_session",
         weekOffset: week,
         phaseId: null,
-        ownersRoles: ["pm_lead", "pm_cel"],
+        ownersRoles: ["project_lead", "pm_lead", "pm_cel"],
         source: "system",
         seedKey,
       })
@@ -74,7 +74,7 @@ export async function ensureSystemWeeklies(
           kind: "weekly_session",
           weekOffset: week,
           phaseId: null,
-          ownersRoles: ["pm_lead", "pm_cel"],
+          ownersRoles: ["project_lead", "pm_lead", "pm_cel"],
           source: "system",
         },
       });

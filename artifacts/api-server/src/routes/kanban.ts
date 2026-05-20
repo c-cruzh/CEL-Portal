@@ -35,7 +35,7 @@ async function loadActor(userId: string) {
   return actor ?? null;
 }
 
-const PM_ROLE_IDS = new Set(["pm_lead", "pm_cel"]);
+const PM_ROLE_IDS = new Set(["project_lead", "pm_lead", "pm_cel"]);
 
 export function serializeCard(row: typeof kanbanCardsTable.$inferSelect) {
   return {

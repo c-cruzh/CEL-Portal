@@ -24,7 +24,7 @@ import { notifyAsync } from "../lib/notifications";
 const router: IRouter = Router();
 const objectStorage = new ObjectStorageService();
 
-const PM_ROLE_IDS = new Set(["pm_lead", "pm_cel"]);
+const PM_ROLE_IDS = new Set(["project_lead", "pm_lead", "pm_cel"]);
 const ALLOWED_PHASE_IDS = new Set(["F0", "F1", "F2", "F3", "F4"]);
 
 async function isUserPM(userId: string): Promise<boolean> {

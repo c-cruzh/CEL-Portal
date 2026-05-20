@@ -1,5 +1,6 @@
 export const ROLES = [
-  { id: "pm_lead", label: "PM / Líder de Proyecto", description: "Liderazgo general del piloto, planificación y coordinación con CEL. Puede ser asumido por más de una persona." },
+  { id: "project_lead", label: "Líder de Proyecto", description: "Liderazgo general del piloto. Owner de la relación completa con CEL: orquesta, gobierna y delega. Autoridad final del lado C2 Labs." },
+  { id: "pm_lead", label: "Project Manager (C2 Labs)", description: "Coordinación ejecutiva del piloto: seguimiento, operación PM, agenda con CEL y delegación interna. Reporta al Líder de Proyecto." },
   { id: "pm_cel", label: "PM / Contraparte CEL", description: "Contraparte de gestión por parte de CEL: agenda, accesos y stakeholders internos." },
   { id: "hydrology_lead_cel", label: "Líder Hidrología (CEL)", description: "Validación de patrones, ground-truth y evaluación de pronósticos." },
   { id: "geospatial_expert_cel", label: "Experto Geoespacial (CEL)", description: "MDE, HydroATLAS, cobertura de suelos y delimitación de cuencas." },

@@ -2,7 +2,7 @@ import { type Request, type Response, type NextFunction } from "express";
 import { eq } from "drizzle-orm";
 import { db, userRolesTable } from "@workspace/db";
 
-const PM_ROLE_IDS = new Set(["pm_lead", "pm_cel"]);
+const PM_ROLE_IDS = new Set(["project_lead", "pm_lead", "pm_cel"]);
 
 export async function requirePM(
   req: Request,

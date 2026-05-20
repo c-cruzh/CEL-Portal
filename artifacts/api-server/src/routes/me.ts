@@ -170,7 +170,7 @@ router.put("/me/roles", requireAuth, async (req, res): Promise<void> => {
     .where(eq(userRolesTable.userId, req.userId!));
   const previousRoles = previousRows.map((r) => r.roleId).sort();
 
-  const PRIVILEGED_ROLES = new Set(["pm_lead", "pm_cel"]);
+  const PRIVILEGED_ROLES = new Set(["project_lead", "pm_lead", "pm_cel"]);
   const previousSet = new Set(previousRoles);
   const candidateAdds = desired.filter(
     (r) => PRIVILEGED_ROLES.has(r) && !previousSet.has(r),
