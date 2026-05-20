@@ -1,0 +1,1454 @@
+# CONTEXTO MAESTRO — Piloto de Pronóstico Hidrológico con IA (CEL)
+### Proceso CEL-CFU 02/26 · Documento único de traspaso de contexto
+
+> **Propósito de este archivo.** Reúne, en un solo lugar, TODO el contexto del proyecto: estado actual, decisiones tomadas, estructura de gobernanza, reconciliaciones pendientes, el contenido íntegro de los documentos de trabajo, los diagramas en código fuente, y la lista de asuntos abiertos. Está pensado para retomar el trabajo en otro entorno sin perder nada.
+
+---
+
+## 0. Resumen ejecutivo del proyecto
+
+- **Cliente:** Comisión Ejecutiva Hidroeléctrica del Río Lempa (CEL), El Salvador.
+- **Proyecto:** Plan piloto de pronóstico hidrológico avanzado basado en inteligencia artificial (modelo LSTM/NeuralHydrology), con orquestación en Mage, bases PostgreSQL/PostGIS + MongoDB, dashboard web y alertas.
+- **Consultora:** C² Labs (Camila Cruz, Líder de Proyecto / CEO; Kevin Centeno, PM).
+- **Marco contractual:** DSP firmado bajo el proceso CEL-CFU 02/26. Es la fuente de verdad contractual y rige alcance, entregables, cronograma y RACI.
+- **Hecho disruptivo central:** CEL adquirió, vía el proveedor Martinexsa/Dell, una plataforma de infraestructura MÁS AMPLIA que la arquitectura de referencia original del DSP. Esto deja "deprecated" el BOM y la arquitectura física originales y obliga a una readecuación técnica-contractual — SIN ampliar el alcance de la Consultora.
+- **Postura contractual clave:** la infraestructura adquirida se consume como *entorno habilitante*; no convierte a la Consultora en integradora de data center, administradora de infraestructura, ni responsable de soporte/garantías/administración continua. Toda ampliación requiere adenda expresa.
+
+---
+
+## 1. Estado de los entregables (dónde va cada cosa)
+
+**Trabajo organizado en DOS threads paralelos:**
+
+- **Thread A — gobernanza / minuta / comunicación** (este thread). Produjo: la minuta formal de sesión, y el ensamblaje del paquete maestro.
+- **Thread B — técnico/contractual** (otro thread). Produjo los artifacts grandes: Alineación Técnica-Contractual (7 partes), Anexo BOM/Diagramas, Handoff de Alcance.
+
+**Artifacts COMPLETOS y existentes (no reescribir, son la base):**
+
+| Artifact | Tema | Estado |
+|---|---|---|
+| `Alineacion_Tecnica_Contractual_AI_Silo_CEL_Fase0.docx` | Documento maestro: 7 partes (anexo sustitutivo, matriz de cambios, delimitación de alcance, checklist Fase 0, gates/ruta crítica, cláusulas defendibles, carta formal) | Completo |
+| `Anexo_Complementario_BOM_Diagrama_AI_Silo_CEL_Fase0.docx` | BOM HW/SW actualizado, arquitectura por capas, decisiones pendientes, texto sustitutivo Anexos B/C | Completo |
+| `Handoff_Alcance_CEL_Martinexsa_Informacion_Requerida_Fase0.docx` | Responsabilidades CEL/Martinexsa/Dell, info requerida (INF-01..24), gates, exclusiones | Completo |
+| `Paquete_Complementario_AI_Silo_CEL_Fase0_v2.docx` | Documento de ensamblaje/uso de los anexos | Completo |
+| `Minuta_formal_sesion_Piloto_CEL.docx` | Registro oficial de la sesión de coordinación | Completo (generado en Thread A) |
+| `Comunicacion_de_Seguimiento_Apr_1.pdf` | Refresh Sección 10 + RACI + modelo FTE | Completo (referencia) |
+| `ACEPTACION_OFERTA_MARTINEXSA.pdf` | Oferta aceptada Dell/Martinexsa — fuente de verdad de infraestructura | Completo (referencia) |
+
+**Diagramas existentes (5):**
+- `architecture_scope_final.png` — arquitectura + frontera de alcance (PNG)
+- `handoff_scope_boundary.png` — handoff y gates (PNG)
+- Diagrama de gobernanza organizacional (Mermaid, FROZEN)
+- Diagrama de arquitectura lógica/funcional por capas (Mermaid)
+- Diagrama de topología física del data center (Mermaid)
+
+**Entregable empaquetado:** `Paquete_Maestro_Piloto_CEL.zip` (todo lo anterior, organizado por tema, con README).
+
+---
+
+## 2. Las TRES vistas de "source of truth" (CONGELADAS)
+
+1. **Gobernanza / organización** → diagrama de gobernanza (Sección 7 de este archivo).
+2. **Arquitectura / frontera de alcance** → Mermaid de arquitectura del silo (Sección 7).
+3. **Handoff / gates** → `handoff_scope_boundary` + el documento de Handoff (Sección 5).
+
+Las tres son mutuamente consistentes. El DevOps (José Manuel Guardado) es la costura entre la zona física (CEL/Martinexsa/Dell) y la zona funcional (Consultora).
+
+---
+
+## 3. Estructura de gobernanza y roles (CONFIRMADA)
+
+**C² Labs (Consultora):**
+- **Camila Cruz** — Líder de Proyecto, CEO & Founder. camila@c2labs.ai. Orquesta, gobierna, delega. Owner de la relación completa.
+- **Kevin Centeno** — Project Manager, Operaciones. kevin@c2labs.ai. Coordina ejecución y seguimiento.
+
+**CEL Core Pilot Team:**
+- **Ing. José Mauricio Herrera Mercado** — PM / Líder de Proyecto CEL + Administración del Contrato. Gerencia de Producción. jmherreram@cel.gob.sv. (Asume el rol completo que antes era de Rodolfo.)
+- **Ing. Víctor Alabí** — Líder Técnico en Hidrología. Gerencia de Producción. vialabi@cel.gob.sv. Liaison directo con las 5 centrales.
+- **Ing. Fernando Garay** — Especialista SIG / Teledetección. Catastro GIS. fgaray@cel.gob.sv.
+- **Ing. William Juárez** — Ingeniero de Datos y Backend. Gerencia Comercial. wjuarez@cel.gob.sv.
+- **Ing. José Manuel Guardado** — Administrador de Sistemas / Ingeniero DevOps. Unidad de Informática. jmguardado@cel.gob.sv. Enlace entre Core Pilot Team y Comité de Informática.
+
+**Comité de Informática (ente rector — autoriza, dicta lineamientos, integra de forma segura):**
+- **Lic. Lorena Pineda** — Jefa de la Unidad de Informática. alpineda@cel.gob.sv. Autoridad final: aprueba/autoriza. Autorización exclusiva para exposición de servicios hacia el exterior. Owner de infraestructura y continuidad.
+- **Nelson Flores** — Jefe de Administración de Redes e Informática. nfloresc@cel.gob.sv. Aprueba, delega, maneja recursos. Mecanismo de escalamiento operativo.
+- **Adrián Miranda** — Administrador de Sistemas y Redes. Ejecutor (redes/infra) para DevOps.
+- **Carlos Sánchez** — Administrador de Base de Datos (DBA). Gobernanza de BD; interdependencia crítica con datos para replicación/ground truth.
+- **Miladis** — Especialista de Ciberseguridad. Lineamientos de seguridad y pre-auditorías.
+
+**Centrales Hidroeléctricas (usuarios/validadores):** 15 de Septiembre, 5 de Noviembre, Cerrón Grande, 3 de Febrero, Guajoyo. Conformadas operativamente por los jefes de operación de cada central, coordinadas por Víctor.
+
+**Equipo de Dirección del Piloto — TBD (rol/involucramiento por definir, a derivarse del DSP por etapa):**
+- Ing. Guillermo Colorado
+- Ing. Gerardo Ávalos
+- Ing. Mauricio Herrera Landaverde *(persona DISTINTA de José Mauricio Herrera Mercado)*
+- Ing. Rigoberto Ávila — ravila@cel.gob.sv
+
+**Dinámica de escalación:** Consultora → Mauricio Herrera Mercado → (Lorena / Nelson). José Manuel = enlace operativo. Nelson distribuye a Adrián/Carlos/Miladis. La comunicación con los especialistas NO es directa: se canaliza vía Comité. Lorena concentra autorizaciones de alto nivel (especialmente exposición externa).
+
+---
+
+## 4. Modelo de esfuerzo (FTE) — RECONCILIADO
+
+- **FTE 0.3 — Tech Circle:** 30 h de soporte técnico remoto (vía proveedor de hardware).
+- **FTE 0.35 (compartido) — Comité Consultivo de TI:** CINCO roles → Lorena, Nelson, Carlos S., Adrián, Miladis. No operativo diario; autoriza/informa/dicta.
+- **FTE 1.0 — Ingeniero DevOps:** José Manuel Guardado. 100% operativo. Enlace y ejecutor. **NO** consume la fracción consultiva (evita doble conteo).
+
+---
+
+## 5. LAS TRES RECONCILIACIONES (decididas, pendientes de propagar)
+
+Estas correcciones fueron ACORDADAS para alinear la Sección 10 + RACI (refresh Apr 1) con el diagrama de gobernanza frozen. Falta aplicarlas formalmente a los documentos de Sección 10 / RACI:
+
+1. **DevOps confirmado.** Deja de ser "TBD" → es **José Manuel Guardado**, en perfiles y en la columna RACI.
+2. **FTE limpio.** José Manuel = DevOps FTE 1.0 únicamente. El comité consultivo (0.35) = los otros 5. Sin doble conteo. *(Confirmado: NO existe regla interna de imputación que obligue a dejarlo en el comité.)*
+3. **Perfiles desdoblados.** Separar "Líder Técnico en Hidrología y Gerente de Proyecto" en DOS: Mauricio Herrera Mercado (PM + Contrato) y Víctor Alabí (Líder Hidrología). En la RACI, Víctor pasa de "Operaciones" a "Líder Técnico Hidrología" (debe ser C/A en validación de modelo y variables, no solo I).
+
+---
+
+## 6. ASUNTOS ABIERTOS / TBD
+
+- **Equipo de Dirección (4 ingenieros):** rol e involucramiento por definir, por etapa, derivado del DSP.
+- **Host final de Mage / PostgreSQL-PostGIS / MongoDB / API:** decisión de CEL/TI (gate de definición). NO es gap de la Consultora; se consume como input.
+- **GPU efectiva:** la oferta lista NVIDIA H100 NVL 94GB; validar contra la entrega física en el handoff.
+- **Zona de responsabilidad intermedia** (admin continua, backups corporativos, hardening, identidad): queda en CEL salvo adenda; también excluida por el proveedor en su oferta base.
+- **Propagación de las 3 reconciliaciones** a Sección 10 / RACI.
+- **SLAs** de respuesta entre Comité (autorizaciones) y DevOps (ejecución): a definir.
+- **Idioma de diagramas:** los dos diagramas nuevos (lógico y físico) están en inglés; el resto del paquete en español. Pendiente decidir si se traducen.
+
+---
+
+## 7. DIAGRAMAS — CÓDIGO FUENTE (Mermaid)
+
+
+### 7.1 Gobernanza organizacional (FROZEN)
+```mermaid
+%%{init: {"theme": "base", "themeVariables": {"fontFamily": "Inter, Arial", "lineColor": "#9CA3AF"}}}%%
+flowchart TB
+
+subgraph C2Group["C2 Labs Project Leadership"]
+direction TB
+Camila["Lider de Proyecto - Camila Cruz / CEO & Founder / camila@c2labs.ai. Orquesta, gobierna y delega. Owner de la relacion completa."]
+Kevin["Project Manager - Kevin Centeno / Operaciones / kevin@c2labs.ai. Coordina ejecucion, seguimiento y operacion PM del piloto."]
+Camila <-->|direccion, PM execution y coordinacion interna| Kevin
+end
+
+subgraph CELCore["CEL Core Pilot Team"]
+direction TB
+Mauricio["PM / Lider de Proyecto CEL + Administracion del Contrato - Ing. Jose Mauricio Herrera Mercado / Gerencia de Produccion / jmherreram@cel.gob.sv"]
+Victor["Lider Tecnico en Hidrologia - Ing. Victor Alabi / Gerencia de Produccion / vialabi@cel.gob.sv"]
+Fernando["Especialista SIG / Teledeteccion - Ing. Fernando Garay / Catastro GIS / fgaray@cel.gob.sv"]
+William["Ingeniero de Datos y Backend - Ing. William Juarez / Gerencia Comercial / wjuarez@cel.gob.sv"]
+JoseDevOps["Administrador de Sistemas / Ingeniero DevOps - Ing. Jose Manuel Guardado / Unidad de Informatica / jmguardado@cel.gob.sv. Enlace Core Pilot Team / Comite de Informatica."]
+end
+
+Camila <-->|owner relacion global| Mauricio
+Kevin <-->|cadencia PM / seguimiento| Mauricio
+Mauricio <-->|trabajan de la mano| Victor
+Mauricio -->|coordina operatividad| William
+Mauricio -->|coordina operatividad| Fernando
+Mauricio -->|coordina infra / deployment| JoseDevOps
+Victor <-->|requerimientos hidrologicos| William
+Victor <-->|validacion SIG| Fernando
+JoseDevOps <-->|infraestructura y despliegue| William
+
+Victor --> HydroLiaison["Victor lidera la relacion tecnica directa con las cinco centrales"]
+subgraph PlantsGroup["Centrales Hidroelectricas"]
+direction LR
+P15["15 de Septiembre"]
+P5N["5 de Noviembre"]
+PCG["Cerron Grande"]
+P3F["3 de Febrero"]
+PGU["Guajoyo"]
+end
+HydroLiaison --> P15 & P5N & PCG & P3F & PGU
+
+subgraph ITCommittee["Comite de Informatica"]
+direction TB
+Lorena["Jefa de Unidad de Informatica - Lic. Lorena Pineda / alpineda@cel.gob.sv. Autoridad final: aprueba/autoriza, permanece informada. Owner de infraestructura."]
+Nelson["Jefe de Administracion de Redes e Informatica - Nelson Flores / nfloresc@cel.gob.sv. Aprueba, autoriza, delega y maneja recursos."]
+Adrian["Administrador de Sistemas y Redes - Adrian Miranda. Ejecuta y entrega recursos para DevOps."]
+Carlos["Administrador de Base de Datos - Carlos Sanchez. Ejecuta y entrega recursos para DevOps."]
+Miladis["Especialista de Ciberseguridad - Miladis. Ejecuta y entrega recursos para DevOps."]
+end
+
+JoseDevOps <-->|liaison operativo Comite| Lorena
+JoseDevOps <-->|coordina y escala| Nelson
+Lorena -->|lidera comite / autoridad final| Nelson
+Nelson -->|delega / maneja recursos| Adrian
+Nelson -->|delega / maneja recursos| Carlos
+Nelson -->|delega / maneja recursos| Miladis
+Adrian -->|entrega recursos a DevOps| JoseDevOps
+Carlos -->|entrega recursos a DevOps| JoseDevOps
+Miladis -->|entrega recursos a DevOps| JoseDevOps
+```
+
+### 7.2 Arquitectura del AI Silo y frontera de alcance (canónico)
+```mermaid
+flowchart TB
+    subgraph EXT["Fuera del Silo / Insumos"]
+        MET["Fuentes meteorologicas y satelitales: ECMWF/ERA5, GPM/IMERG, CHIRPS, Sentinel-1"]
+        GEO["Fuentes geoespaciales: HydroATLAS/HydroSHEDS, DEM/MDE, suelos, OSM"]
+        CELDATA["Fuentes internas CEL: hidrologia, aforos, embalses, Excel/macros, BD (read-only o replica)"]
+        CONSULTORA["Consultora: acceso remoto autorizado"]
+        OPS["Usuarios CEL: operacion, hidrologia, SIG, gerencia"]
+    end
+    subgraph CEL["Perimetro CEL / Data Center"]
+        FW["Firewall / VPN / Bastion / Politicas TI: VLAN, ACL, egress allowlist, credenciales"]
+        SW["Dell PowerSwitch S5224F-ON: Top-of-Rack 25/100GbE"]
+        subgraph HW["Infraestructura fisica provista por CEL + Martinexsa/Dell"]
+            ML["Servidor ML/IA: Dell PowerEdge R770, Ubuntu Server 24.04 LTS + Docker, NVIDIA GPU efectiva (H100 NVL segun oferta; validar contra entrega), NVIDIA AI Enterprise"]
+            VIRT["Servidor de Virtualizacion: Dell PowerEdge R770, VMs/servicios institucionales, host final definido por CEL/TI"]
+            NAS["NAS/File Server: Dell PowerEdge R570, Windows Server 2025, SMB/NFS, RAID, datasets, artefactos, respaldos"]
+            WS["Estaciones de Gestion: Dell Pro Max + monitores, visualizacion/administracion"]
+        end
+        subgraph PILOTO["AI Silo funcional del piloto - scope tecnico de la Consultora"]
+            GIT["Git/repositorio: versionamiento de codigo, configs y documentacion"]
+            MAGE["Mage: orquestacion central, scheduling, DAGs, retries, logs, monitoreo operativo"]
+            ETL["Pipelines Python ETL/QA-QC: normalizacion, limpieza, features, geoprocesamiento"]
+            PG["PostgreSQL + PostGIS: historico, capas geoespaciales, subcuencas, mapas"]
+            MDB["MongoDB: datos operacionales, pronosticos recientes, estado del dashboard"]
+            MODEL["Modelo hidrologico IA: PyTorch/NeuralHydrology/LSTM, entrenamiento + inferencia"]
+            FLOOD["Modelo de inundacion: umbrales, escenarios, capas de anegacion"]
+            API["API/Backend del piloto: servicio de resultados y consultas"]
+            DASH["Dashboard web: React + Leaflet/Mapbox GL JS, mapas, hidrogramas, alertas"]
+            ALERTS["Alertas operativas: SMTP CEL + gateway SMS si CEL lo habilita"]
+        end
+        DEC["Gate de definicion CEL/TI: host final de Mage/BDs/API, IPs/DNS/VLANs, credenciales, storage mounts, politica de backup, politicas de seguridad y acceso"]
+    end
+    MET -->|descarga programada| FW
+    GEO -->|descarga/ingesta| FW
+    CELDATA -->|consulta read-only o replica| FW
+    CONSULTORA -->|VPN o bastion aprobado| FW
+    OPS -->|uso/validacion operacional| DASH
+    FW --> SW
+    SW <--> ML
+    SW <--> VIRT
+    SW <--> NAS
+    SW <--> WS
+    DEC -. habilita .-> MAGE
+    DEC -. define host final .-> PG
+    DEC -. define host final .-> MDB
+    DEC -. define host final .-> API
+    ML -. computo GPU .-> MODEL
+    ML -. runtime posible .-> MAGE
+    VIRT -. host posible .-> MAGE
+    VIRT -. host posible .-> API
+    NAS -. datasets/artefactos .-> ETL
+    NAS -. storage/respaldos .-> PG
+    NAS -. storage/respaldos .-> MDB
+    NAS -. checkpoints/modelos .-> MODEL
+    GIT --> MAGE
+    MAGE --> ETL
+    ETL --> PG
+    ETL --> MDB
+    PG --> MODEL
+    MDB --> MODEL
+    MODEL --> FLOOD
+    FLOOD --> PG
+    FLOOD --> MDB
+    PG --> API
+    MDB --> API
+    API --> DASH
+    API --> ALERTS
+    ALERTS --> OPS
+    NOTE["Nota de alcance: Mage sustituye Pentaho/Grafana para orquestacion y observabilidad operativa del piloto. Racking, red fisica, garantias, administracion continua, backups corporativos, hardening avanzado, SIEM, AD/LDAP, HA/DR y soporte de plataforma quedan en CEL/Martinexsa/Dell salvo adenda expresa."]
+    NOTE -.-> MAGE
+    NOTE -.-> DEC
+```
+
+### 7.3 Arquitectura lógica / funcional por capas
+```mermaid
+flowchart TB
+    %% ============================================================
+    %% AI SILO — LOGICAL ARCHITECTURE
+    %% Logical / functional view, not physical infrastructure view.
+    %% ============================================================
+
+    %% -------------------------------
+    %% 1. External and Internal Inputs
+    %% -------------------------------
+    subgraph INPUTS["1. Data Sources / Inputs"]
+        METEO["Meteorological Inputs<br/>ECMWF / ERA5<br/>GPM / IMERG<br/>CHIRPS<br/>temperature, rainfall, forecast variables"]
+        HYDRO["Hydrological Inputs<br/>CEL gauges / aforos<br/>reservoir levels<br/>plant records<br/>historical inflows / outflows"]
+        GEO["Geospatial Inputs<br/>DEM / MDE<br/>HydroATLAS / HydroSHEDS<br/>soil, land cover, basin attributes<br/>Sentinel-1 flood extents"]
+        OPSDATA["Operational Inputs<br/>CEL Excel workbooks / macros<br/>operator thresholds<br/>plant-specific operating logic<br/>critical points of interest"]
+    end
+
+    %% -------------------------------
+    %% 2. Access / Security Boundary
+    %% -------------------------------
+    subgraph ACCESS["2. Access, Security & Data Boundary"]
+        READONLY["Read-only connectors / replicas<br/>No direct modification of CEL production systems"]
+        VPN["Secure access layer<br/>VPN / bastion / firewall rules<br/>CEL-approved credentials"]
+        POLICY["Data governance rules<br/>source registry<br/>access controls<br/>data ownership / audit trail"]
+    end
+
+    %% -------------------------------
+    %% 3. AI Silo Logical Core
+    %% -------------------------------
+    subgraph SILO["AI Silo Logical Core"]
+        
+        %% Orchestration Layer
+        subgraph ORCH["3. Orchestration Layer"]
+            MAGE["Mage<br/>central orchestration layer<br/>schedules, DAGs, retries, logs,<br/>pipeline state, operational monitoring"]
+            GIT["Git Repository<br/>pipeline code<br/>model code<br/>configs<br/>documentation"]
+        end
+
+        %% Data Engineering Layer
+        subgraph DATAENG["4. Data Engineering / ETL Layer"]
+            INGEST["Ingestion Pipelines<br/>API pulls<br/>file ingestion<br/>database connectors<br/>satellite/geospatial downloads"]
+            STAGING["Raw / Staging Zone<br/>raw files<br/>unvalidated tables<br/>source-level snapshots"]
+            QAQC["QA/QC + Validation<br/>schema checks<br/>missing data checks<br/>range checks<br/>temporal alignment<br/>unit normalization"]
+            FEATURES["Feature Engineering<br/>basin aggregation<br/>rainfall over sub-basins<br/>time-series windows<br/>static catchment attributes<br/>model-ready tensors"]
+        end
+
+        %% Storage Layer
+        subgraph STORAGE["5. Logical Data Storage Layer"]
+            PG["PostgreSQL + PostGIS<br/>historical datasets<br/>geospatial layers<br/>sub-basins<br/>flood maps<br/>model outputs archive"]
+            MONGO["MongoDB<br/>operational / near-real-time data<br/>latest forecasts<br/>dashboard state<br/>alert state"]
+            ARTIFACTS["Model & Data Artifacts<br/>trained weights<br/>checkpoints<br/>validation outputs<br/>benchmark reports<br/>run metadata"]
+        end
+
+        %% Modeling Layer
+        subgraph MODELING["6. Modeling & Analytics Layer"]
+            TRAIN["Training Workflow<br/>NeuralHydrology / PyTorch<br/>LSTM training<br/>hyperparameter search<br/>rolling-origin validation"]
+            INFER["Inference Workflow<br/>daily forecast execution<br/>7-day hydrological forecast<br/>virtual gauges / control points"]
+            FLOOD["Flood / Impact Modeling<br/>threshold model<br/>inundation layers<br/>flood extent estimation<br/>risk zones"]
+            METRICS["Model Evaluation<br/>NSE, RMSE, MAE<br/>skill vs persistence<br/>POD / FAR<br/>spatial validation"]
+        end
+
+        %% Decision Layer
+        subgraph DECISION["7. Decision Products Layer"]
+            FORECASTS["Forecast Products<br/>hydrographs<br/>inflow forecasts<br/>risk levels<br/>lead-time windows"]
+            MAPS["Spatial Products<br/>dynamic flood layers<br/>critical zones<br/>affected areas<br/>basin/sub-basin views"]
+            ALERTLOGIC["Alert Logic<br/>threshold crossing<br/>severity levels<br/>anti-spam / deduplication<br/>event audit trail"]
+        end
+
+        %% Interface Layer
+        subgraph INTERFACE["8. Interface & Delivery Layer"]
+            API["Backend / API Layer<br/>serves forecasts<br/>serves map layers<br/>serves alert state<br/>exports data to dashboard"]
+            DASH["Web Dashboard<br/>React / Leaflet or Mapbox<br/>maps, charts, filters, toggles<br/>single operational view"]
+            ALERTS["Notifications<br/>email via CEL SMTP<br/>SMS gateway if enabled<br/>distribution lists<br/>alert history"]
+            DOCS["Operational Documentation<br/>POE / SOP<br/>technical docs<br/>handoff materials<br/>training guides"]
+        end
+    end
+
+    %% -------------------------------
+    %% 4. Users and Operational Consumers
+    %% -------------------------------
+    subgraph USERS["9. Users / Operational Consumers"]
+        HYDROTEAM["CEL Hydrology Team<br/>validates patterns, thresholds,<br/>forecast reasonableness"]
+        PLANTS["Plant Operators<br/>Cerrón Grande<br/>5 de Noviembre / G9<br/>Guajoyo<br/>15 de Septiembre"]
+        SIG["SIG / Teledetection Team<br/>validates geospatial layers<br/>DEM, flood extents, Sentinel-1"]
+        MANAGEMENT["CEL Leadership / Decision Makers<br/>situational awareness<br/>risk and operations visibility"]
+    end
+
+    %% -------------------------------
+    %% 5. Flow Connections
+    %% -------------------------------
+
+    %% Inputs into access layer
+    METEO --> VPN
+    HYDRO --> READONLY
+    GEO --> VPN
+    OPSDATA --> READONLY
+
+    READONLY --> POLICY
+    VPN --> POLICY
+    POLICY --> MAGE
+
+    %% Orchestration controls ETL
+    GIT --> MAGE
+    MAGE --> INGEST
+    INGEST --> STAGING
+    STAGING --> QAQC
+    QAQC --> FEATURES
+
+    %% ETL to storage
+    STAGING --> PG
+    QAQC --> PG
+    QAQC --> MONGO
+    FEATURES --> PG
+    FEATURES --> ARTIFACTS
+
+    %% Storage to modeling
+    PG --> TRAIN
+    PG --> INFER
+    MONGO --> INFER
+    ARTIFACTS --> TRAIN
+    TRAIN --> ARTIFACTS
+    TRAIN --> METRICS
+
+    %% Forecast and flood modeling
+    INFER --> FORECASTS
+    INFER --> FLOOD
+    FLOOD --> MAPS
+    FLOOD --> ALERTLOGIC
+    METRICS --> ARTIFACTS
+
+    %% Store outputs
+    FORECASTS --> MONGO
+    FORECASTS --> PG
+    MAPS --> PG
+    ALERTLOGIC --> MONGO
+
+    %% Delivery layer
+    PG --> API
+    MONGO --> API
+    API --> DASH
+    ALERTLOGIC --> ALERTS
+    API --> DOCS
+
+    %% Users consume and validate
+    DASH --> HYDROTEAM
+    DASH --> PLANTS
+    DASH --> SIG
+    DASH --> MANAGEMENT
+    ALERTS --> HYDROTEAM
+    ALERTS --> PLANTS
+    DOCS --> HYDROTEAM
+    DOCS --> PLANTS
+    DOCS --> SIG
+
+    %% Feedback loops
+    HYDROTEAM -. validation feedback .-> METRICS
+    HYDROTEAM -. threshold calibration .-> ALERTLOGIC
+    PLANTS -. operational feedback .-> OPSDATA
+    SIG -. geospatial validation .-> MAPS
+    MANAGEMENT -. decision requirements .-> DASH
+
+    %% -------------------------------
+    %% Styling
+    %% -------------------------------
+    classDef input fill:#FFF8E6,stroke:#B38B00,stroke-width:1px,color:#111;
+    classDef boundary fill:#FCEEEE,stroke:#B85C5C,stroke-width:1px,color:#111;
+    classDef orchestration fill:#EEF4FF,stroke:#4C6FB3,stroke-width:1px,color:#111;
+    classDef data fill:#F2FFF5,stroke:#4D9A63,stroke-width:1px,color:#111;
+    classDef storage fill:#F4F0FF,stroke:#7A5CB8,stroke-width:1px,color:#111;
+    classDef model fill:#EFFFFF,stroke:#3C9EA3,stroke-width:1px,color:#111;
+    classDef decision fill:#FFF2E8,stroke:#C97932,stroke-width:1px,color:#111;
+    classDef interface fill:#F7F7F7,stroke:#555,stroke-width:1px,color:#111;
+    classDef users fill:#EAF7FF,stroke:#4B8BBE,stroke-width:1px,color:#111;
+
+    class METEO,HYDRO,GEO,OPSDATA input;
+    class READONLY,VPN,POLICY boundary;
+    class MAGE,GIT orchestration;
+    class INGEST,STAGING,QAQC,FEATURES data;
+    class PG,MONGO,ARTIFACTS storage;
+    class TRAIN,INFER,FLOOD,METRICS model;
+    class FORECASTS,MAPS,ALERTLOGIC decision;
+    class API,DASH,ALERTS,DOCS interface;
+    class HYDROTEAM,PLANTS,SIG,MANAGEMENT users;
+```
+
+### 7.4 Topología física del data center
+```mermaid
+flowchart TB
+    %% ============================================================
+    %% AI SILO — DATA CENTER / PHYSICAL TOPOLOGY ARCHITECTURE
+    %% Vista del data center en sí, no de la lógica de datos/modelo.
+    %% ============================================================
+
+    %% -------------------------------
+    %% External / Enterprise Edge
+    %% -------------------------------
+    subgraph EXT["External / Enterprise Edge"]
+        INTERNET["Internet / External Data Sources<br/>ECMWF, Copernicus, NASA, Sentinel, CHIRPS<br/>egress controlled by CEL"]
+        REMOTE["Authorized Remote Access<br/>Consultora / technical support<br/>via VPN or bastion approved by CEL"]
+        CEL_LAN["CEL Enterprise LAN / Users<br/>operators, hydrology, SIG, leadership"]
+        DELL_CLOUD["Dell / NVIDIA Support Cloud<br/>ProSupport, TechDirect, MyService360,<br/>Dell AIOps, Secure Connect Gateway"]
+    end
+
+    %% -------------------------------
+    %% Security Boundary
+    %% -------------------------------
+    subgraph EDGE["CEL Security Boundary"]
+        FW["Firewall / VPN / Bastion / NAT<br/>ACLs, egress allowlist, access policies<br/>owned by CEL / TI"]
+        CORE["CEL Core Network / WAN<br/>routing to institutional systems<br/>and corporate services"]
+    end
+
+    %% -------------------------------
+    %% Data Center Footprint
+    %% -------------------------------
+    subgraph DC["AI Silo Data Center Footprint — On-Prem CEL"]
+
+        FAC["Facility Layer<br/>rack space, power circuits, grounding,<br/>PDU / UPS / cooling / physical access<br/>to be confirmed and operated by CEL / provider"]
+
+        %% ---------------------------
+        %% Network Fabric
+        %% ---------------------------
+        subgraph NET["Data Center Network Fabric"]
+            TOR["Dell PowerSwitch S5224F-ON<br/>Top-of-Rack Switch — 1RU<br/>24 x 25GbE SFP28<br/>4 x 100GbE QSFP28<br/>Dell SmartFabric OS10<br/>L2/L3, VLAN, ACL, OSPF/BGP capable"]
+
+            MGMT_VLAN["Management VLAN<br/>iDRAC, switch admin,<br/>support telemetry"]
+            AI_VLAN["AI Compute VLAN<br/>GPU workloads, model training,<br/>inference runtime"]
+            VIRT_VLAN["Virtualization / Services VLAN<br/>VMs, internal services,<br/>platform services as defined by CEL"]
+            STORAGE_VLAN["Storage VLAN<br/>SMB / NFS, datasets,<br/>model artifacts, backups"]
+            USER_VLAN["User / Access VLAN<br/>dashboard access,<br/>operator workstations,<br/>management endpoints"]
+        end
+
+        %% ---------------------------
+        %% Management and Support Plane
+        %% ---------------------------
+        subgraph MGMT["Out-of-Band Management & Support Plane"]
+            IDRAC["iDRAC Enterprise<br/>remote administration for Dell servers<br/>firmware, health, power, diagnostics"]
+            SCG["Secure Connect Gateway<br/>Dell AIOps / TechDirect / MyService360<br/>support telemetry and incident workflow"]
+            PROSUPPORT["Dell ProSupport Plus Mission Critical<br/>24x7 support<br/>critical parts replacement<br/>severity escalation"]
+            TECHCIRCLE["TechCircle Advisory Support<br/>30h remote specialized support<br/>architecture review, growth recommendations,<br/>GPU/container/data best practices"]
+        end
+
+        %% ---------------------------
+        %% Server and Storage Layer
+        %% ---------------------------
+        subgraph SERVERS["Server & Storage Layer"]
+
+            R770_AI["Dell PowerEdge R770 — ML / IA Server<br/>2 x Intel Xeon 6515P<br/>256GB DDR5<br/>NVIDIA GPU installed by provider<br/>H100 NVL 94GB HBM3 listed in accepted offer<br/>final effective GPU to validate on delivery<br/>Ubuntu Server 24.04 LTS<br/>Docker Engine + Docker Compose<br/>NVIDIA AI Enterprise per offer<br/>High-speed NVMe workspace"]
+
+            R770_VIRT["Dell PowerEdge R770 — Virtualization Server<br/>2 x Intel Xeon 6515P<br/>256GB DDR5<br/>enterprise SSD RAID storage<br/>institutional VM / services layer<br/>hypervisor and final VM topology<br/>to be defined by CEL / provider"]
+
+            R570_NAS["Dell PowerEdge R570 — NAS / File Server<br/>Intel Xeon 6511P<br/>64GB DDR5<br/>Windows Server 2025 Standard<br/>BOSS-N1 RAID1 for OS<br/>6 x 14TB HDD configured RAID6<br/>SMB / NFS file sharing<br/>central repository for institutional data,<br/>AI datasets, artifacts and historical files"]
+        end
+
+        %% ---------------------------
+        %% Platform Management Endpoints
+        %% ---------------------------
+        subgraph ENDPOINTS["Platform Management & Visualization Endpoints"]
+            WS1["Dell Pro Max 16 Plus — Workstation 01<br/>NVIDIA RTX PRO 3000 Blackwell<br/>64GB RAM<br/>Thunderbolt dock<br/>dual 32in 4K monitors"]
+            WS2["Dell Pro Max 16 Plus — Workstation 02<br/>NVIDIA RTX PRO 3000 Blackwell<br/>64GB RAM<br/>Thunderbolt dock<br/>dual 32in 4K monitors"]
+        end
+
+        %% ---------------------------
+        %% AI Workload Landing Zone
+        %% ---------------------------
+        subgraph LANDING["AI Silo Workload Landing Zone — consumed by the pilot"]
+            LANDING_NOTE["Pilot runtime placement to be confirmed by CEL / TI<br/>Mage, PostgreSQL/PostGIS, MongoDB, API/backend,<br/>model runtime and dashboard services<br/>must be mapped to the final host topology"]
+            VALIDATION["Fase 0 Readiness Validation<br/>GPU visibility<br/>storage mounts<br/>network throughput<br/>remote access<br/>database/runtime availability<br/>benchmark GPU / IO / Red"]
+        end
+
+        %% ---------------------------
+        %% Explicit Scope Boundary
+        %% ---------------------------
+        SCOPE_NOTE["Scope Boundary<br/>CEL / Martinexsa / Dell: procurement, delivery, racking, power,<br/>base cabling, base VLAN/switch config, iDRAC, firmware,<br/>base OS, storage sharing, support, warranties, platform administration.<br/><br/>Consultora: consumes the enabled environment,<br/>defines pilot requirements, deploys/configures pilot stack as applicable,<br/>and validates readiness for the hydrological AI pilot.<br/><br/>Excluded unless expressly added:<br/>Kubernetes/OpenShift, AD/LDAP integration, SIEM/NAC,<br/>advanced hardening, HA/DR, microsegmentation,<br/>WAN/provider integration, continuous platform administration."]
+    end
+
+    %% -------------------------------
+    %% External connections
+    %% -------------------------------
+    INTERNET -->|controlled outbound data pulls| FW
+    REMOTE -->|VPN / bastion| FW
+    CEL_LAN --> CORE
+    CORE --> FW
+    DELL_CLOUD -->|support telemetry / outbound support path<br/>if enabled by CEL| FW
+    FW -->|uplink to AI Silo network| TOR
+
+    %% -------------------------------
+    %% Facility hosting
+    %% -------------------------------
+    FAC -. hosts / powers / cools .-> TOR
+    FAC -. hosts / powers / cools .-> R770_AI
+    FAC -. hosts / powers / cools .-> R770_VIRT
+    FAC -. hosts / powers / cools .-> R570_NAS
+    FAC -. houses endpoints as applicable .-> WS1
+    FAC -. houses endpoints as applicable .-> WS2
+
+    %% -------------------------------
+    %% Network segmentation
+    %% -------------------------------
+    TOR --> MGMT_VLAN
+    TOR --> AI_VLAN
+    TOR --> VIRT_VLAN
+    TOR --> STORAGE_VLAN
+    TOR --> USER_VLAN
+
+    %% -------------------------------
+    %% Server connections
+    %% -------------------------------
+    AI_VLAN <-->|25GbE / 100GbE as configured| R770_AI
+    VIRT_VLAN <-->|25GbE as configured| R770_VIRT
+    STORAGE_VLAN <-->|25GbE as configured| R570_NAS
+    USER_VLAN <-->|client / admin access| WS1
+    USER_VLAN <-->|client / admin access| WS2
+
+    %% -------------------------------
+    %% Storage flows
+    %% -------------------------------
+    R770_AI <-->|datasets, checkpoints,<br/>model artifacts| R570_NAS
+    R770_VIRT <-->|VM data / service data<br/>as defined by CEL| R570_NAS
+    WS1 <-->|admin / visualization access| R570_NAS
+    WS2 <-->|admin / visualization access| R570_NAS
+
+    %% -------------------------------
+    %% Management and support
+    %% -------------------------------
+    MGMT_VLAN <--> IDRAC
+    IDRAC -. manages .-> R770_AI
+    IDRAC -. manages .-> R770_VIRT
+    IDRAC -. manages .-> R570_NAS
+    SCG -. telemetry / support path .-> IDRAC
+    PROSUPPORT -. escalation / warranty .-> SCG
+    TECHCIRCLE -. advisory support .-> R770_AI
+    TECHCIRCLE -. advisory support .-> R770_VIRT
+    TECHCIRCLE -. advisory support .-> R570_NAS
+
+    %% -------------------------------
+    %% AI workload landing zone
+    %% -------------------------------
+    R770_AI -. GPU runtime target .-> LANDING_NOTE
+    R770_VIRT -. possible service host .-> LANDING_NOTE
+    R570_NAS -. storage dependency .-> LANDING_NOTE
+    TOR -. network dependency .-> LANDING_NOTE
+    LANDING_NOTE --> VALIDATION
+
+    %% -------------------------------
+    %% Scope note
+    %% -------------------------------
+    SCOPE_NOTE -. applies to .-> FAC
+    SCOPE_NOTE -. applies to .-> NET
+    SCOPE_NOTE -. applies to .-> SERVERS
+    SCOPE_NOTE -. applies to .-> LANDING
+
+    %% -------------------------------
+    %% Styling
+    %% -------------------------------
+    classDef external fill:#FFF8E6,stroke:#B38B00,stroke-width:1px,color:#111;
+    classDef security fill:#FCEEEE,stroke:#B85C5C,stroke-width:1px,color:#111;
+    classDef facility fill:#F7F7F7,stroke:#555,stroke-width:1px,color:#111;
+    classDef network fill:#EEF4FF,stroke:#4C6FB3,stroke-width:1px,color:#111;
+    classDef mgmt fill:#F4F0FF,stroke:#7A5CB8,stroke-width:1px,color:#111;
+    classDef server fill:#F2FFF5,stroke:#4D9A63,stroke-width:1px,color:#111;
+    classDef endpoint fill:#EFFFFF,stroke:#3C9EA3,stroke-width:1px,color:#111;
+    classDef landing fill:#FFF2E8,stroke:#C97932,stroke-width:1px,color:#111;
+    classDef scope fill:#FFECEC,stroke:#A33,stroke-width:1px,color:#111;
+
+    class INTERNET,REMOTE,CEL_LAN,DELL_CLOUD external;
+    class FW,CORE security;
+    class FAC facility;
+    class TOR,MGMT_VLAN,AI_VLAN,VIRT_VLAN,STORAGE_VLAN,USER_VLAN network;
+    class IDRAC,SCG,PROSUPPORT,TECHCIRCLE mgmt;
+    class R770_AI,R770_VIRT,R570_NAS server;
+    class WS1,WS2 endpoint;
+    class LANDING_NOTE,VALIDATION landing;
+    class SCOPE_NOTE scope;
+```
+
+---
+
+## 8. CONTENIDO ÍNTEGRO DE LOS ARTIFACTS
+
+> El texto siguiente es el contenido completo, extraído de cada documento de trabajo. Es la fuente real; los .docx mantienen el formato y las tablas.
+
+### 8.1 — Alineación Técnica-Contractual (documento maestro, 7 partes)
+
+Anexo Técnico de Alineación | AI Silo / Fase 0 | CEL-CFU 02/26
+
+**ANEXO TÉCNICO DE ALINEACIÓN**
+**Y NOTA ACLARATORIA CONTRACTUAL**
+
+**Infraestructura Local para AI Silo, BOM HW/SW y Fase 0**
+
+**Proceso CEL-CFU 02/26**
+Servicios Especializados para el Desarrollo de un Plan Piloto de Pronóstico Hidrológico Avanzado Basado en Inteligencia Artificial
+
+Preparado por: Camila Alejandra Cruz Hernández
+Fecha: mayo de 2026
+Estatus: versión client-facing para revisión, validación y formalización
+
+**Propósito del documento**
+
+Este documento consolida la readecuación técnica y contractual necesaria para reconciliar la documentación originalmente incluida en el DSP/propuesta técnica con la infraestructura efectivamente adquirida por CEL a través de su proveedor. **No constituye ampliación automática de alcance, precio, plazo, soporte, garantía, administración de infraestructura ni obligación adicional de la Consultora. **Su finalidad es limpiar referencias técnicas superadas, establecer una fuente de verdad operacional para Fase 0 y fijar los gates mínimos requeridos para iniciar el trabajo bajo condiciones ejecutables, verificables y atribuibles.
+
+Base documental considerada: propuesta técnica/contractual CEL-CFU 02/26; cronograma, RACI y anexos técnicos del DSP; y oferta aceptada Martinexsa/Dell Technologies para Plataforma Integral de Inteligencia Artificial y Procesamiento de Datos para Infraestructura Hidroeléctrica.
+
+# Resumen ejecutivo de postura
+
+La infraestructura física descrita originalmente en el Anexo Técnico B y en el BOM del Anexo Técnico C debe considerarse superada para efectos de adquisición y materialización física del entorno, en la medida en que CEL ha seleccionado una arquitectura Dell/Martinexsa distinta, más amplia y con componentes empresariales adicionales. **Sin embargo, esa adquisición posterior no convierte a la Consultora en integradora general de data center, administradora de infraestructura Dell, responsable de soporte 24/7, propietaria de garantías, operadora de red, responsable de hardening corporativo, ejecutora de migraciones históricas, ni responsable de servicios expresamente excluidos por el proveedor o no incluidos en el DSP. **La Consultora debe adherirse al DSP y consumir la arquitectura provista por CEL como entorno habilitante para el piloto, dentro del alcance técnico pactado.
+
+**• **El plano de orquestación, ejecución, trazabilidad, logs, retries y monitoreo operacional de pipelines queda centralizado en Mage. No se incorpora Grafana como componente requerido ni se mantiene Pentaho como herramienta del piloto.
+
+**• **Las referencias a RTX 4090, la arquitectura de tres nodos económicos, ZFS/OpenZFS y switch 10GbE del BOM original quedan reemplazadas por la arquitectura efectivamente provista por CEL/Martinexsa, salvo que CEL indique formalmente otro equipo entregado.
+
+**• **La Fase 0 conserva sus actividades contractuales: comisionamiento funcional del entorno IA, red/seguridad requerida para el piloto, stack Mage/BD/Python y validación/benchmark GPU-IO-red. Lo que cambia es la plataforma física sobre la cual se ejecutan dichas actividades.
+
+**• **El inicio efectivo de Fase 0 debe computarse desde la entrega técnica mínima del entorno por parte de CEL/proveedor, no desde hitos administrativos de adquisición que no habiliten todavía trabajo técnico ejecutable.
+
+**• **Todo componente adicional adquirido por CEL será tratado como recurso disponible, dependencia técnica o capacidad institucional; no como ampliación tácita de obligaciones de la Consultora.
+
+| **Parte** | **Contenido** | **Propósito** |
+| --- | --- | --- |
+| I | Anexo técnico actualizado / texto sustitutivo | Rehacer las secciones del DSP afectadas por infraestructura, manteniendo su lógica original pero con información no deprecated. |
+| II | Matriz de cambios | Documentar qué queda reemplazado, qué se conserva y por qué. |
+| III | Delimitación contractual de alcance | Separar obligaciones de Consultora, CEL, TI, Martinexsa/Dell y terceros. |
+| IV | Checklist operativo de Fase 0 | Definir condiciones mínimas de readiness, handoff y aceptación técnica. |
+| V | Gates, dependencias y ruta crítica | Evitar que atrasos de adquisición, acceso o proveedor se imputen indebidamente a la Consultora. |
+| VI | Versión limpia y defendible | Lenguaje contractual/técnico listo para incorporar como adenda, nota aclaratoria o anexo sustitutivo. |
+| VII | Carta formal | Carta de remisión y solicitud de alineación para CEL. |
+
+# PARTE I. Anexo técnico actualizado / texto sustitutivo
+
+La siguiente redacción está diseñada para sustituir, complementar o interpretar las secciones del DSP relacionadas con infraestructura, AI Silo, BOM HW/SW, Fase 0, orquestación de pipelines, automatización, bases de datos, visualización, riesgos y RACI. **La estructura conserva la lógica del documento original, pero elimina referencias técnicas inconsistentes o superadas.**
+
+## 1.1 Metodología de Implementación - 0. Configuración de Infraestructura y Entorno
+
+**Texto actualizado propuesto:**
+
+La Fase 0 establece la base tecnológica sobre la cual se desarrollará el piloto de pronóstico hidrológico avanzado basado en inteligencia artificial. A partir de la adquisición realizada por CEL, el entorno de infraestructura física será el provisto por CEL y su proveedor designado, Martinexsa/Dell Technologies, o por el proveedor que CEL determine formalmente. La Consultora utilizará dicho entorno como infraestructura habilitante para desplegar, configurar y validar el stack técnico del piloto, sin asumir responsabilidades de adquisición, entrega, garantía, soporte, instalación física general, administración continua, operación 24/7, gestión de data center, mantenimiento preventivo/correctivo, ni resolución de fallas atribuibles al hardware, licenciamiento, red corporativa o proveedor.
+
+| **Actividad contractual** | **Redacción operativa actualizada** | **Límite de responsabilidad** |
+| --- | --- | --- |
+| Comisionamiento HW solo IA | Validación funcional del nodo/entorno IA efectivamente provisto por CEL: disponibilidad de GPU, CPU, RAM, almacenamiento, sistema operativo base, drivers, conectividad y acceso remoto. | No incluye compra, importación, instalación física, racking, cableado eléctrico, cooling, garantías, RMA, soporte Dell/NVIDIA ni administración continua del servidor. |
+| Red/Seguridad (VLAN/FW/VPN) | Definición y validación de los requisitos mínimos de conectividad del piloto: acceso remoto seguro, egress controlado a fuentes externas, comunicación entre servicios internos del piloto y acceso read-only a fuentes CEL cuando aplique. | No incluye diseño integral de red corporativa, BGP/EVPN, fabric, NAC, WAN, SDN, microsegmentación, SIEM, hardening corporativo completo ni operación de firewall. |
+| Stack (Mage, PG/PostGIS, Mongo, Python) | Instalación/configuración del stack del piloto o acompañamiento técnico documentado para su instalación en el entorno autorizado: Mage como orquestador central, PostgreSQL/PostGIS, MongoDB, Python, librerías IA/GIS, Git y contenedores cuando aplique. | No incluye plataformas enterprise no pactadas, Kubernetes/OpenShift, AD/LDAP avanzado, herramientas externas de monitoreo, backup corporativo, CI/CD corporativo o migraciones históricas no previstas. |
+| Validación/Benchmark GPU/IO/Red | Ejecución de pruebas técnicas para confirmar que el entorno permite iniciar Fase 1: visibilidad de GPU, drivers, prueba de cómputo, throughput básico de almacenamiento, conectividad red y ejecución de pipeline dummy en Mage. | La validación certifica readiness funcional para el piloto; no certifica toda la plataforma institucional Dell ni usos ajenos al piloto. |
+
+## 1.2 Ruta de Implementación y Entregable Principal de Fase 0
+
+| **Fase** | **Duración contractual** | **Condición de inicio** | **Tareas clave** | **Entregable principal** |
+| --- | --- | --- | --- | --- |
+| 0. Configuración de infraestructura y entorno | 4 semanas | Entrega técnica mínima del entorno por CEL/proveedor: equipos instalados, energizados, accesibles, red básica, credenciales, GPU/driver verificable, storage disponible y responsables designados. | Validación de servidores, accesos, red, stack Mage/BD/Python, ejecución de pruebas GPU/IO/red y documentación de configuración funcional. | Certificación de Entorno Operacional del Piloto IA y checklist de readiness firmado/validado. |
+| 1. Adquisición y preprocesamiento de datos | 5 semanas | Fase 0 certificada o waiver formal de CEL sobre dependencias pendientes. | Fuentes, estandarización y control de calidad de datos hidrometeorológicos y geoespaciales. | Conjunto de datos listo para análisis. |
+| 2. Configuración y entrenamiento del modelo | 9 semanas | Dataset base validado y recursos GPU disponibles. | LSTM, features, entrenamiento, ajuste y validación. | Modelo validado de pronóstico hidrológico. |
+| 3. Operacionalización y automatización | 5 semanas | Modelo validado y definición operativa de umbrales/UI. | Pipelines, BD, dashboard, alertas e integración operacional. | Sistema automatizado end-to-end. |
+| 4. Validación y transferencia | 5 semanas | Sistema integrado listo para pruebas. | Pruebas OOS, documentación, POE y talleres. | Informe de validación piloto, POE y sesiones de transferencia. |
+
+## 1.3 Fase 0 - redacción sustitutiva ampliada
+
+Esta fase inicial y fundamental establece el entorno técnico de ejecución del piloto. Su objetivo no es sustituir a CEL, a su área de Informática, a Martinexsa, a Dell Technologies ni a ningún proveedor de infraestructura en las actividades de adquisición, instalación física, garantía, soporte, operación o administración de la plataforma. Su objetivo es habilitar y validar, dentro del alcance del piloto, que la infraestructura provista por CEL permite ejecutar el stack de datos, IA y automatización requerido por el DSP.
+
+La Consultora ejecutará o acompañará la configuración del stack del piloto en la medida en que reciba acceso técnico suficiente, credenciales, rutas de red, permisos, almacenamiento, drivers, sistema operativo base, políticas de seguridad aplicables y responsable técnico designado por CEL. Las actividades de Fase 0 se documentarán en una Certificación de Entorno Operacional, la cual contendrá: inventario técnico de los recursos usados por el piloto, ubicación de servicios, versiones de software, pruebas de conectividad, pruebas de GPU/IO/red, estado de Mage, bases de datos, repositorio, dependencias abiertas y riesgos pendientes.
+
+La arquitectura física aceptada por CEL, por tratarse de una adquisición posterior y diferenciada, será considerada la fuente de verdad para el hardware efectivamente disponible. Por tanto, la referencia original al Escenario 2 económico de tres nodos se mantiene únicamente como antecedente de dimensionamiento y queda sustituida para fines de ejecución por la arquitectura Dell/Martinexsa entregada a CEL.
+
+## 1.4 Anexo Técnico A - secciones afectadas
+
+| **Sección** | **Texto/ajuste sustitutivo** |
+| --- | --- |
+| A.1 Flujo completo del sistema | Mantener el flujo end-to-end: adquisición/validación de datos, pronóstico LSTM, modelado de inundación y distribución de alertas. Ajustar el preámbulo de Fase 0 para indicar que la infraestructura será la plataforma provista por CEL/Martinexsa y que la finalización de Fase 0 depende del handoff técnico mínimo. |
+| A.3 Preprocesamiento y canalizaciones ETL | Sustituir cualquier referencia a Pentaho por Mage. Mage será la herramienta central de orquestación, versionamiento operacional, trazabilidad de ejecuciones, logs, retries, manejo de errores y operación de pipelines en Python. |
+| A.4.1 Modelo LSTM | Sustituir menciones cerradas a RTX 4090 por 'GPU NVIDIA instalada en el nodo IA provisto por CEL'. Cuando se cite la propuesta Martinexsa, puede indicarse que la arquitectura aceptada contempla una GPU NVIDIA H100 NVL de 94 GB, sujeta a validación física al momento de entrega. |
+| A.6 Infraestructura técnica | Reemplazar la arquitectura recomendada de tres nodos económicos por la arquitectura Dell/Martinexsa: servidor ML/IA Dell PowerEdge R770, servidor de virtualización PowerEdge R770, servidor NAS/File Server PowerEdge R570, switch Dell PowerSwitch S5224F-ON 25/100GbE y estaciones ejecutivas/de gestión. Aclarar que componentes institucionales adicionales no expanden el scope del piloto. |
+| A.7 Automatización y operación diaria | Ratificar que las ejecuciones diarias, dependencias, estados, retries, logs y notificaciones técnicas de pipeline se gestionarán desde Mage. No incorporar Grafana como requisito ni dependencia del piloto. |
+| A.8 Visualización y alertas | Mantener dashboard/web app y alertas email/SMS. Aclarar que el dashboard operativo del sistema hidrológico no equivale a monitoreo corporativo de infraestructura Dell, SIEM, observabilidad data center ni Grafana. |
+| A.10 Recursos humanos y RACI | Actualizar el RACI para reflejar que CEL/TI/proveedor son responsables de la instalación física, red base, soporte, garantías, administración de infraestructura y entrega técnica mínima. La Consultora es responsable del diseño técnico del piloto, stack de IA/datos, documentación, desarrollo, validación funcional y transferencia dentro del DSP. |
+
+## 1.5 Anexo Técnico B - Infraestructura Local Provista por CEL/Martinexsa
+
+**Objetivo actualizado:** formalizar que la infraestructura local para el AI Silo del piloto se ejecutará sobre la plataforma que CEL adquiera y ponga a disposición, manteniendo los principios de soberanía, seguridad, separación de cargas, escalabilidad y operación on-premise, pero reemplazando el BOM físico original por el BOM efectivo de CEL.
+
+| **Capa / componente** | **Elemento provisto según arquitectura aceptada** | **Rol para el piloto** | **Responsabilidad primaria** |
+| --- | --- | --- | --- |
+| Procesamiento IA | Dell PowerEdge R770 - Servidor ML/IA, con GPU NVIDIA de alto rendimiento según entrega final; la propuesta aceptada contempla H100 NVL 94 GB. | Entrenamiento, inferencia, experimentación, cómputo acelerado y procesamiento intensivo asociado al modelo hidrológico. | CEL/proveedor: entrega, soporte y plataforma base. Consultora: uso funcional, stack del piloto y validación. |
+| Virtualización institucional | Dell PowerEdge R770 - servidor de virtualización. | Puede alojar servicios institucionales o componentes de integración si CEL lo define; no es automáticamente parte core del piloto salvo asignación formal. | CEL/TI/proveedor. |
+| Almacenamiento NAS/File Server | Dell PowerEdge R570 con Windows Server 2025 Standard, almacenamiento RAID 6 y servicios SMB/NFS. | Repositorio de datasets, artefactos, archivos compartidos, históricos y soporte de almacenamiento para el entorno IA. | CEL/proveedor para instalación/administración; Consultora consume rutas/permisos autorizados. |
+| Conectividad Data Center | Dell PowerSwitch S5224F-ON con puertos 25GbE/100GbE y SmartFabric OS10. | Conectividad de alta velocidad entre servidores, NAS y red de datos del piloto. | CEL/TI/proveedor. |
+| Gestión/productividad | 2 estaciones Dell Pro Max 16 Plus con docking, monitores 4K y periféricos. | Gestión, análisis técnico, visualización avanzada o estación de usuario, según CEL determine. | CEL. No constituye obligación de configuración aplicativa por la Consultora salvo solicitud formal dentro del piloto. |
+
+## 1.6 Anexo Técnico C - BOM actualizado
+
+**El BOM actualizado debe tratarse como BOM de infraestructura provista por CEL, no como presupuesto, adquisición ni obligación económica de la Consultora. **La Consultora no garantiza precio, disponibilidad, SLA, garantía, soporte, licenciamiento ni configuración enterprise de componentes adquiridos por CEL, salvo la validación funcional del entorno requerido para el piloto.
+
+| **Bloque** | **BOM actualizado / fuente de verdad física** | **Uso esperado en piloto** | **Nota de alcance** |
+| --- | --- | --- | --- |
+| Servidor ML/IA | Dell PowerEdge R770, CPU dual Intel Xeon 6 Performance, memoria DDR5, GPU NVIDIA según entrega final, NVMe/SSD, iDRAC Enterprise, NVIDIA AI Enterprise/soporte según oferta. | Cómputo acelerado para entrenamiento e inferencia. | La validación se hará contra hardware instalado, no contra supuestos anteriores RTX. |
+| Servidor virtualización | Dell PowerEdge R770 sin GPU dedicada para virtualización/servicios institucionales. | Solo si CEL asigna servicios del piloto a esta capa. | Virtualización/hypervisor/HA/DR no son responsabilidad de Consultora salvo adenda. |
+| NAS/File Server | Dell PowerEdge R570, Windows Server 2025 Standard, RAID 6, SMB/NFS. | Datasets, archivos, artefactos y respaldo/almacenamiento del piloto según permisos. | Herramientas de backup, migraciones históricas y AD/GPO quedan fuera salvo alcance formal. |
+| Switch | Dell PowerSwitch S5224F-ON, 25/100GbE. | Interconexión de alto desempeño. | Routing avanzado, BGP/EVPN, NAC, performance certification y monitoreo continuo son de CEL/proveedor. |
+| Estaciones | Dell Pro Max 16 Plus + docking + monitores/periféricos. | Gestión y visualización por usuarios designados. | No amplía scope de capacitación/configuración de equipos finales. |
+
+| **Capa software** | **Herramientas / criterio actualizado** | **Estado** |
+| --- | --- | --- |
+| Orquestación | Mage como capa central de pipelines, logs, retries, estados, ejecución programada, monitoreo operacional de flujos y documentación de procesos. | In-scope del piloto. |
+| Bases de datos | PostgreSQL/PostGIS para histórico/geoespacial; MongoDB para datos operativos/tiempo real, según arquitectura lógica del piloto. | In-scope funcional; ubicación exacta a definir por CEL. |
+| Lenguaje/librerías | Python, PyTorch, NeuralHydrology, NumPy, Pandas, GeoPandas, Rasterio/GDAL, Scikit-learn, Optuna u otras librerías open-source necesarias. | In-scope. |
+| Contenedores | Docker/Docker Compose si el entorno base provisto lo permite y CEL lo autoriza. | In-scope limitado al piloto. |
+| Dashboard | Node.js/React, Leaflet/Mapbox/OpenStreetMap según decisión UI/IT. No Grafana como dependencia del piloto. | In-scope para visualización hidrológica. |
+| Sistema operativo | Ubuntu Server 24.04 LTS en servidor ML/IA según oferta; Windows Server 2025 Standard en NAS según oferta. | Base provista por proveedor/CEL; Consultora valida y consume. |
+| NVIDIA | Drivers, CUDA, contenedores o NVIDIA AI Enterprise según disponibilidad del entorno y licencias de CEL. | CEL/proveedor provee; Consultora valida funcionalidad para piloto. |
+| Fuera | Grafana, Pentaho, Kubernetes/OpenShift, SIEM, AD/LDAP avanzado, hardening CIS completo, HA/DR, monitoreo 24/7, herramientas corporativas de backup, microsegmentación, BGP/EVPN. | Fuera de alcance salvo adenda. |
+
+## 1.7 Anexo Técnico D - Riesgos actualizados y mitigación
+
+| **Riesgo** | **Descripción** | **Impacto** | **Mitigación / decisión requerida** |
+| --- | --- | --- | --- |
+| Handoff incompleto | Equipos adquiridos pero no listos técnica u operativamente para que la Consultora ejecute Fase 0. | Alto | Establecer checklist de handoff mínimo y no computar Fase 0 hasta que se cumpla o CEL emita waiver formal. |
+| Divergencia DSP vs adquisición | El DSP contiene BOM y arquitectura física ya superados por la compra final. | Alto | Aprobar este anexo como adenda técnica/nota aclaratoria que sustituye referencias deprecated. |
+| Ubicación de Mage/BD no definida | La arquitectura Dell incluye varias capas; aún debe decidirse dónde alojar Mage, PostgreSQL/PostGIS y MongoDB. | Medio | CEL/TI debe confirmar host, ruta, permisos y política de servicios antes del despliegue. |
+| GPU/driver/NVIDIA stack | La propuesta contempla GPU empresarial; la funcionalidad depende de drivers, CUDA, permisos y licencias. | Medio-Alto | Proveedor/CEL deben entregar GPU visible, drivers funcionales y acceso para benchmark; Consultora valida para piloto. |
+| Acceso remoto/VPN | Sin acceso seguro y estable, la Consultora no puede configurar ni validar el entorno. | Alto | VPN/bastion/credenciales y reglas de acceso como gate de inicio. |
+| Backups/retención | NAS y almacenamiento existen, pero política de backup/restauración puede no estar definida. | Medio | CEL debe definir RPO/RTO y responsable; Consultora documenta respaldo mínimo del piloto si es autorizado. |
+| Scope creep infraestructura | Componentes empresariales adicionales podrían pretender imputarse a la Consultora. | Alto | Cláusula expresa de no ampliación de alcance; cambios solo vía modificación contractual. |
+| Exclusiones del proveedor | Martinexsa excluye varias actividades avanzadas; no deben trasladarse tácitamente a la Consultora. | Alto | Registrar exclusiones y asignar owners CEL/proveedor o adenda separada. |
+| Monitoreo institucional | Mage monitorea pipelines, no sustituye SIEM/observabilidad data center/operación 24x7. | Medio | Separar monitoreo operacional del piloto vs monitoreo corporativo de infraestructura. |
+| Atrasos de adquisición | Procurement, importación, instalación física o soporte proveedor retrasan el entorno. | Alto | Cronograma del piloto se ajusta por dependencias del Contratante/proveedor. |
+
+# PARTE II. Matriz de cambios: antes / deprecated / reemplazo
+
+| **Elemento** | **Antes / documento original** | **Estado** | **Reemplazo actualizado** | **Efecto** |
+| --- | --- | --- | --- | --- |
+| Arquitectura física | 3 nodos económicos: ML/Compute, Datos & ETL, Backup NAS. | Deprecated como infraestructura física de ejecución. | Arquitectura Dell/Martinexsa provista por CEL: R770 IA, R770 virtualización, R570 NAS/File Server, S5224F-ON, estaciones. | No altera entregables; cambia plataforma física. |
+| GPU | NVIDIA RTX 4090 24 GB; en algunos cálculos aparece RTX 4080. | Inconsistente y superado por adquisición final. | GPU NVIDIA instalada en nodo IA; propuesta aceptada contempla NVIDIA H100 NVL 94 GB, sujeta a validación física. | No fijar promesa a GPU no instalada; benchmarks contra equipo real. |
+| Datos & ETL | Servidor dedicado con Mage/PostgreSQL/Mongo; algunas secciones dicen Pentaho/Grafana. | Pentaho y Grafana quedan eliminados del piloto. | Mage es capa única de orquestación/observabilidad de pipelines; DBs en ubicación que CEL/TI confirme. | Reduce ambigüedad operativa. |
+| Backup/NAS | NAS con ZFS/OpenZFS, RAID-6, snapshots nocturnos. | Superado si la plataforma final usa Windows Server/SMB/NFS. | NAS/File Server Dell PowerEdge R570 con Windows Server 2025 Standard, RAID 6, SMB/NFS según oferta. | Backups corporativos no son responsabilidad implícita de Consultora. |
+| Red | Switch 10GbE y VLAN aislada. | Superado físicamente por switch 25/100GbE. | Dell PowerSwitch S5224F-ON 25/100GbE; CEL/TI/proveedor configuran red base. | La Consultora define requisitos y valida conectividad del piloto. |
+| CAPEX/OPEX | US$15,600 CAPEX + OPEX estimado por arquitectura original. | No vigente para compra final CEL. | El costo real pertenece al proceso de adquisición CEL/Martinexsa; no debe figurar como presupuesto de Consultora. | Evita confusión financiera. |
+| UPS/rack/cooling | UPS 3 kVA, rack 2U/4U según BOM original. | No usar como fuente de verdad física final. | Infraestructura física, energía, rack, cooling y garantías son de CEL/proveedor. | No imputar a Consultora. |
+| Fase 0 | Implementar/configurar/validar infraestructura y stack. | Debe interpretarse con RACI y nueva adquisición. | Validar y configurar el entorno del piloto sobre infraestructura provista; no adquirir ni operar data center. | Mantiene scope contractual. |
+| RACI | Consultora diseña/guía; CEL ejecuta infraestructura. | Debe reforzarse por nueva compra. | CEL/TI/proveedor responsables de instalación física, soporte, red base y entrega técnica; Consultora responsable del piloto. | Demarcación clara. |
+| Grafana | Aparece como monitoreo en BOM/anexo original. | Eliminar para piloto. | Mage cubre observabilidad operacional de pipelines. Monitoreo corporativo queda fuera. | Evita dependencia innecesaria. |
+| Pentaho | Aparece en Anexo B original. | Eliminar. | Mage reemplaza Pentaho para todos los flujos ETL/ELT del piloto. | Consistencia técnica. |
+
+# PARTE III. Delimitación contractual de alcance
+
+**Principio rector: **la Consultora está obligada a ejecutar los servicios especializados pactados para el piloto de pronóstico hidrológico basado en IA conforme al DSP, sus entregables, cronograma y RACI. La infraestructura que CEL adquiera posteriormente se incorpora como entorno habilitante del piloto, no como ampliación tácita del alcance de consultoría.
+
+## 3.1 En alcance de la Consultora
+
+| **Bloque** | **Incluido** |
+| --- | --- |
+| Diseño técnico del piloto | Arquitectura lógica del sistema IA, flujos de datos, modelo LSTM/inundación, DBs lógicas, APIs, dashboard y automatización. |
+| Stack de datos/IA | Mage, Python, librerías IA/GIS, PostgreSQL/PostGIS, MongoDB, Git y entornos necesarios para el piloto, dentro de permisos otorgados. |
+| Pipelines | Desarrollo, pruebas, documentación y transferencia de pipelines en Mage/Python para ingesta, QC, procesamiento, predicción y actualización de resultados. |
+| Validación funcional | Benchmarks y pruebas para confirmar que GPU, almacenamiento, red y stack son suficientes para iniciar y ejecutar el piloto. |
+| Modelo | Implementación, entrenamiento, validación, métricas, interpretación y documentación del modelo hidrológico y componentes geoespaciales. |
+| Dashboard y alertas | Diseño/implementación del dashboard de resultados y lógica de alertas del piloto, no monitoreo corporativo de infraestructura. |
+| Documentación | Certificación de Entorno Operacional, documentación técnica, POE, informe de validación, manuales y transferencia de conocimiento. |
+| Coordinación técnica | Sesiones de alineación con CEL/TI/proveedor para requisitos funcionales del piloto y resolución de dependencias técnicas. |
+
+## 3.2 Fuera de alcance de la Consultora salvo modificación contractual expresa
+
+**• **Compra, selección comercial final, importación, logística, entrega, inventario, garantías, RMA, sustitución de partes o administración de contratos de soporte Dell/NVIDIA/Martinexsa.
+
+**• **Instalación física general: racking, rails, cableado eléctrico, circuitos, UPS, cooling, organización física del data center, seguridad física o continuidad eléctrica.
+
+**• **Administración continua de servidores, NAS, switch, firewalls, VPN, usuarios corporativos, sistemas operativos, parches corporativos, endpoint management o monitoreo 24/7.
+
+**• **Implementación de hypervisors específicos, Kubernetes/OpenShift, clusters HA/DR, replicación entre sitios, BGP/EVPN, fabric, WAN, NAC, SIEM, microsegmentación, SDN u overlay networks.
+
+**• **Integraciones avanzadas con Active Directory/LDAP, diseño de OU/GPO, políticas corporativas de identidad, auditorías CIS completas o hardening enterprise fuera del piloto.
+
+**• **Herramientas corporativas de backup, migración/copia de datos históricos institucionales no incluidos en el piloto, deduplicación/tiering/FSRM o administración permanente del NAS.
+
+**• **Soporte a estaciones ejecutivas, periféricos, productividad de usuario final o configuración de laptops/monitores/docks fuera de necesidades puntuales del piloto.
+
+**• **Cualquier servicio excluido por Martinexsa/Dell o no contemplado en el DSP, salvo que CEL lo formalice como cambio de alcance, adenda, orden de cambio o contratación separada.
+
+## 3.3 Responsabilidades por actor
+
+| **Actor** | **Responsabilidades principales** | **Puntos de control** |
+| --- | --- | --- |
+| Consultora | Diseño técnico, stack del piloto, pipelines, modelo, dashboard, documentación, validación funcional y transferencia. | Certificación Fase 0; entregables por fase; reportes; POE. |
+| CEL - Sponsor/Contratante | Aprobaciones, dirección institucional, recursos, decisiones, coordinación interna, aceptación de entregables y resolución de bloqueos administrativos. | Orden de inicio; aprobaciones por fase; aceptación de gates. |
+| CEL - TI/Seguridad/DevOps | Red, accesos, VPN/bastion, credenciales, usuarios, permisos, firewall, hostnames, DNS, seguridad interna, política de backups y operación de infraestructura. | Handoff técnico; accesos; definición de hosts; soporte de red. |
+| Martinexsa/Dell/proveedor | Entrega, instalación base, firmware, OS base, drivers, conexión física, iDRAC, soporte, garantía y cumplimiento de la oferta aceptada. | Acta de instalación; inventario; contactos de soporte; SLAs. |
+| Equipo hidrológico/operativo CEL | Validación de datos, umbrales, patrones, puntos de interés, aceptación operativa y retroalimentación sobre dashboard/alertas. | Sesiones técnicas; validación de salidas; POE. |
+
+## 3.4 Regla de no ampliación automática
+
+**Ningún componente, licencia, servicio de soporte, estación de trabajo, switch, servidor, sistema operativo, suscripción NVIDIA, servicio Dell, herramienta de gestión, capacidad de virtualización, almacenamiento, red o soporte institucional adquirido por CEL podrá interpretarse como obligación adicional de la Consultora por el solo hecho de encontrarse disponible dentro de la plataforma. **Toda obligación adicional deberá estar expresamente descrita, aceptada por escrito y, cuando corresponda, reflejada en precio, plazo, entregables y RACI actualizados.
+
+# PARTE IV. Checklist operativo de Fase 0
+
+Este checklist define las condiciones mínimas para considerar que el entorno ha sido entregado técnica y operativamente a la Consultora para iniciar Fase 0 de manera efectiva. **Los ítems pendientes deberán registrarse como dependencia, riesgo, excepción o waiver formal de CEL.**
+
+| **Gate** | **Condición mínima** | **Owner primario** | **Estado** |
+| --- | --- | --- | --- |
+| A. Gobernanza documental | Orden de inicio emitida; anexo técnico actualizado aprobado; responsables CEL/TI/proveedor designados; canal de soporte definido; calendario de reuniones aprobado. | CEL | No iniciado / En proceso / Listo / Waiver |
+| B. Inventario y entrega física | Listado de equipos, seriales, ubicación, estado de instalación, energización, rack, red física, UPS/cooling y contacto de garantía. | CEL/Martinexsa | Listo para validación |
+| C. Acceso remoto | VPN/bastion funcional; usuarios entregados; MFA/políticas; alcance de permisos; ventana de acceso; procedimiento de emergencia. | CEL TI | Bloqueante |
+| D. Red y seguridad | IPs/hostnames/DNS; VLAN; reglas FW; egress a ECMWF/Copernicus/NASA/OSM u otras fuentes; conectividad interna entre IA/NAS/DB/Mage. | CEL TI | Bloqueante |
+| E. Sistema operativo base | Ubuntu Server en nodo IA; Windows Server en NAS; parches base; repositorios; hora/NTP; usuarios sudo/service accounts según política. | Proveedor/CEL TI | Necesario |
+| F. GPU/NVIDIA | GPU visible; drivers/CUDA funcionales; nvidia-smi; prueba PyTorch CUDA; licencia/soporte si aplica; contenedores NVIDIA si se autorizan. | Proveedor/CEL TI | Bloqueante para modelo |
+| G. Almacenamiento | Volúmenes disponibles; rutas NAS/SMB/NFS; permisos read/write; capacidad; estructura de carpetas; política de retención. | CEL TI | Necesario |
+| H. Bases de datos | PostgreSQL/PostGIS y MongoDB instaladas o ubicación definida; credenciales; roles; backups; acceso desde Mage/app. | CEL TI + Consultora | Necesario |
+| I. Mage | Instancia Mage instalada/levantada; acceso UI; repositorio; pipelines dummy; logs; retries; scheduler; variables/secrets; backup de configuración. | Consultora + CEL TI | Core Fase 0 |
+| J. Git/control de versiones | Repositorio creado; permisos; estructura de ramas; política de commits; secrets fuera del repo; acceso consultora/equipo CEL. | CEL TI + Consultora | Necesario |
+| K. Fuentes externas | Prueba descarga/consulta de datos abiertos; allowlist si aplica; credenciales/API keys; manejo de rate limits. | Consultora + CEL TI | Necesario |
+| L. Fuentes internas CEL | Acceso read-only a datos aprobados; rutas; formato; owner de datos; restricciones; ventana de extracción. | CEL | Según fase |
+| M. Seguridad y secretos | Gestión de secrets; no credenciales en código; mínimo privilegio; bitácora de accesos; procedimiento de revocación. | CEL TI + Consultora | Necesario |
+| N. Backups/restore | Responsable de backup; periodicidad; alcance; prueba de restore para configuración crítica del piloto; RPO/RTO documentado. | CEL TI | Necesario |
+| O. Benchmarks | GPU smoke test; lectura/escritura storage; conectividad red; pipeline dummy end-to-end; latencia básica; registro de resultados. | Consultora | Entregable Fase 0 |
+| P. Acta de readiness | Checklist cerrado; excepciones documentadas; riesgos aceptados; firma/validación de responsables; autorización Fase 1. | CEL + Consultora | Gate de cierre |
+
+# PARTE V. Gates, dependencias y ruta crítica
+
+## 5.1 Regla de inicio efectivo de Fase 0
+
+**La orden administrativa de inicio no debe confundirse con la capacidad técnica real de iniciar Fase 0. **La Fase 0 podrá coordinarse preliminarmente desde la orden de inicio, pero el cómputo operativo de actividades técnicas dependientes del entorno deberá iniciar desde el cumplimiento del Handoff Técnico Mínimo. Si CEL requiere iniciar antes, deberá aceptarse formalmente que las actividades se limitarán a planificación, revisión documental, coordinación técnica y preparación de scripts/documentación, sin que los pendientes de infraestructura sean imputables a la Consultora.
+
+## 5.2 Gates de ejecución
+
+| **Gate** | **Owner** | **Condición de cierre** | **Efecto si no se cumple** |
+| --- | --- | --- | --- |
+| G0 - Alineación documental | CEL + Consultora | Adenda/anexo/nota aprobada; scope y RACI reconocidos. | Riesgo de ambigüedad y disputas de alcance. |
+| G1 - Handoff proveedor | CEL/Martinexsa | Equipos instalados, red base, OS base, iDRAC, storage y soporte documentados. | No inicia validación técnica completa. |
+| G2 - Acceso seguro | CEL TI | VPN/bastion y credenciales funcionales. | Trabajo remoto técnico queda bloqueado. |
+| G3 - GPU y stack base | CEL TI/proveedor | GPU/driver/CUDA/PyTorch funcionales; Docker si aplica. | Entrenamiento/inferencia no ejecutables. |
+| G4 - Datos y almacenamiento | CEL + Consultora | Rutas, permisos, DBs y datasets iniciales accesibles. | No avanza preparación de datos. |
+| G5 - Mage operativo | Consultora + CEL TI | Mage corre pipeline dummy, logs, retries y scheduler. | No inicia automatización robusta. |
+| G6 - Certificación Fase 0 | Consultora + CEL | Benchmarks y checklist cerrados; excepciones aceptadas. | Fase 1 inicia solo bajo waiver formal. |
+
+## 5.3 Ruta crítica sugerida
+
+| **Momento** | **Actividades** | **Dependencias** | **Resultado** |
+| --- | --- | --- | --- |
+| Pre-Fase 0 / desde orden de inicio | Revisión documental, coordinación con CEL/TI/proveedor, validación de oferta final, calendarización, preparación de scripts/checklist. | Documentos, responsables y disponibilidad de CEL. | Plan de Fase 0 listo; no sustituye handoff. |
+| Semana 1 Fase 0 | Accesos, inventario, validación OS, GPU, storage, red, repositorios, estructura de carpetas y permisos. | G1-G3. | Ambiente base verificado o lista de bloqueos. |
+| Semana 2 Fase 0 | Instalación/configuración Mage, DBs, Python envs, Git, secrets, primeros pipelines dummy y pruebas de conectividad externa. | Accesos estables; recursos disponibles. | Stack del piloto instalado o documentado. |
+| Semana 3 Fase 0 | Pruebas GPU/IO/red, ejecución de pipeline dummy end-to-end, conexión DB/dashboard base, logging, retries y manejo de errores. | Mage y DBs funcionales. | Benchmarks y validación funcional. |
+| Semana 4 Fase 0 | Cierre de checklist, Certificación de Entorno Operacional, documentación, handoff interno, riesgos y autorización Fase 1. | Excepciones resueltas o waivers. | Fase 0 cerrada; Fase 1 habilitada. |
+
+## 5.4 Criterios de stop / go
+
+| **Criterio** | **Go** | **Stop / waiver requerido** |
+| --- | --- | --- |
+| Acceso | VPN/bastion estable, usuarios válidos, permisos mínimos. | Acceso intermitente, credenciales incompletas, políticas no resueltas. |
+| GPU | GPU visible y ejecuta prueba de cómputo. | Driver/CUDA/licencia no funcional; GPU no instalada; acceso denegado. |
+| Mage | Mage corre pipeline dummy con logs/retries. | No hay host, permisos, red o configuración base. |
+| DB/Storage | DBs y rutas disponibles con permisos y capacidad. | Sin rutas, sin permisos, storage no montado, política indefinida. |
+| Red externa | Fuentes externas accesibles o mecanismo alterno aprobado. | Egress bloqueado sin alternativa. |
+| RACI | Owners CEL/proveedor confirmados. | Sin responsable para infraestructura, red o soporte. |
+
+# PARTE VI. Versión limpia y defendible para incorporar como adenda / nota aclaratoria
+
+## 6.1 Cláusula de alineación técnica
+
+Para efectos de ejecución del piloto, las referencias técnicas contenidas en el DSP, Anexo Técnico B y Anexo Técnico C relativas a una arquitectura física específica de tres nodos, GPU RTX 4090, NAS ZFS/OpenZFS, switch 10GbE, Grafana, Pentaho o CAPEX/OPEX de infraestructura original deberán entenderse sustituidas, únicamente en lo relativo a infraestructura física efectivamente provista, por la arquitectura que CEL adquiera y ponga a disposición a través de su proveedor. Las referencias metodológicas, entregables, fases, lógica funcional del sistema, uso de Mage, bases de datos, pipelines, modelo hidrológico, dashboard, alertas, documentación y transferencia se mantienen conforme al alcance del DSP, salvo modificación expresa.
+
+## 6.2 Cláusula de no ampliación de alcance
+
+**La adquisición, disponibilidad o inclusión de componentes adicionales por parte de CEL no ampliará tácitamente el alcance, obligaciones, precio, plazo ni responsabilidades de la Consultora. **Cualquier servicio adicional relativo a administración de infraestructura, soporte, operación continua, monitoreo 24/7, hardening corporativo, alta disponibilidad, recuperación ante desastres, integración de identidad, SIEM, backup corporativo, virtualización institucional, configuración avanzada de red, estaciones de trabajo o servicios excluidos por el proveedor requerirá formalización expresa mediante instrumento contractual, orden de cambio o contratación independiente.
+
+## 6.3 Cláusula de inicio efectivo de Fase 0
+
+La ejecución técnica plena de Fase 0 quedará condicionada a que CEL entregue a la Consultora un entorno mínimo operacional, accesible y verificable, incluyendo, como mínimo: equipos instalados y energizados, red base funcional, acceso remoto seguro, credenciales, sistema operativo base, GPU y drivers verificables, almacenamiento disponible, rutas/permisos, responsables técnicos de CEL/proveedor y documentación de soporte. Los atrasos, fallas, limitaciones o pendientes asociados a adquisición, instalación, garantía, licenciamiento, red corporativa, soporte proveedor o acceso institucional no serán imputables a la Consultora.
+
+## 6.4 Cláusula Mage / observabilidad operacional
+
+La orquestación, trazabilidad, programación, monitoreo operacional de pipelines, logs, retries y gestión de errores del sistema de pronóstico se realizará mediante Mage. Esta observabilidad se limita al flujo de datos, IA y automatización del piloto, y no sustituye herramientas corporativas de monitoreo de infraestructura, SIEM, NOC, observabilidad de data center, administración 24/7 ni plataformas como Grafana, salvo decisión y alcance adicional de CEL.
+
+## 6.5 Cláusula de ownership de infraestructura
+
+CEL, su área de Informática/Seguridad y el proveedor de infraestructura conservarán la responsabilidad primaria sobre la plataforma física, red, seguridad institucional, garantías, soporte, administración continua, parches corporativos, usuarios, credenciales, backups institucionales, licencias y operación de los componentes Dell/NVIDIA/Martinexsa. La Consultora documentará las dependencias técnicas del piloto y validará funcionalmente el entorno para los fines del proyecto, sin asumir titularidad operacional sobre la infraestructura institucional.
+
+## 6.6 Versión ejecutiva para acta o correo
+
+Se deja constancia de que el BOM original del DSP queda reemplazado, para efectos de infraestructura física, por la plataforma que CEL ha decidido adquirir. La Consultora se adherirá al DSP y adaptará el piloto a dicha plataforma, sin que ello implique ampliación tácita de sus obligaciones. El stack del piloto se mantendrá bajo Mage como capa de orquestación y observabilidad operacional. El inicio efectivo de Fase 0 dependerá del handoff técnico mínimo del entorno, incluyendo accesos, GPU, red, almacenamiento, permisos y responsables designados. Cualquier servicio de infraestructura adicional o componente no previsto deberá ser gestionado por CEL/proveedor o formalizado mediante modificación contractual expresa.
+
+# PARTE VII. Carta formal de remisión y solicitud de alineación
+
+[Lugar y fecha]
+
+Señores
+COMISIÓN EJECUTIVA HIDROELÉCTRICA DEL RÍO LEMPA (CEL)
+Presente.
+
+**Referencia: Proceso CEL-CFU 02/26 - Servicios Especializados para el Desarrollo de un Plan Piloto de Pronóstico Hidrológico Avanzado Basado en Inteligencia Artificial. Asunto: Alineación técnica-contractual de infraestructura, BOM HW/SW, Fase 0 y alcance de responsabilidades frente a la arquitectura adquirida por CEL.**
+
+**Estimados señores:**
+
+Por medio de la presente, y con el debido respeto, me permito dejar constancia formal de la necesidad de alinear la documentación técnica del proyecto, particularmente en lo relativo a infraestructura local, AI Silo, BOM de hardware y software, Fase 0, accesos, soporte y responsabilidades operativas, con la arquitectura de infraestructura que CEL ha decidido adquirir y poner a disposición para la ejecución del piloto.
+
+La propuesta técnica y contractual presentada para el proceso CEL-CFU 02/26 contiene un diseño de referencia para un entorno local dedicado al piloto, incluyendo una arquitectura de tres nodos, un BOM específico, determinados supuestos de cómputo, almacenamiento, red, respaldo y operación. Dicho diseño cumplió su función dentro del proceso de formulación del proyecto y permitió dimensionar las necesidades técnicas mínimas del piloto. No obstante, a partir de la adquisición posterior definida por CEL mediante su proveedor, la arquitectura física originalmente documentada ha sido superada para efectos de adquisición, instalación y plataforma real de ejecución.
+
+En consecuencia, y para evitar ambigüedades técnicas, operativas o contractuales, resulta necesario reconocer expresamente que la infraestructura física efectiva del proyecto será la plataforma que CEL adquiera, instale, reciba y ponga a disposición a través de Martinexsa/Dell Technologies o del proveedor designado. Esta alineación debe entenderse como una actualización técnica de la plataforma habilitante y no como una modificación automática del alcance de la consultoría, del precio, del plazo, de los entregables, ni de las responsabilidades originalmente pactadas.
+
+Es fundamental establecer esta distinción con claridad. Mi obligación contractual es ejecutar los servicios especializados del piloto de pronóstico hidrológico basado en inteligencia artificial conforme al DSP, sus entregables, su cronograma, su metodología y su matriz de responsabilidades. Dicha obligación incluye el diseño técnico del sistema, el desarrollo del stack de datos e inteligencia artificial, la configuración funcional del entorno del piloto, la implementación de pipelines, el uso de Mage como herramienta central de orquestación, la configuración o acompañamiento de bases de datos del piloto, el desarrollo y validación del modelo, la automatización, visualización, documentación, capacitación y transferencia de conocimiento dentro del alcance pactado.
+
+Por el contrario, no corresponde a la Consultora asumir responsabilidades propias del proceso de adquisición, entrega, instalación física, garantía, soporte, administración continua, operación 24/7, seguridad corporativa, gestión de red, licenciamiento, mantenimiento, reemplazo de componentes, hardening institucional, integración avanzada de identidad, SIEM, alta disponibilidad, recuperación ante desastres, monitoreo corporativo, backup institucional, migración histórica de datos o cualquier otra actividad de infraestructura no contemplada expresamente en el DSP o expresamente excluida por el proveedor de la plataforma.
+
+La adquisición de una plataforma más amplia, robusta o empresarial por parte de CEL no puede ni debe interpretarse como una ampliación tácita de mis obligaciones profesionales. Todo componente adicional adquirido por CEL —incluyendo servidores de virtualización, switches 25/100GbE, NAS empresarial, estaciones ejecutivas, soporte Dell/NVIDIA, licencias, herramientas de gestión, servicios del fabricante o capacidades de data center— deberá ser tratado como recurso disponible, dependencia institucional o responsabilidad de CEL/proveedor, salvo que exista una modificación contractual expresa que incorpore nuevos servicios, nuevos entregables, nuevos plazos y la compensación correspondiente.
+
+Asimismo, debe quedar formalmente establecido que la Fase 0 no puede ejecutarse plenamente mientras el entorno no haya sido entregado técnica y operativamente en condiciones mínimas de uso. Para efectos prácticos, la orden administrativa de inicio no sustituye la entrega técnica del ambiente. La Fase 0 requiere, como condición mínima, equipos instalados y energizados, red base funcional, acceso remoto seguro, credenciales, sistema operativo base, GPU y drivers verificables, almacenamiento disponible, rutas y permisos definidos, conectividad necesaria, responsables técnicos designados por CEL y proveedor, y documentación suficiente de la infraestructura entregada.
+
+Cualquier atraso, limitación, falla, bloqueo o dependencia derivada de adquisición, instalación, entrega, garantías, soporte del proveedor, configuración de red, seguridad institucional, accesos, licencias, drivers, permisos o disponibilidad física del entorno deberá registrarse como dependencia del Contratante o del proveedor correspondiente, y no como incumplimiento de la Consultora. La ejecución técnica del piloto solo puede medirse razonablemente a partir del momento en que CEL ponga a disposición un entorno mínimo operacional, accesible y verificable.
+
+También solicito dejar sin efecto, para fines de ejecución técnica vigente, las referencias del documento original que resulten inconsistentes con la arquitectura final adquirida. En particular, deberán sustituirse las referencias al BOM original de tres nodos, a GPU RTX 4090 como especificación cerrada, a Pentaho, a Grafana como componente requerido, a ZFS/OpenZFS cuando no corresponda a la plataforma efectivamente entregada, al switch 10GbE original, al CAPEX/OPEX estimado del BOM inicial y a cualquier otra especificación física superada por la adquisición final de CEL. La lógica funcional del piloto se mantiene: infraestructura on-premise, soberanía de datos, ejecución local, Mage como capa central de orquestación, PostgreSQL/PostGIS y MongoDB como repositorios del piloto, Python y librerías IA/GIS, modelo hidrológico, dashboard, alertas, documentación y transferencia.
+
+En ese sentido, adjunto y someto a revisión el Anexo Técnico de Alineación y Nota Aclaratoria Contractual, el cual propone: (i) texto sustitutivo para las secciones del DSP afectadas por infraestructura; (ii) matriz de cambios entre el BOM original y la arquitectura actual; (iii) delimitación expresa de responsabilidades entre Consultora, CEL, TI, proveedor e involucrados; (iv) checklist operativo de Fase 0; (v) gates, dependencias y ruta crítica desde la orden de inicio hasta la certificación del entorno; y (vi) lenguaje limpio para incorporar como adenda técnica, nota aclaratoria contractual o instrumento de alineación operativa.
+
+Solicito que esta alineación sea revisada y formalizada antes de exigir la ejecución plena de actividades técnicas dependientes del entorno. Esta formalización protege a ambas partes: a CEL, porque asegura que el piloto se ejecute sobre una fuente de verdad técnica actualizada; y a la Consultora, porque evita que brechas de adquisición, infraestructura, soporte o administración institucional se trasladen indebidamente al alcance de una consultoría especializada en inteligencia artificial y pronóstico hidrológico.
+
+De manera específica, solicito a CEL confirmar por escrito los siguientes puntos: (1) arquitectura final efectivamente adquirida y entregada; (2) ubicación aprobada para Mage, PostgreSQL/PostGIS, MongoDB, repositorios y servicios del piloto; (3) responsable técnico de CEL para infraestructura, red y seguridad; (4) contacto técnico del proveedor y procedimiento de soporte; (5) mecanismo de acceso remoto; (6) política mínima de almacenamiento, respaldo y restauración aplicable al piloto; (7) ruta de aprobación del checklist de Fase 0; y (8) tratamiento de cualquier componente o servicio adicional que no forme parte del alcance pactado.
+
+La ejecución exitosa del piloto requiere una separación rigurosa entre infraestructura institucional, soporte proveedor, operación de data center y servicios especializados de IA. Mi disposición de colaborar técnicamente con CEL se mantiene íntegra; sin embargo, dicha colaboración debe ocurrir dentro de un marco claro, verificable y contractualmente consistente. No es técnica ni contractualmente sostenible que una adquisición posterior, distinta y más amplia, desplace de forma tácita obligaciones de infraestructura hacia la Consultora sin la debida formalización.
+
+Agradezco la atención a esta aclaración y quedo a disposición para una sesión de revisión técnica con CEL, TI, el equipo operativo y el proveedor, a fin de cerrar el handoff mínimo de Fase 0, resolver decisiones abiertas y proceder con la ejecución del piloto bajo una estructura clara, responsable y trazable.
+
+**Atentamente,**
+
+Camila Alejandra Cruz Hernández
+Consultora en Ciencia de Datos, Ingeniería de Machine Learning e Inteligencia Artificial
+[Teléfono] | [Correo]
+
+# Referencias documentales y notas de uso
+
+**• **Documento de Solicitud de Propuesta / Propuesta Técnica y Financiera del proceso CEL-CFU 02/26, incluyendo cronograma, Anexo Técnico A, Anexo Técnico B, Anexo Técnico C, Anexo Técnico D y Matriz RACI.
+
+**• **Oferta aceptada Martinexsa/Dell Technologies, referencia Plataforma Integral de Inteligencia Artificial y Procesamiento de Datos para Infraestructura Hidroeléctrica, de fecha 16 de febrero de 2026, incluyendo descripción de capas, servidores Dell PowerEdge R770/R570, switch Dell PowerSwitch S5224F-ON, estaciones de gestión, servicios incluidos y exclusiones.
+
+**• **Criterios de alineación operacional: Mage como capa central de orquestación y observabilidad de pipelines; eliminación de Grafana y Pentaho como componentes requeridos; GPU y ubicación de servicios sujetas a validación contra el hardware efectivamente entregado por CEL/proveedor.
+
+Nota: este documento está redactado como instrumento técnico-contractual de alineación. Para firma o incorporación formal como adenda contractual, se recomienda validación por las áreas jurídica, técnica y administrativa correspondientes de CEL.
+
+Documento de alineación técnico-contractual - versión para revisión y formalización
+---
+### 8.2 — Anexo Complementario: BOM HW/SW y Diagramas
+
+Anexo Complementario No. 1 - BOM actualizado y diagrama final de alcance
+
+**ANEXO TÉCNICO COMPLEMENTARIO No. 1**
+
+**BOM actualizado de hardware/software y diagrama final de alcance técnico del AI Silo**
+
+Proyecto CEL-CFU 02/26 - Plan piloto de pronóstico hidrológico avanzado basado en IA
+
+| **Objeto del documento** Este anexo complementa y actualiza, únicamente para fines de alineación técnica-operativa, las secciones de infraestructura, AI Silo y BOM previamente incluidas en el DSP/propuesta contractual. La actualización responde a la infraestructura finalmente adquirida por CEL mediante la oferta aceptada de Martinexsa/Dell. Este anexo no amplía por sí mismo el alcance contractual de la Consultora ni convierte la administración integral de la plataforma adquirida por CEL en una obligación de la Consultora. |
+| --- |
+
+# 1. Fuente de verdad técnica y criterio de actualización
+
+El BOM físico original del DSP queda tratado como antecedente de dimensionamiento y arquitectura de referencia. La infraestructura física vigente para ejecución será la plataforma adquirida por CEL a través de Martinexsa/Dell, compuesta por servidores Dell PowerEdge, almacenamiento NAS/File Server, conectividad 25/100GbE, soporte Dell/NVIDIA y estaciones de gestión. La Consultora consumirá esta plataforma como entorno habilitante del piloto, siempre dentro del alcance funcional y de validación previsto para Fase 0.
+
+El stack de orquestación del piloto queda bajo Mage. No se utilizará Grafana como capa formal de monitoreo del flujo del piloto y no se mantiene Pentaho como herramienta de ETL del proyecto.
+
+La GPU y configuración real deberán validarse contra el equipo efectivamente entregado, inventariado y habilitado. La oferta aceptada contempla GPU NVIDIA H100 NVL; la certificación del piloto debe basarse en la unidad instalada y funcional.
+
+La ubicación final de Mage, PostgreSQL/PostGIS, MongoDB, dashboard/API y repositorios deberá ser definida por CEL/TI y/o el proveedor de infraestructura antes de certificar Fase 0.
+
+Los componentes de virtualización institucional, soporte enterprise, estaciones ejecutivas, red data center, NAS y servicios de garantía son recursos de CEL/proveedor, no obligaciones adicionales de diseño, soporte o administración por parte de la Consultora salvo adenda expresa.
+
+# 2. Arquitectura física adquirida por CEL - resumen por capas
+
+| **Capa** | **Dominio** | **Componente adquirido** | **Función operativa** |
+| --- | --- | --- | --- |
+| **1** | Procesamiento IA | Dell PowerEdge R770 - Plataforma IA | Servidor dedicado a cargas de inteligencia artificial, analítica avanzada, entrenamiento/inferencia y procesamiento intensivo de datos. |
+| **2** | Virtualización institucional | Dell PowerEdge R770 - Servidor de virtualización | Hospedaje de máquinas virtuales, servicios institucionales, aplicaciones administrativas e integración/middleware, sujeto a decisión de CEL/TI. |
+| **3** | Almacenamiento NAS/File Server | Dell PowerEdge R570 | Almacenamiento centralizado institucional, repositorio para datasets IA, histórico/documental y compartición SMB/NFS. |
+| **4** | Conectividad Data Center | Dell PowerSwitch S5224F-ON | Switch Top-of-Rack 25/100GbE para concentrar conectividad de servidores, NAS y enlaces de alta velocidad. |
+| **5** | Gestión y productividad | 2 estaciones Dell Pro Max 16 Plus + docks + monitores/periféricos | Equipos de gestión, visualización, administración de plataforma y análisis técnico. No sustituyen el cómputo servidor del piloto. |
+| **6** | Soporte y licenciamiento | Dell ProSupport Plus Mission Critical + NVIDIA AI Enterprise + TechCircle | Soporte especializado, garantías, telemetría y hasta 30 horas de acompañamiento técnico especializado remoto según oferta. |
+
+# 3. Nuevo BOM de hardware - plataforma adquirida
+
+El siguiente BOM resume la infraestructura nueva a considerar como plataforma física habilitante del piloto. La responsabilidad por adquisición, entrega, garantía, instalación física, racking, energía, cooling, cableado, soporte de fabricante y administración base corresponde a CEL, Martinexsa/Dell y/o los proveedores designados por CEL.
+
+| **Dominio** | **Modelo / servicio** | **Cantidad** | **Configuración relevante** | **Uso para el piloto** |
+| --- | --- | --- | --- | --- |
+| **Servidor IA / ML** | Dell PowerEdge R770 | 1 | 2 x Intel Xeon 6 Performance 6515P; 256 GB DDR5; GPU NVIDIA H100 NVL PCIe 94 GB HBM3; 2 x SSD SATA 480 GB sistema; 2 x NVMe 1.92 TB workspace; NVIDIA ConnectX-6 Dx dual port 100GbE; interfaces 25GbE SFP28; iDRAC Enterprise. | Entrenamiento, inferencia, analítica avanzada, procesamiento intensivo y uso funcional de GPU para el piloto. |
+| **Servidor virtualización** | Dell PowerEdge R770 | 1 | 2 x Intel Xeon 6 Performance 6515P; 256 GB DDR5; almacenamiento SSD empresarial; adaptador 25GbE SFP28; iDRAC Enterprise; configuración base sujeta al diseño de CEL/TI. | Hospedaje de VMs, servicios institucionales, middleware y potencial alojamiento de Mage/BDs si CEL/TI así lo define. |
+| **NAS / File Server** | Dell PowerEdge R570 | 1 | Intel Xeon 6 Performance 6511P; 64 GB DDR5; Windows Server 2025 Standard; BOSS-N1 2 x M.2 480 GB RAID 1 para sistema; 6 x HDD empresariales 4 TB en RAID 6; 25GbE SFP28; iDRAC. | Repositorio de datasets IA, almacenamiento centralizado, histórico/documental, compartición SMB/NFS y soporte de almacenamiento para el piloto. |
+| **Switch Data Center** | Dell PowerSwitch S5224F-ON | 1 | 24 x puertos 25GbE SFP28; 4 x puertos 100GbE QSFP28; Dell SmartFabric OS10; L2/L3; VLAN/ACL/OSPF/BGP; fuentes redundantes; ópticos y DAC según oferta. | Conectividad ToR de alta velocidad entre servidores, NAS y data center. |
+| **Estaciones de gestión** | Dell Pro Max 16 Plus Laptop | 2 | Intel Core Ultra 9; GPU NVIDIA RTX PRO 3000 Blackwell 12 GB GDDR7; 64 GB DDR5; SSD NVMe 1 TB; Windows 11 Pro; conectividad Thunderbolt; Wi-Fi 7. | Gestión, análisis técnico, visualización, administración de plataforma y trabajo de usuarios designados por CEL. |
+| **Docking** | Dell Pro Thunderbolt 4 - WD25TB4 | 2 | Docking station para centralizar periféricos, energía y conectividad. | Soporte de estaciones de gestión. |
+| **Monitores** | Dell 32 Plus 4K Monitor - S3225QS | 4 | Monitores 32 pulgadas 4K UHD; dos por estación de trabajo. | Visualización extendida para operación, análisis y gestión. |
+| **Accesorios** | Brazos duales MDA20 + teclado/mouse KM332W | 2 sets | Brazos duales para monitores y periféricos Dell. | Ergonomía y productividad de estaciones. |
+| **Soporte fabricante** | Dell ProSupport Plus Mission Critical | 3 años | Soporte técnico especializado 24x7, diagnóstico remoto, respuesta según SLA, reemplazo de partes críticas, herramientas Dell AI Ops/Secure Connect/TechDirect/MyService360. | Continuidad y soporte de infraestructura; responsabilidad de CEL/proveedor. |
+| **Soporte/licencia GPU** | NVIDIA AI Enterprise | 3 años por GPU | Subscription y soporte 24x7 por GPU; frameworks optimizados, contenedores certificados, bibliotecas aceleradas y soporte especializado. | Habilitador de entorno acelerado NVIDIA; administración/licenciamiento bajo CEL/proveedor. |
+| **Acompañamiento técnico** | TechCircle | 30 horas remotas | Asistencia especializada para evolución, revisión de arquitectura, recomendaciones de crecimiento, desempeño inicial, ajustes de red/almacenamiento/virtualización y buenas prácticas de IA/datos. | Recurso de soporte de CEL/proveedor; no sustituye obligaciones de la Consultora ni las amplía. |
+
+# 4. Nuevo BOM de software, runtime y servicios
+
+La siguiente tabla separa el software/plataforma provisto o habilitado por la adquisición de CEL de los componentes funcionales que la Consultora configura, desarrolla o utiliza para el piloto. Esta separación evita que herramientas base de data center, licenciamiento enterprise o administración continua se confundan con entregables del plan piloto.
+
+| **Categoría** | **Componente** | **Función** | **Responsable primario** | **Implicación para Fase 0** |
+| --- | --- | --- | --- | --- |
+| **Base provista por plataforma** | Ubuntu Server 24.04 LTS | Instalación base contemplada en actividades de proveedor para servidores Linux según oferta. | CEL / Martinexsa / Dell | Debe estar instalado, actualizado, accesible y documentado antes de la certificación funcional. |
+| **Base provista por plataforma** | Docker Engine + Docker Compose | Runtime de contenedores instalado en el servidor ML/IA y/o host designado. | CEL / Martinexsa / Dell | La Consultora puede usarlo para desplegar Mage y servicios del piloto; administración base queda fuera. |
+| **Base provista por plataforma** | Windows Server 2025 Standard | Sistema operativo del NAS/File Server R570. | CEL / Martinexsa / Dell | Habilita SMB/NFS y servicios de archivo; su administración no corresponde a la Consultora. |
+| **Base provista por plataforma** | Dell SmartFabric OS10 | Sistema operativo del switch S5224F-ON. | CEL / Martinexsa / Dell | Configuración de red, VLANs, ACLs y routing bajo CEL/proveedor. |
+| **Base provista por plataforma** | iDRAC Enterprise | Administración remota de servidores Dell. | CEL / Martinexsa / Dell | Credenciales/uso restringido a TI/proveedor salvo que CEL otorgue acceso específico. |
+| **Base provista por plataforma** | NVIDIA AI Enterprise + soporte 24x7 | Licencia/soporte por GPU para uso enterprise de aceleración NVIDIA. | CEL / Martinexsa / Dell / NVIDIA | Debe confirmarse activación, drivers, CUDA/container runtime y acceso NGC si aplica. |
+| **Base provista por plataforma** | Dell AI Ops, Secure Connect Gateway, TechDirect, MyService360 | Herramientas de soporte/telemetría asociadas a Dell ProSupport. | CEL / Dell / Martinexsa | Monitoreo/soporte de fabricante; no es monitoreo operativo del pipeline del piloto. |
+| **Stack funcional del piloto** | Mage | Orquestación de pipelines, ejecución diaria, dependencias, logs, retries y monitoreo operacional del flujo. | Consultora configura/desarrolla; CEL/TI provee host/accesos | Sustituye Pentaho/Grafana para el plano operativo del piloto. |
+| **Stack funcional del piloto** | Python + librerías científicas | Pandas, NumPy, GeoPandas, Rasterio/GDAL, scikit-learn, requests, psycopg2, pymongo, etc. | Consultora | ETL, QA/QC, features, procesamiento geoespacial y conectividad de datos. |
+| **Stack funcional del piloto** | PyTorch + NeuralHydrology + Optuna | Framework de modelado LSTM, entrenamiento, validación, inferencia y optimización bayesiana. | Consultora | Usa GPU disponible para entrenamiento/inferencia del piloto. |
+| **Stack funcional del piloto** | PostgreSQL/PostGIS | Repositorio histórico/geoespacial del piloto. | Consultora diseña/configura funcionalmente; CEL/TI define host y seguridad | Debe existir endpoint, credenciales, storage y política de backup definidos por CEL/TI. |
+| **Stack funcional del piloto** | MongoDB | Repositorio operativo/tiempo real para pronósticos, estados y documentos flexibles. | Consultora diseña/configura funcionalmente; CEL/TI define host y seguridad | Debe existir endpoint, credenciales, storage y política de backup definidos por CEL/TI. |
+| **Stack funcional del piloto** | Git/GitLab o repositorio definido por CEL | Versionamiento de código, scripts, configuración y documentación técnica. | CEL/TI provee repositorio; Consultora versiona entregables | Debe confirmarse plataforma, permisos, ramas y política de acceso. |
+| **Stack funcional del piloto** | Node.js / React / Leaflet o Mapbox GL JS | Dashboard, mapa interactivo, visualización de pronósticos y capas de riesgo. | Consultora desarrolla; CEL/TI define hosting | Mapbox/API externa solo si CEL aprueba; alternativa OSM/Leaflet. |
+| **Integraciones** | SMTP CEL / gateway SMS | Canales de notificación de alertas. | CEL/TI provee; Consultora integra si se habilita | SMTP, remitente, listas, credenciales y reglas de envío deben confirmarse. |
+| **Integraciones** | ECMWF/Copernicus, ERA5, GPM/IMERG, CHIRPS, Sentinel, OSM | Fuentes externas de datos abiertos y geoespaciales. | Consultora consume; CEL/TI habilita egress | Se requieren reglas de salida a internet, credenciales/API keys cuando aplique. |
+
+# 5. Elementos explícitamente no asumidos como parte del stack del piloto
+
+| **Dominio** | **Elemento no asumido** | **Tratamiento** |
+| --- | --- | --- |
+| **ETL / monitoreo** | Pentaho PDI, Grafana | Quedan sustituidos por Mage como capa de orquestación y monitoreo operativo de pipelines del piloto. |
+| **Contenedores / orquestación** | Kubernetes, OpenShift, Docker Enterprise, Ubuntu Enterprise | No se asumen salvo decisión y provisión expresa de CEL/proveedor. |
+| **Identidad** | AD/LDAP avanzado, SSO corporativo, RBAC enterprise | No se asume como entregable de la Consultora; CEL/TI define identidad/accesos. |
+| **Seguridad** | Hardening CIS completo, auditorías de seguridad, SIEM, NAC, microsegmentación, redes overlay | Exclusiones de proveedor o responsabilidades institucionales; no se transfieren a la Consultora. |
+| **Continuidad** | HA, clustering, DR, replicación multisite, monitoreo 24x7 | Fuera de alcance del piloto salvo adenda o decisión institucional de CEL. |
+| **Backup empresarial** | Herramientas de backup del cliente, migración de históricos, restore corporativo | CEL/TI/proveedor deben definir política, herramienta, RPO/RTO y responsable operativo. |
+| **Administración continua** | Operación permanente de servidores, NAS, switch, licencias y soporte | Responsabilidad de CEL/proveedor. La Consultora valida funcionalmente el entorno para el piloto. |
+
+# 6. Diagrama final de arquitectura y alcance
+
+El siguiente diagrama representa la arquitectura final de trabajo desde la perspectiva del piloto. La plataforma física es habilitante y pertenece al ámbito CEL/Martinexsa/Dell; el alcance de la Consultora se concentra en el stack funcional del piloto: Mage, pipelines, bases del piloto, modelo IA, dashboard/API, alertas, documentación y validación funcional.
+
+Figura 1. Arquitectura lógica y frontera de alcance. Las dependencias de hosting, red, GPU, storage, VPN y base OS deben ser entregadas por CEL/proveedor como condición habilitante para Fase 0.
+
+# 7. Diagrama de frontera de responsabilidad para Fase 0
+
+Figura 2. Fase 0 depende de un handoff técnico mínimo. La Consultora no puede certificar el ambiente si CEL/proveedor no entrega accesos, hostnames, red, GPU, storage, soporte y decisiones de ubicación del stack.
+
+# 8. Decisiones técnicas pendientes que deben quedar resueltas antes de certificar Fase 0
+
+| **ID** | **Decisión** | **Confirmación requerida** | **Efecto** |
+| --- | --- | --- | --- |
+| **D-01** | Ubicación de Mage | CEL/TI debe confirmar si Mage se alojará en una VM del servidor de virtualización, en el servidor ML/IA o en otro host institucional. | Crítica. Sin host/puertos/storage no puede cerrarse el stack de orquestación. |
+| **D-02** | Ubicación de PostgreSQL/PostGIS y MongoDB | CEL/TI debe confirmar hosts, puertos, credenciales, storage, backup y segmentación. | Crítica. Sin endpoints no puede cerrarse el modelo de datos del piloto. |
+| **D-03** | Uso de GPU | Confirmar GPU efectiva instalada, drivers, CUDA/NVIDIA runtime, acceso al servidor y política de uso. | Crítica para validación/benchmark GPU y entrenamiento/inferencia. |
+| **D-04** | Storage persistente del piloto | Confirmar rutas NAS/volúmenes, cuotas, permisos, retención y owner. | Crítica para datasets, artefactos, logs y checkpoints. |
+| **D-05** | Acceso remoto seguro | Confirmar VPN/bastion, usuarios, MFA, horarios, IP allowlist y procedimientos de soporte. | Crítica para ejecución remota y soporte desde Boston. |
+| **D-06** | Egress a fuentes externas | Confirmar permisos firewall/DNS/HTTPS para ECMWF/Copernicus, NASA, CHIRPS, Sentinel/OSM/Mapbox o equivalentes. | Crítica para ingesta diaria. |
+| **D-07** | Data handoff CEL | Confirmar fuentes internas, esquemas, archivos Excel, owners, frecuencia, units/timezones y permisos read-only. | Crítica para Fase 1, pero debe iniciarse desde Fase 0. |
+| **D-08** | SMTP/SMS y alertas | Confirmar canal, remitente, destinatarios, niveles de alerta, umbrales y protocolo de comunicación. | Necesario antes de operacionalización/alertas. |
+| **D-09** | Backups y restore | Confirmar herramienta, responsables, RPO/RTO, retención y prueba de restauración. | No es administración de la Consultora; sí es dependencia de operación segura. |
+| **D-10** | Soporte y escalación | Confirmar contactos CEL, Martinexsa, Dell/NVIDIA, SLA, portal de tickets y uso de TechCircle. | Necesario para que incidentes de plataforma no se imputen al piloto funcional. |
+
+# 9. Redacción sustitutiva recomendada para el Anexo Técnico B/C del DSP
+
+| **Texto propuesto para insertar como nota de actualización** La infraestructura física del AI Silo se actualizará conforme a la plataforma adquirida por CEL mediante la oferta aceptada de Martinexsa/Dell. En consecuencia, el BOM original de tres nodos incluido en el DSP se mantiene únicamente como antecedente de dimensionamiento y deja de ser la arquitectura física vigente para ejecución. La Consultora implementará, integrará y validará el stack funcional del piloto de pronóstico hidrológico basado en IA dentro de la infraestructura que CEL ponga formalmente a disposición, siempre que dicha infraestructura haya sido instalada, configurada, accesible y documentada por CEL y/o su proveedor. Esta actualización no amplía el alcance contractual de la Consultora hacia actividades de adquisición, racking, energía, cooling, switching, licenciamiento enterprise, hardening institucional, monitoreo 24x7, backup corporativo, administración continua, garantías, soporte de fabricante o servicios de data center no previstos expresamente en el contrato. |
+| --- |
+
+# 10. Criterio de aceptación técnica de este anexo
+
+Este anexo se considera aceptado para fines de alineación operativa cuando CEL confirme por escrito: (i) inventario final de equipos entregados; (ii) ubicación de Mage/BDs/dashboard; (iii) accesos remotos; (iv) GPU efectiva y runtime; (v) rutas de almacenamiento; (vi) reglas de red/firewall; (vii) responsables de backup/soporte; y (viii) contactos de escalación. Sin esta confirmación, la Consultora puede avanzar en diseño/documentación preparatoria, pero no debe considerarse que la Fase 0 está plenamente habilitada ni que los retrasos de infraestructura son imputables al alcance funcional del piloto.
+
+Documento técnico de alineación contractual-operativa | CEL-CFU 02/26 | Preparado para revisión institucional
+---
+### 8.3 — Handoff de Alcance y Información Requerida
+
+Documento de Handoff - Alcance CEL/Martinexsa/Dell e información requerida
+
+**DOCUMENTO DE HANDOFF TÉCNICO Y DELIMITACIÓN DE ALCANCE**
+
+**Responsabilidades de CEL / Martinexsa / Dell e información requerida para iniciar y cerrar Fase 0**
+
+Proyecto CEL-CFU 02/26 - Plan piloto de pronóstico hidrológico avanzado basado en IA
+
+| **Posición operativa** La Fase 0 contractual requiere un entorno AI Silo operacional para el piloto. No obstante, la infraestructura física finalmente adquirida por CEL es una plataforma más amplia que la arquitectura original de referencia. Este documento delimita qué componentes, decisiones, configuraciones, accesos y confirmaciones quedan en el ámbito de CEL, Martinexsa/Dell y/o sus proveedores, y cuáles constituyen condiciones habilitantes para que la Consultora pueda ejecutar su alcance funcional sin absorber responsabilidades de infraestructura no contratadas. |
+| --- |
+
+# 1. Principio rector de alcance
+
+La Consultora es responsable de diseñar, implementar, integrar y validar funcionalmente el piloto de pronóstico hidrológico basado en IA dentro de la infraestructura que CEL ponga a disposición. CEL y/o su proveedor conservan la responsabilidad sobre la adquisición, instalación, configuración base, seguridad institucional, soporte, administración continua, garantías y decisiones de arquitectura física/virtual de la plataforma adquirida. Toda ampliación de alcance deberá constar por escrito mediante instrumento contractual o adenda expresa.
+
+# 2. Lo que queda en alcance de CEL / Martinexsa / Dell / proveedor designado
+
+| **Dominio** | **Responsabilidad de CEL/proveedor** | **Evidencia mínima requerida** |
+| --- | --- | --- |
+| **Adquisición e inventario** | Compra, recepción, inventario, asset tags, seriales, garantías, licencias y documentación de la plataforma Dell/NVIDIA. | Orden de compra/aceptación, inventario final, garantías, contacto de soporte, evidencia de licencias. |
+| **Instalación física** | Racking, energía, cooling, cableado, ópticos/DAC, conexión a circuitos eléctricos y condiciones físicas del data center. | Acta de instalación física, rack elevation, validación eléctrica/cooling, fotos o plano si aplica. |
+| **Red data center** | Configuración base del Dell PowerSwitch, VLANs, puertos, IPs, DNS, routing, firewall, ACLs, VPN/bastion y egress/ingress. | Diagrama lógico, VLAN IDs, IP plan, puertos habilitados, reglas firewall, responsable de cambios. |
+| **Servidores y OS base** | Instalación de Ubuntu Server 24.04 LTS, Windows Server 2025, actualizaciones base, usuarios administrativos, hostname, NTP, seguridad base. | Hostnames, IPs, versiones OS, usuarios, patch baseline, evidencia de acceso. |
+| **GPU/NVIDIA stack** | Drivers, CUDA/NVIDIA runtime, NVIDIA AI Enterprise, container toolkit, licenciamiento, soporte, prueba nvidia-smi. | GPU efectiva, versión driver/CUDA, acceso NGC/licencias, benchmark o evidencia de disponibilidad. |
+| **Docker/runtime base** | Instalación y habilitación de Docker Engine/Compose y política de ejecución de contenedores aprobada por TI. | Docker version, compose version, usuario/grupo autorizado, política de restart/logs. |
+| **Virtualización** | Definir si el servidor R770 de virtualización alojará Mage, BDs, dashboard, VMs o servicios de middleware. | Nombre de VM/host, recursos asignados, storage, red, puertos, snapshot/backup. |
+| **NAS/File Server** | Windows Server 2025, RAID 6, volúmenes, SMB/NFS, permisos, cuotas, estructura de carpetas y rutas para datasets/modelos/logs. | Share names, paths, cuotas, permisos, owner, política de retención y backup. |
+| **Backups y restore** | Herramientas de backup, retención, RPO/RTO, frecuencia, pruebas de restauración, responsabilidad operativa. | Política formal de backup/restore, owner, evidencia de prueba de restore si aplica. |
+| **Identidad y accesos** | Usuarios, credenciales, MFA, llaves SSH, cuentas de servicio, permisos read-only a datos internos y cuentas para servicios. | Matriz de accesos aprobada, credenciales entregadas por canal seguro, responsable de revocación. |
+| **Seguridad institucional** | Aprobaciones de seguridad, segmentación, hardening institucional, SIEM/NAC/AD/LDAP si CEL los requiere. | Aprobación de seguridad y aclaración de qué controles aplican o no al piloto. |
+| **Datos internos CEL** | Disponibilizar fuentes, esquemas, archivos Excel, bases, históricos, responsables de datos, unidades, timezones y reglas de acceso. | Data registry, owners, credenciales read-only, data dictionary, calendario de entrega. |
+| **Alertas y comunicaciones** | Canales SMTP/SMS, destinatarios, umbrales operativos, protocolo de escalación y reglas institucionales de alerta. | SMTP/gateway, listas, umbrales, niveles, textos aprobados, protocolo de uso. |
+| **Soporte y escalación** | Contactos CEL, Martinexsa, Dell, NVIDIA, TechCircle, portales de tickets, SLAs y procedimiento de incidentes. | Directorio de escalación, horarios, SLA, portal, owner por dominio. |
+| **Administración continua** | Operación continua de servidores, red, NAS, licencias, seguridad, monitoreo institucional y soporte de fabricante. | Responsable institucional designado y procedimiento de cambios/incidentes. |
+
+# 3. Matriz operativa de responsabilidades
+
+| **Actividad / dominio** | **CEL/TI** | **Martinexsa/Dell** | **Consultora** | **Resultado esperado** |
+| --- | --- | --- | --- | --- |
+| **Inventario final de hardware/licencias** | R/A | R/A | C | Lista final de equipos, seriales, garantías, licencias y soporte. |
+| **Racking, power, cooling, cableado** | A | R | I | Plataforma física instalada y energizada. |
+| **Switching, VLAN, firewall, VPN/bastion** | R/A | R/C | C | Conectividad segura y documentada para el piloto. |
+| **Instalación OS/runtime base** | A | R | C | Ubuntu/Windows/Docker operativos y accesibles. |
+| **Drivers GPU/NVIDIA Enterprise** | A | R | C | nvidia-smi, driver/CUDA/container runtime validados. |
+| **Definir host para Mage** | R/A | C | C | Host/VM, puertos, storage y permisos confirmados. |
+| **Instalar/configurar Mage funcional** | C/A sobre host | C sobre runtime | R | Mage operativo para pipelines del piloto. |
+| **Definir host PostgreSQL/PostGIS/MongoDB** | R/A | C | C | Endpoint y política de seguridad/backup. |
+| **Diseñar esquema funcional de BDs del piloto** | C | I | R/A | Modelo de datos del piloto y documentación. |
+| **Disponibilizar datos internos read-only** | R/A | I | C | Credenciales, fuentes, data dictionary y owners. |
+| **Desarrollar pipelines ETL en Mage** | C | I | R/A | Pipelines versionados, logs/retries y QA/QC. |
+| **Entrenar/validar modelo IA** | C en validación hidrológica | I | R/A | Modelo validado y métricas documentadas. |
+| **Dashboard/API/alertas** | C/A en requerimientos | C en hosting | R | Interfaz, API y alertas del piloto. |
+| **Backups/restore de plataforma y datos** | R/A | R/C | C | Política y ejecución bajo CEL/proveedor. |
+| **Monitoreo 24x7/SIEM/NAC/AD** | R/A si aplica | R/C si contratado | I | Fuera de alcance de la Consultora salvo adenda. |
+| **Certificación funcional Fase 0** | A/C | C | R | Acta/reporte de entorno operacional del piloto. |
+
+Leyenda: R = responsable de ejecutar; A = aprobador/owner final; C = consultado; I = informado. Esta matriz es operativa y debe alinearse con cualquier matriz RACI formal que CEL adopte institucionalmente.
+
+# 4. Información que CEL/proveedor debe confirmar antes de iniciar ejecución plena de Fase 0
+
+| **ID** | **Tema** | **Pregunta que deben responder** | **Owner esperado** | **Evidencia mínima** |
+| --- | --- | --- | --- | --- |
+| **INF-01** | Inventario final | ¿Cuál es el inventario final de equipos, seriales, GPUs, licencias y garantías efectivamente entregadas? | CEL / Martinexsa | Inventario firmado o correo formal con anexos. |
+| **INF-02** | GPU efectiva | ¿Qué GPU quedó instalada en el servidor ML/IA y cuál es su estado funcional? | CEL / Martinexsa / Dell | Modelo exacto, VRAM, driver, CUDA, nvidia-smi. |
+| **INF-03** | Host Mage | ¿Dónde se alojará Mage: servidor ML/IA, VM del R770 de virtualización u otro host? | CEL/TI | Hostname/IP, recursos, puertos, storage, owner. |
+| **INF-04** | Host BDs | ¿Dónde se alojarán PostgreSQL/PostGIS y MongoDB? | CEL/TI | Endpoints, puertos, credenciales, storage, backup. |
+| **INF-05** | Dashboard/API | ¿Dónde se alojará el dashboard/API del piloto y bajo qué dominio/ruta interna? | CEL/TI | Host, puerto, reverse proxy si aplica, DNS, TLS. |
+| **INF-06** | VPN/bastion | ¿Cuál será el mecanismo de acceso remoto seguro para la Consultora? | CEL/TI Seguridad | VPN/bastion, MFA, horarios, IP allowlist, soporte. |
+| **INF-07** | Usuarios | ¿Qué usuarios/cuentas de servicio serán creados para la Consultora y servicios del piloto? | CEL/TI | Matriz de permisos y credenciales por canal seguro. |
+| **INF-08** | Firewall interno | ¿Qué puertos se habilitarán entre Mage, BDs, GPU server, NAS y dashboard? | CEL/TI | Reglas aprobadas y diagrama de conectividad. |
+| **INF-09** | Egress externo | ¿Qué dominios/APIs externas estarán permitidas para ingesta meteorológica/geoespacial? | CEL/TI Seguridad | Allowlist HTTPS/DNS y mecanismo de actualización. |
+| **INF-10** | NAS paths | ¿Cuáles son las rutas de almacenamiento para raw, staging, processed, models, logs y backups? | CEL/TI | SMB/NFS paths, cuotas, permisos, owner. |
+| **INF-11** | Backup | ¿Qué herramienta y política respaldará BDs, código, configuraciones, modelos y datasets? | CEL/TI | RPO/RTO, retención, frecuencia, responsable, restore test. |
+| **INF-12** | Repositorio Git | ¿Qué plataforma de versionamiento usará CEL para el piloto? | CEL/TI | GitLab/GitHub interno/otro, permisos, ramas, reviewers. |
+| **INF-13** | Secretos | ¿Cómo se gestionarán credenciales, API keys y secretos? | CEL/TI Seguridad | Vault/secret manager/canal aprobado; prohibido en código. |
+| **INF-14** | Datos hidrológicos | ¿Qué fuentes internas contienen aforos, niveles, descargas, embalses y series históricas? | CEL operaciones / hidrología / TI | Data registry, owner, endpoint/archivo, frecuencia, unidades. |
+| **INF-15** | Excel operativos | ¿Qué workbooks de centrales deben considerarse como insumo/ground-truth operativo? | CEL operaciones | Lista de archivos, ubicación, macros relevantes, owner y versión. |
+| **INF-16** | Timezones/unidades | ¿Qué zona horaria, unidades y convenciones usa CEL para cada variable? | CEL hidrología / operaciones | Data dictionary con unidades y reglas de conversión. |
+| **INF-17** | Puntos de interés | ¿Qué estaciones, embalses, gauges físicos/virtuales y zonas críticas priorizará CEL? | CEL hidrología / operaciones | Listado priorizado, coordenadas, criticidad y owner. |
+| **INF-18** | Umbrales | ¿Qué umbrales operativos y niveles de alerta serán utilizados inicialmente? | CEL operaciones / riesgo | Umbrales por punto/zona, lógica de semáforo, protocolo. |
+| **INF-19** | SMTP | ¿Qué servidor SMTP/remitente/listas estarán disponibles para alertas de correo? | CEL/TI | SMTP host, puerto, auth/TLS, listas, remitente. |
+| **INF-20** | SMS/gateway | ¿Habrá gateway SMS autorizado o se excluye SMS del piloto inicial? | CEL/TI / operaciones | Proveedor, credenciales, presupuesto, destinatarios, reglas. |
+| **INF-21** | Soporte Dell/NVIDIA | ¿Quién abre tickets con Dell/NVIDIA y cómo se activa TechCircle? | CEL / Martinexsa | Contactos, portal, SLA, procedimiento. |
+| **INF-22** | Ventanas de cambio | ¿Cuándo se pueden instalar/configurar servicios sin afectar operación institucional? | CEL/TI | Calendario, aprobadores y política de cambios. |
+| **INF-23** | Seguridad/Hardening | ¿Qué controles institucionales son obligatorios para este piloto? | CEL Seguridad | Checklist aprobado y exclusiones reconocidas. |
+| **INF-24** | Aceptación Fase 0 | ¿Quién firma la certificación de entorno operacional y con qué criterios? | CEL PM / TI / operaciones | Formato de acta, responsables, criterios de aceptación. |
+
+# 5. Gates de inicio, ejecución y cierre de Fase 0
+
+| **Gate** | **Condición mínima** | **Responsable primario** | **Evidencia requerida** |
+| --- | --- | --- | --- |
+| **Gate 0 - Handoff de infraestructura** | Equipos instalados, energizados, conectados, inventariados, con OS/runtime base y soporte/licencias confirmadas. | CEL / Martinexsa | Acta o correo formal de entrega técnica. |
+| **Gate 1 - Acceso seguro** | VPN/bastion, usuarios, MFA/SSH/RDP, firewall interno y egress externo habilitados. | CEL/TI Seguridad | Prueba de acceso exitosa y matriz de permisos. |
+| **Gate 2 - Decisión de ubicación del stack** | Host para Mage, BDs, dashboard/API, rutas NAS y repositorio Git definidos. | CEL/TI | Diagrama lógico y endpoints confirmados. |
+| **Gate 3 - Stack funcional instalado** | Mage, Python, BDs, repositorio y runtime de GPU preparados para prueba del piloto. | Consultora con soporte CEL/TI | Servicios accesibles, versionados y documentados. |
+| **Gate 4 - Validación técnica** | Pruebas GPU/IO/red, conectividad a fuentes externas, conectividad read-only a datos internos, escritura/lectura en storage. | Consultora + CEL/TI | Reporte de benchmark/readiness. |
+| **Gate 5 - Certificación Fase 0** | Entorno operacional del piloto listo para Fase 1; riesgos y pendientes documentados. | Consultora prepara; CEL valida/aprueba | Certificación de Entorno Operacional. |
+
+# 6. Exclusiones que no deben trasladarse tácitamente a la Consultora
+
+| **Categoría** | **Exclusión / responsabilidad externa** |
+| --- | --- |
+| **Infraestructura física** | Compra, entrega, garantías, racking, energía, cooling, cableado, ópticos, rack elevation, RMAs. |
+| **Administración base** | Administración continua de OS, servidores, NAS, switch, licencias, iDRAC, Dell/NVIDIA portals. |
+| **Seguridad enterprise** | Hardening CIS completo, auditorías, SIEM, NAC, AD/LDAP, microsegmentación, redes overlay, SSO institucional. |
+| **Continuidad/HA** | Clustering, alta disponibilidad, DR, replicación multisite, failover, monitoreo 24x7. |
+| **Backup corporativo** | Herramientas institucionales de backup, migración de históricos, restore operativo, retención corporativa. |
+| **Plataformas no contratadas** | Kubernetes/OpenShift, Docker Enterprise, Ubuntu Enterprise, CI/CD enterprise, bases/middleware adicionales. |
+| **Soporte de fabricante** | Apertura y seguimiento de tickets Dell/NVIDIA/Martinexsa, TechCircle, ProSupport, reemplazos de partes. |
+| **Gobernanza operativa** | Definición institucional de umbrales finales, protocolos de emergencia, destinatarios oficiales y cadena de decisión. |
+
+# 7. Texto formal sugerido para remitir a CEL
+
+| **Redacción para nota aclaratoria / correo formal** Para poder ejecutar y certificar la Fase 0 conforme al alcance del contrato CEL-CFU 02/26, se solicita a CEL confirmar formalmente la entrega técnica mínima de la plataforma adquirida y las decisiones de arquitectura necesarias para alojar el stack funcional del piloto. En particular, se requiere confirmar la ubicación de Mage, PostgreSQL/PostGIS, MongoDB, dashboard/API, rutas de almacenamiento, acceso remoto seguro, reglas de red/firewall, GPU efectiva y runtime NVIDIA, repositorio de código, fuentes de datos internas, canales de alerta, política de backups y contactos de soporte/escalación. La Consultora podrá desarrollar, integrar y validar funcionalmente el piloto sobre la plataforma que CEL ponga a disposición; sin embargo, no asumirá por inferencia la administración continua, soporte de fabricante, hardening institucional, backup corporativo, monitoreo 24x7, configuración avanzada de red, licenciamiento enterprise, servicios de virtualización institucional o responsabilidades de data center que correspondan a CEL y/o a sus proveedores. Cualquier ampliación de alcance deberá documentarse mediante adenda o instrumento contractual expreso. En ausencia de las confirmaciones indicadas, la Consultora podrá avanzar únicamente en actividades preparatorias de diseño, documentación, especificación y coordinación técnica, pero no podrá considerarse habilitada la ejecución plena ni la certificación de Fase 0. Las demoras, brechas o dependencias asociadas a la adquisición, instalación, configuración base o soporte de la plataforma no deberán imputarse al alcance funcional de la Consultora. |
+| --- |
+
+Documento técnico de alineación contractual-operativa | CEL-CFU 02/26 | Preparado para revisión institucional
+---
+### 8.4 — Minuta Formal de Sesión
+
+*Piloto CEL — Minuta formal de sesión*
+
+**MINUTA FORMAL DE SESIÓN**
+
+**Piloto CEL — Coordinación de gobernanza, roles y Fase 0**
+
+*Documento de registro oficial de la sesión*
+
+# **1. Identificación de la sesión**
+
+| **Tipo de sesión** | Reunión de coordinación del piloto: gobernanza, roles, Fase 0 e infraestructura. |
+| --- | --- |
+| **Convocante** | Equipo del piloto (Camila Cruz / Kevin Centeno). |
+| **Modalidad** | Videoconferencia. |
+| **Duración** | Aproximadamente 1 hora y 13 minutos. |
+| **Quórum** | Se alcanzó quórum funcional con los responsables técnicos y de gobernanza requeridos para los temas tratados. |
+| **Ausencias justificadas** | José Mauricio (administrador de contrato por CEL). |
+
+# **2. Participantes**
+
+La sesión contó con la participación de los responsables relacionados con la gestión del piloto, la infraestructura informática de CEL y la coordinación hidrológica.
+
+| **Participante** | **Organización / Unidad** | **Rol en la sesión** |
+| --- | --- | --- |
+| Camila Cruz | Equipo del piloto (Contraparte técnica) | Líder de proyecto |
+| Kevin Centeno | Equipo del piloto | Project Manager |
+| Víctor Ignacio Alabi | CEL — Gerencia de Producción | Líder técnico en hidrología |
+| William Juárez | CEL | Contraparte técnica |
+| José Manuel | CEL — Unidad de Informática | Administrador de sistemas / DevOps |
+
+# **3. Orden del día**
+
+La sesión se desarrolló sobre los siguientes ejes temáticos, abordados en el orden en que se exponen:
+
+- Revisión y formalización de la estructura de gobernanza del piloto y de los roles aún no documentados.
+
+- Definición de la dinámica de escalación entre el equipo del piloto y la Unidad de Informática de CEL.
+
+- Revisión del comité de informática, gobernanza y seguridad: integrantes, funciones y vías de comunicación.
+
+- Estado de las tareas pendientes de la Fase 0 del proyecto de infraestructura.
+
+- Preparación de la entrega del proveedor prevista para el viernes y delimitación de etapas.
+
+- Planificación de la reunión interna del día siguiente y definición de su agenda.
+
+# **4. Contexto y antecedentes**
+
+La sesión retoma los trabajos iniciados en reuniones previas con el objetivo de habilitar el arranque formal (kick-off) del piloto. Como insumo de continuidad, el equipo del piloto ha venido desarrollando un portal interno para la asignación pragmática de tareas y la organización estructurada del proyecto, complementario al Documento de Solución del Proyecto (en adelante, “DSP”) suscrito contractualmente.
+
+Camila Cruz expone que no había recibido formalmente la propuesta final del proveedor, sino únicamente un diagrama conceptual remitido por José Mauricio. A partir de la información compartida por William Juárez la mañana de la sesión, se procederá a readecuar la lógica del silo definida en el DSP, tropicalizándola con los componentes efectivamente adquiridos. Este ejercicio incluirá la traducción del listado de componentes a un Bill of Materials (BOM) y la identificación de varianzas tanto de hardware como de software.
+
+Se reconoce, asimismo, la necesidad de subsanar una falta de visibilidad sobre la estructura de gobernanza del proyecto y sobre algunos roles que han variado en el tiempo sin haber sido formalmente documentados. La sesión se concibe como un mecanismo para destrabar estos puntos y aportar claridad.
+
+# **5. Estructura de gobernanza y roles**
+
+## **5.1. Antecedentes del ejercicio de roles**
+
+El equipo del piloto realizó una revisión del DSP original, identificando roles que se encontraban amalgamados y que requerían ser explotados o desagregados. Se incorporaron, entre otros, los roles técnicos de William Juárez y de José Mauricio del lado de datos y backend, así como la nueva conformación del comité de gobernanza de informática. El ejercicio se sustentó en una hoja de trabajo inicial preparada con William y José Mauricio, y posteriormente formalizada en un diagrama compartido por José Mauricio, el cual ha servido de base para la nueva Sección 10 del DSP en versión revisada.
+
+## **5.2. Roles confirmados en la sesión**
+
+A continuación se consigna la asignación de roles acordada, incluyendo las observaciones relevantes manifestadas por los participantes.
+
+| **Rol** | **Responsable** | **Observaciones** |
+| --- | --- | --- |
+| Líder de proyecto (piloto) | Camila Cruz | Conducción técnica del piloto. |
+| Project Manager (piloto) | Kevin Centeno | Gestión operativa, agenda y seguimiento. |
+| Líder técnico en hidrología | Víctor Ignacio Alabi | Coordinación con hidrólogos operativos de cada central. |
+| Administrador de contrato / Líder de proyecto por CEL | José Mauricio (Mauri) | Asume el rol completo previamente desempeñado por Rodolfo: líder del proyecto y administración del contrato. |
+| Especialista en teledetección | Fernando (Depto. de Catastro) | Rol sin variación respecto al DSP. |
+| Administrador de sistemas / Ingeniero DevOps | José Manuel (Unidad de Informática) | Enlace operativo entre el comité de informática y el equipo del piloto. |
+| Jefatura de la Unidad de Informática | Lorena | Gobernanza y autorizaciones de alto nivel; autorización única para aperturas hacia el exterior. |
+| Jefatura de Bases de Datos y Redes | Nelson | Punto de escalación interna desde José Manuel hacia los especialistas. |
+| Especialista en Redes | Adrián | Ejecutor de tareas de red (p. ej. apertura de puertos en firewall). |
+| Especialista en Bases de Datos | Carlos | Ejecutor de tareas de conectividad y estructuras de base de datos. |
+| Especialista (Unidad de Informática) | Miladis | Ejecutor de tareas específicas asignadas por la jefatura. |
+
+## **5.3. Consideraciones especiales sobre roles**
+
+- **Administrador de contrato / Líder de proyecto por CEL: **se acuerda no desglosar este rol en dos posiciones diferenciadas. José Mauricio asume el rol completo previamente desempeñado por Rodolfo, comprendiendo tanto la conducción del proyecto como la administración del contrato y los compromisos derivados.
+
+- **Hidrólogos operativos: **se conformarán a partir de los jefes de los departamentos de operación de cada central, en su calidad de usuarios finales del sistema. La coordinación de este grupo será liderada por Víctor Ignacio Alabi. Víctor proveerá el listado completo (nombre, rol, central y punto de contacto) para su incorporación al portal del proyecto.
+
+- **Project Manager: **se incorpora a Kevin Centeno con la finalidad de que Camila Cruz pueda concentrarse en la ejecución técnica del piloto.
+
+# **6. Dinámica de gobernanza con la Unidad de Informática**
+
+## **6.1. Vía de comunicación principal**
+
+La sesión dedicó un análisis detallado a la articulación entre el equipo del piloto y la Unidad de Informática de CEL. Tras la deliberación de los participantes, se acordó la siguiente dinámica:
+
+- **Camila Cruz **canaliza los requerimientos del piloto hacia José Mauricio, en su calidad de administrador del contrato.
+
+- **José Mauricio **mantiene comunicación directa con Lorena (jefa de la Unidad de Informática) y con Nelson (jefatura de Bases de Datos y Redes).
+
+- **José Manuel **actúa como enlace operativo entre el comité de informática y el equipo del piloto, asumiendo el rol de DevOps y siendo responsable de la implementación física y la configuración de la infraestructura en la Fase 0.
+
+- **Nelson **distribuye las solicitudes operativas hacia los especialistas correspondientes: Adrián (Redes), Carlos (Bases de Datos) y Miladis.
+
+- **Lorena **concentra las autorizaciones de alto nivel, particularmente aquellas que implican exposición de servicios hacia el exterior de la red institucional, las cuales son competencia exclusiva de la jefatura de la Unidad.
+
+## **6.2. Comunicación con los especialistas técnicos**
+
+Se aclara que la comunicación con Adrián, Carlos y Miladis no es directa desde el equipo del piloto, sino que se canaliza a través de Nelson o de José Manuel. José Manuel formaliza las solicitudes técnicas que se requieran (por ejemplo, apertura de puertos en firewall, definiciones de conectividad o estructuras de bases de datos), siempre manteniendo a Nelson en conocimiento de las gestiones realizadas en su unidad.
+
+## **6.3. Comité de Informática, Gobernanza y Seguridad**
+
+El comité se define como un ente rector multidisciplinario de la Unidad de Informática, cuya función no es la operación diaria del desarrollo sino la rectoría de los lineamientos y la integración segura de la solución dentro de la infraestructura de CEL. Su composición y funciones son las siguientes:
+
+- **Lorena: **figura de gobernanza y autorizaciones. Toma decisiones de alto nivel, asignación de personal y enlace entre dependencias de CEL para efectos del piloto.
+
+- **Nelson: **jefatura de Bases de Datos y Redes; punto de escalación interna.
+
+- **José Manuel: **administración de sistemas operativos y aplicaciones; aprobación de accesos y definición de los lineamientos sobre alojamiento de la solución a nivel de servidores, sistemas operativos y aplicaciones.
+
+- **José Manuel (rol de DevOps): **enlace operativo directo entre el comité y el equipo del piloto; lidera la implementación física y la configuración de la infraestructura correspondiente a la Fase 0.
+
+## **6.4. Documentación de la gobernanza**
+
+Camila Cruz asignará formalmente a José Manuel a todas las tareas del comité dentro del portal del proyecto, registrando las escalaciones internas que se deriven de cada tarea. El objetivo es contar con trazabilidad de los ejecutores reales (Adrián, Carlos, Miladis) aun cuando la coordinación se canalice a través del rol de DevOps. Asimismo, se documentarán los timelines requeridos por las escalaciones internas para que las solicitudes lleguen a los responsables con la antelación necesaria, dado que el cronograma del piloto es, en su estado actual, agnóstico a estos procesos internos.
+
+# **7. Fase 0 — Infraestructura**
+
+## **7.1. Estado actual y problemática**
+
+Se identifica que existe una desconexión entre la arquitectura del silo descrita en el DSP vigente y la configuración efectiva de los equipos adquiridos. El BOM final incorpora componentes que no estaban contemplados originalmente, y la incorporación de un hipervisor introduce una capa de virtualización ausente en el diseño original. En consecuencia, es necesario realizar un reproceso sobre la arquitectura para tropicalizarla a los componentes adquiridos, manteniendo la lógica del DSP como referencia rectora.
+
+## **7.2. Separación en dos etapas**
+
+A partir de la intervención de José Manuel y el consenso de los participantes, se reconoce que la Fase 0 debe ser entendida en dos subetapas claramente diferenciadas:
+
+- **Subetapa A — Instalación y configuración base: **comprende la recepción de los equipos, la instalación del sistema operativo, la conectividad de red de cada servidor, la conectividad con el servidor de almacenamiento y la habilitación del hipervisor. Esta subetapa es ejecutada principalmente por el proveedor y por la Unidad de Informática a partir de la entrega prevista para el viernes.
+
+- **Subetapa B — Instalación de aplicativos y servicios: **comprende la instalación de las máquinas virtuales, los servicios que correrán en cada una de ellas (PostgreSQL, PostGIS, MongoDB, Mage, Python, entre otros), la definición de puertos requeridos por cada aplicación, la integración con el servidor que aloja la tarjeta gráfica para IA y la configuración del entorno MLOps/DevOps. Esta subetapa se ejecuta dentro del piloto.
+
+## **7.3. Dudas técnicas a resolver**
+
+Se levantó un conjunto preliminar de dudas técnicas a discutir en la reunión interna y, en lo pertinente, con el proveedor:
+
+- Esquema de direccionamiento de la red aislada que albergará la solución dentro del centro de datos, por requerimiento de seguridad.
+
+- Cantidad de direcciones IP requeridas por cada equipo.
+
+- Versión del sistema operativo a instalar sobre los servidores.
+
+- Definición y configuración del hipervisor sobre el cual operarán los servidores virtuales (incluido el servidor Ubuntu que alojará los aplicativos).
+
+- Cantidad de puertos a utilizar por cada servidor y configuración del particionado de discos.
+
+- Administración a nivel de red de los equipos y servidores.
+
+- Puertos de firewall a habilitar para la gestión web de los equipos y del hipervisor.
+
+- Conectividad hacia internet y hacia los sistemas internos desde los cuales se consumirá la data del piloto.
+
+## **7.4. Documentación interna requerida**
+
+Camila Cruz reitera la necesidad de contar con la documentación interna de ciberseguridad y los lineamientos institucionales aplicables, así como con los detalles relativos a horas de replicación y demás guidelines a los que la solución debe adherirse. William Juárez se compromete a coordinar con José Mauricio el envío oportuno de dicha documentación.
+
+## **7.5. Alineación con el DSP**
+
+Se reafirma el principio de que el DSP vigente es el marco contractual rector del proyecto. El silo y las actividades de la Fase 0 deben ajustarse a lo establecido en el documento, evitando la inclusión de actividades adicionales no contempladas. La readecuación se limitará a integrar las mejoras derivadas de los componentes efectivamente adquiridos, manteniendo la lógica y los entregables previstos en el DSP.
+
+# **8. Próxima reunión interna**
+
+Los participantes acuerdan calendarizar una reunión interna del día siguiente, con una duración estimada de dos horas. Kevin Centeno se encargará de la convocatoria y la habilitación de la grabación. La agenda propuesta es la siguiente:
+
+| **Bloque** | **Contenido** |
+| --- | --- |
+| Primeros 30 min. | Presentación del nuevo planteamiento de infraestructura del silo, incluyendo el Bill of Materials final (hardware y software) y la identificación de componentes adicionales no contemplados originalmente en el DSP. |
+| Siguientes 30 min. | Depuración granular de las tareas correspondientes a la Fase 0: repositorio, decisiones pendientes, fechas, criterios de entrada y vinculación con la entrega del proveedor del viernes. |
+| Última hora | Definición de quién ejecuta qué y cuándo: delimitación de tareas cara al proveedor y cara a la Fase 0; revisión de dudas técnicas (puertos, discos, particionado, administración a nivel de red); cierre con responsables nombrados. |
+
+*Como insumos previos a dicha sesión se utilizarán: (i) la versión readecuada del silo preparada por Camila Cruz; (ii) la documentación interna que William Juárez coordinará con José Mauricio; (iii) el listado de dudas técnicas elaborado por José Manuel; y (iv) la presente minuta.*
+
+# **9. Acuerdos y acciones**
+
+Los acuerdos formales adoptados y las acciones derivadas de la sesión se consignan en la siguiente tabla. Cada acción tiene asignado un responsable y un plazo orientativo de ejecución.
+
+| **#** | **Acuerdo / Acción** | **Responsable** | **Plazo** |
+| --- | --- | --- | --- |
+| 1 | Readecuar la arquitectura del silo a partir del DSP original, integrando los componentes efectivamente adquiridos. Producir un Bill of Materials (BOM) actualizado de hardware y software e identificar varianzas. | Camila Cruz | Sesión del día siguiente |
+| 2 | Actualizar la Sección 10 del DSP con la nueva estructura de gobernanza, reflejando los desgloses de roles, el comité de informática y los hidrólogos operativos por central. | Camila Cruz | En curso |
+| 3 | Proveer el detalle de los hidrólogos operativos por central (nombre, rol, central asignada y punto de contacto) y los datos necesarios para invitarlos al portal del proyecto. | Víctor Ignacio Alabi | Por definir |
+| 4 | Calendarizar la reunión interna con el equipo de proyecto, informática y producción para revisar el nuevo planteamiento de infraestructura, depurar tareas de Fase 0 y delimitar responsabilidades cara al proveedor. | Kevin Centeno | Inmediato |
+| 5 | Coordinar con José Mauricio la entrega de la documentación interna de ciberseguridad, lineamientos y referencias necesarias para tropicalizar la arquitectura. | William Juárez | Previo a la sesión del día siguiente |
+| 6 | Documentar las dudas técnicas internas (esquema de direccionamiento aislado, cantidad de puertos por servidor, versión del sistema operativo, hipervisor, conexión al almacenamiento) para discutirlas en la reunión interna y, posteriormente, con el proveedor. | José Manuel | Previo a entrega del viernes |
+| 7 | Levantar minuta de la sesión y compartirla con los participantes como insumo de la reunión siguiente. | Kevin Centeno | Inmediato |
+| 8 | Definir formalmente la lista de decisiones cuya autorización compete exclusivamente a la jefatura de la Unidad de Informática (Lorena), particularmente las aperturas hacia el exterior de la red. | Camila Cruz / José Manuel | Reunión interna |
+
+# **10. Asuntos pendientes y observaciones**
+
+- **Definición de la entrega del proveedor del viernes: **queda pendiente confirmar el alcance específico de la entrega y los preparativos requeridos por la Unidad de Informática. Se resolverá en la reunión interna del día siguiente.
+
+- **Documentación de ciberseguridad: **se requiere la consolidación y entrega formal al equipo del piloto de los lineamientos internos aplicables.
+
+- **Variaciones del diagrama conceptual: **subsisten dudas sobre las modificaciones sufridas por el diagrama conceptual respecto de la propuesta original del proveedor; se profundizará con José Mauricio.
+
+- **Integración de componentes adicionales: **es necesario decidir si los componentes adquiridos no contemplados en el DSP se integran al alcance del piloto o se gestionan como recursos adicionales por parte de la Unidad de Informática.
+
+# **11. Cierre de la sesión**
+
+Una vez agotados los puntos del orden del día y confirmados los acuerdos, la sesión fue clausurada. Los participantes manifestaron su conformidad con la planificación de la reunión interna del día siguiente y con la distribución de responsabilidades acordada.
+
+*La presente minuta tiene carácter de registro oficial de lo tratado y acordado en la sesión, y se distribuirá entre los participantes como insumo de continuidad para las actividades subsiguientes del piloto.*
+
+*— Fin de la minuta —*
+
+Página  de
+---
+
+*Fin del contexto maestro. Generado para traspaso. Proceso CEL-CFU 02/26.*
