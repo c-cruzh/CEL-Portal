@@ -95,7 +95,7 @@ export const PHASE_INVOLVEMENT: PhaseInvolvement[] = [
                 id: "f0-a1",
                 name: "Comisionamiento de hardware (AI Silo)",
                 description:
-                  "Racking, conexión eléctrica y de red de los 3 nodos (ML/Compute, Data/ETL, NAS) según especificaciones.",
+                  "Racking, conexión eléctrica y de red de la plataforma adquirida (Dell PowerEdge R770 IA, R770 virtualización, R570 NAS y switch S5224F-ON) según las especificaciones del Paquete Maestro §8.2.",
                 responsible: ["infra_devops"],
                 consulted: ["ml_engineer", "data_engineer"],
                 informed: ["pm_lead", "pm_cel"],

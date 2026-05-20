@@ -49,6 +49,7 @@ Env requerido: `DATABASE_URL`, `PUBLIC_OBJECT_SEARCH_PATHS`, `PRIVATE_OBJECT_DIR
 - **Admin layer**: PM-only se define por **email allowlist** en `requireAdmin` (Camila + Kevin), no por rol. Toda mutación admin registra en `admin_audit_log` vía `logAdminAction()`.
 - **Notificaciones best-effort**: si no hay provider configurado, se registra en `notification_log` con status `noProvider` y nada se rompe.
 - **Branding**: navy PANTONE 289 C; sin emojis; todo el contenido user-facing en español.
+- **Infraestructura del piloto (fuente única)**: el BOM vigente y la arquitectura física del silo de IA están definidos por el Paquete Maestro §8.2 (Anexo Complementario No. 1) y las cláusulas defendibles §6.1–§6.5. Cualquier contenido del portal que mencione hardware, software de plataforma, ownership o alcance de infraestructura debe alinearse con esa fuente; el BOM original del DSP (3 nodos genéricos, RTX 4090, ZFS, switch 10GbE, Pentaho, Grafana) ya no aplica. La definición canónica vive en `INFRA_HARDWARE`, `INFRA_SOFTWARE` e `INFRA_DEFENSIBLE_CLAUSES` dentro de `artifacts/portal/src/lib/desarrolloContent.ts`.
 
 ## Where things live
 

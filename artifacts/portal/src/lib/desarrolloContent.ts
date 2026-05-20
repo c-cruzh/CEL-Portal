@@ -712,7 +712,7 @@ export const DATOS_CATEGORIES = [
 ];
 
 export const ETL_INTRO =
-  "Para convertir los datos brutos en insumos listos para modelar, se implementará una canalización moderna basada en Python orquestada por Mage. Esta decisión reemplaza Pentaho PDI para mejorar fiabilidad, observabilidad y versionamiento del código (pipelines como código en Git). El nuevo Nodo de Datos & ETL actúa como cliente dentro de la red CEL, consultando en solo-lectura PostgreSQL y MongoDB existentes; todo el procesamiento se ejecuta en el hardware dedicado del silo de IA, sin sobrecargar los sistemas productivos y manteniendo la soberanía de los datos.";
+  "Para convertir los datos brutos en insumos listos para modelar, se implementará una canalización moderna basada en Python orquestada por Mage, que actúa como capa central de orquestación y observabilidad operacional del piloto conforme al Paquete Maestro §6.4. La capa de datos se ejecuta dentro del silo de IA on-premise adquirido por CEL (Anexo Complementario §8.2): consume las bases productivas PostgreSQL y MongoDB de CEL en modo solo-lectura, mantiene los pipelines como código en Git y aísla todo el procesamiento intensivo del piloto sin impactar los sistemas operativos del negocio.";
 
 export const ETL_DIAGRAM = `flowchart LR
   subgraph EXT["1. Extracción"]
@@ -1036,9 +1036,9 @@ export const OPEN_DECISIONS: OpenDecision[] = [
   {
     id: "OD-14",
     area: "Stack / Software",
-    decision: "Stack de monitoreo y backup (Prometheus/Grafana, restic/Borg)",
+    decision: "Observabilidad operacional del piloto (Mage) y backup institucional",
     detail:
-      "Versiones, hospedaje (en el silo o en infraestructura corporativa), integración con el SOC de CEL si aplica.",
+      "Mage es la capa de orquestación y observabilidad operacional del piloto conforme al Paquete Maestro §6.4 — sustituye a Pentaho y a Grafana en el plano del flujo de datos/IA. Queda por confirmar con CEL la integración (si aplica) con herramientas corporativas de monitoreo de infraestructura (Dell AI Ops, Secure Connect, SIEM/NOC) y la política de backup institucional sobre el NAS R570, que son responsabilidad de CEL/proveedor (§6.5).",
     responsable: "DevOps CEL",
     contraparteCel: "José Manuel + Miladis",
     fechaObjetivo: "Fase 0",
@@ -1183,8 +1183,8 @@ export const CEL_DAILY_RESPONSIBILITIES: CelResponsibility[] = [
       "Garantizar la disponibilidad del silo (cómputo, red, energía) dentro del data center CEL.",
       "Aprobar y aplicar cambios de configuración en red, accesos y stack del silo.",
       "Custodiar las credenciales y secretos; rotar accesos del consultor según política.",
-      "Mantener el monitoreo de hardware, GPU y servicios base (Prometheus/Grafana).",
-      "Ejecutar respaldos al NAS y verificar restauraciones periódicas.",
+      "Mantener el monitoreo de hardware, GPU y servicios base mediante las herramientas Dell ProSupport (Dell AI Ops, Secure Connect Gateway, TechDirect, MyService360) y la observabilidad operacional del flujo del piloto en Mage.",
+      "Ejecutar respaldos al NAS R570 y verificar restauraciones periódicas según la política institucional de CEL.",
     ],
     accesos: [
       "Acceso root al silo (DevOps) bajo control del Comité.",
@@ -1286,7 +1286,7 @@ export const VISUALIZACION = {
       "El éxito del piloto depende de que CEL adopte y opere el sistema con confianza. La consultora entrega capacitación estructurada al equipo operativo y técnico, y se realizan ejercicios de mesa (tabletop) y simulacros con eventos históricos para calibrar protocolos.",
     bullets: [
       "Manual operativo y sesiones de onboarding al Hidrólogo Operativo y a Hidrología técnica.",
-      "Capacitación al DevOps de enlace sobre el stack (Mage, GitLab, Prometheus/Grafana).",
+      "Capacitación al DevOps de enlace sobre el stack del piloto (Mage como orquestador y observabilidad operacional, Git como repositorio de pipelines).",
       "Ejercicios con eventos históricos (p. ej. Stan, evento 2011) para validar respuesta del sistema y de los protocolos.",
       "Retroalimentación estructurada del usuario operativo durante los primeros meses (operación semi-supervisada).",
     ],
@@ -1937,342 +1937,244 @@ export const RACI_LEGEND = [
   { k: "I", v: "Informado del progreso y de los entregables clave." },
 ];
 
-export type InfraStatus = "confirmado" | "por-confirmar";
-
-export interface InfraArchNode {
-  id: string;
-  name: string;
-  layer: "Compute" | "Data & ETL" | "Backup" | "Red" | "Energía";
-  role: string;
-  specs: string[];
-}
-
 export interface HardwareItem {
-  category: "Cómputo / ML" | "Almacenamiento" | "Red" | "Energía / Rack";
-  item: string;
+  domain: string;
+  model: string;
   qty: string;
-  specs: string;
-  role: string;
-  status: InfraStatus;
+  config: string;
+  use: string;
 }
 
 export interface SoftwareItem {
-  layer: "Sistema operativo" | "Bases de datos" | "Orquestación / ETL" | "ML / Modelos" | "Aplicación" | "Monitoreo / Seguridad";
-  product: string;
-  version: string;
+  bucket: "Base provista por plataforma" | "Stack funcional del piloto";
+  component: string;
   purpose: string;
-  status: InfraStatus;
+  responsable: string;
+  faseImplication: string;
 }
 
-export interface CommissioningTest {
+export interface DefensibleClause {
   id: string;
-  area: "GPU / Cómputo" | "Almacenamiento / E-S" | "Red / VPN" | "Datos / ETL" | "Aplicación";
-  test: string;
-  criteria: string;
-  status: InfraStatus;
-}
-
-export interface BackupPolicy {
   title: string;
   body: string;
-  status: InfraStatus;
 }
 
 export const INFRA_INTRO =
-  "El silo de IA es un entorno on-premise dedicado, instalado dentro del data center de CEL, que aloja el pipeline completo de pronóstico hidrológico (ingesta, ETL, entrenamiento y servicio del modelo, base histórica y dashboard). Opera como cliente en solo-lectura sobre las bases productivas de CEL (PostgreSQL y MongoDB) y mantiene aislado todo el cómputo intensivo, evitando impacto en los sistemas operativos del negocio.";
+  "La infraestructura física vigente del piloto es la plataforma efectivamente adquirida por CEL a través de Martinexsa/Dell Technologies y formalizada en el Anexo Complementario No. 1 del Paquete Maestro (§8.2). El BOM original del DSP queda reemplazado en lo relativo a infraestructura física: la arquitectura de tres nodos genéricos, la GPU NVIDIA RTX 4090, el NAS ZFS/OpenZFS, el switch 10GbE y los stacks de Grafana y Pentaho ya no aplican. La Consultora consume esta plataforma como entorno habilitante del piloto; la administración, soporte y garantías de la infraestructura corresponden a CEL, Martinexsa y Dell conforme a la cláusula §6.5 de ownership de infraestructura.";
 
 export const INFRA_BOM_DISCLAIMER =
-  "Importante — Este capítulo es el scaffold del BOM final aprobado por CEL. El BOM definitivo (modelos, fabricantes, cantidades, costos y cronograma de compra) se cerrará en sesión conjunta con el Comité de TI antes de la orden de compra. Hasta entonces, cada ítem está marcado como “Por confirmar con CEL — BOM final”. La consultora aporta especificaciones técnicas mínimas; CEL aprueba los modelos y proveedores según sus políticas internas (decisión OD-01 en el capítulo de Decisiones abiertas).";
-
-export const INFRA_ARCHITECTURE: InfraArchNode[] = [
-  {
-    id: "ml",
-    name: "Nodo ML / Compute",
-    layer: "Compute",
-    role: "Entrenamiento e inferencia del LSTM y del modelo de inundación manifold",
-    specs: [
-      "1× servidor workstation con GPU NVIDIA RTX 4090 (24 GB VRAM)",
-      "CPU multi-núcleo, 64–128 GB RAM (Por confirmar con CEL)",
-      "Almacenamiento NVMe local para datasets de entrenamiento",
-    ],
-  },
-  {
-    id: "data",
-    name: "Nodo Datos & ETL",
-    layer: "Data & ETL",
-    role: "Mage, scripts de extracción, PostgreSQL/PostGIS y MongoDB locales",
-    specs: [
-      "1× servidor (RAID 1/10) — Por confirmar con CEL",
-      "PostgreSQL + PostGIS para históricos y geometrías",
-      "MongoDB para datos operativos en tiempo real",
-    ],
-  },
-  {
-    id: "app",
-    name: "Nodo Aplicación",
-    layer: "Compute",
-    role: "API Node.js, dashboard React y servicio de notificaciones",
-    specs: [
-      "Puede co-residir con Nodo Datos en el piloto (Por confirmar con CEL)",
-      "Tras firewall de CEL, expuesto solo en intranet",
-    ],
-  },
-  {
-    id: "nas",
-    name: "NAS de Respaldo",
-    layer: "Backup",
-    role: "Backup de DBs, modelos entrenados y artefactos ETL",
-    specs: [
-      "NAS dedicado con discos en RAID (capacidad y modelo Por confirmar con CEL)",
-      "Snapshots diarios + retención semanal/mensual",
-    ],
-  },
-  {
-    id: "net",
-    name: "Red interna y VPN",
-    layer: "Red",
-    role: "Switching del silo y enlace seguro hacia DBs productivas y consultor",
-    specs: [
-      "Switch gigabit gestionado (modelo Por confirmar con CEL)",
-      "VLAN dedicada al silo, ACLs hacia PostgreSQL/MongoDB productivos en solo-lectura",
-      "VPN site-to-site / acceso remoto para el equipo consultor",
-    ],
-  },
-  {
-    id: "ups",
-    name: "Energía protegida",
-    layer: "Energía",
-    role: "Continuidad y protección eléctrica del rack",
-    specs: [
-      "UPS de rack con autonomía mínima para apagado ordenado (capacidad Por confirmar con CEL)",
-      "Doble PSU en servidores donde aplique",
-    ],
-  },
-];
+  "Reemplaza el BOM original del DSP. Mage sustituye a Pentaho y a Grafana como capa de orquestación y observabilidad operacional del piloto (§6.4). La GPU contemplada es NVIDIA H100 NVL PCIe (94 GB HBM3) — la certificación funcional debe validarse contra la unidad efectivamente instalada y habilitada por CEL/proveedor. La ubicación final de Mage, PostgreSQL/PostGIS, MongoDB, dashboard/API y repositorios la define CEL/TI y/o el proveedor antes de certificar el inicio efectivo de Fase 0 (§6.3).";
 
 export const INFRA_HARDWARE: HardwareItem[] = [
   {
-    category: "Cómputo / ML",
-    item: "Servidor / workstation GPU para entrenamiento e inferencia",
+    domain: "Servidor IA / ML",
+    model: "Dell PowerEdge R770",
     qty: "1",
-    specs: "NVIDIA RTX 4090 (24 GB VRAM), CPU multi-núcleo, 64–128 GB RAM, NVMe ≥ 2 TB",
-    role: "Nodo ML — entrenar LSTM (NeuralHydrology/PyTorch) y ejecutar inferencia diaria",
-    status: "por-confirmar",
+    config: "2× Intel Xeon 6 Performance 6515P; 256 GB DDR5; GPU NVIDIA H100 NVL PCIe 94 GB HBM3; 2× SSD SATA 480 GB (sistema); 2× NVMe 1.92 TB (workspace); NIC NVIDIA ConnectX-6 Dx dual port 100GbE; interfaces 25GbE SFP28; iDRAC Enterprise.",
+    use: "Entrenamiento, inferencia, analítica avanzada, procesamiento intensivo y uso funcional de GPU para el piloto.",
   },
   {
-    category: "Cómputo / ML",
-    item: "Servidor Datos & ETL (puede alojar también la aplicación en el piloto)",
+    domain: "Servidor virtualización",
+    model: "Dell PowerEdge R770",
     qty: "1",
-    specs: "CPU multi-núcleo, 32–64 GB RAM, discos en RAID 1/10 — modelo Por confirmar con CEL",
-    role: "Mage + PostgreSQL/PostGIS + MongoDB + API Node.js / dashboard",
-    status: "por-confirmar",
+    config: "2× Intel Xeon 6 Performance 6515P; 256 GB DDR5; almacenamiento SSD empresarial; adaptador 25GbE SFP28; iDRAC Enterprise; configuración base sujeta al diseño de CEL/TI.",
+    use: "Hospedaje de VMs, servicios institucionales, middleware y potencial alojamiento de Mage/BDs si CEL/TI así lo define.",
   },
   {
-    category: "Almacenamiento",
-    item: "NAS de respaldo dedicado",
+    domain: "NAS / File Server",
+    model: "Dell PowerEdge R570",
     qty: "1",
-    specs: "Capacidad útil ≥ 8 TB en RAID, doble interfaz de red — modelo Por confirmar con CEL",
-    role: "Backups de DBs, modelos entrenados, artefactos ETL y logs",
-    status: "por-confirmar",
+    config: "Intel Xeon 6 Performance 6511P; 64 GB DDR5; Windows Server 2025 Standard; BOSS-N1 2× M.2 480 GB en RAID 1 (sistema); 6× HDD empresariales 4 TB en RAID 6; 25GbE SFP28; iDRAC Enterprise.",
+    use: "Repositorio de datasets de IA, almacenamiento centralizado, histórico documental y compartición SMB/NFS para el piloto.",
   },
   {
-    category: "Red",
-    item: "Switch gigabit gestionado",
+    domain: "Switch Data Center",
+    model: "Dell PowerSwitch S5224F-ON",
     qty: "1",
-    specs: "≥ 24 puertos 1 GbE, soporte VLAN/ACL — modelo Por confirmar con CEL",
-    role: "Segmentación del silo y enlace controlado a la red CEL",
-    status: "por-confirmar",
+    config: "24× puertos 25GbE SFP28; 4× puertos 100GbE QSFP28; Dell SmartFabric OS10; L2/L3 (VLAN/ACL/OSPF/BGP); fuentes redundantes; ópticos y DAC según oferta.",
+    use: "Conectividad ToR de alta velocidad entre servidores, NAS y data center.",
   },
   {
-    category: "Red",
-    item: "Appliance / endpoint VPN",
-    qty: "1",
-    specs: "VPN site-to-site o acceso remoto seguro — solución Por confirmar con CEL",
-    role: "Acceso del equipo consultor y administración remota",
-    status: "por-confirmar",
+    domain: "Estaciones de gestión",
+    model: "Dell Pro Max 16 Plus Laptop",
+    qty: "2",
+    config: "Intel Core Ultra 9; GPU NVIDIA RTX PRO 3000 Blackwell 12 GB GDDR7; 64 GB DDR5; SSD NVMe 1 TB; Windows 11 Pro; Thunderbolt; Wi-Fi 7.",
+    use: "Gestión, análisis técnico, visualización y administración de plataforma para usuarios designados por CEL.",
   },
   {
-    category: "Energía / Rack",
-    item: "UPS de rack",
-    qty: "1",
-    specs: "Capacidad suficiente para apagado ordenado de todo el silo — Por confirmar con CEL",
-    role: "Continuidad eléctrica y protección frente a transitorios",
-    status: "por-confirmar",
+    domain: "Docking",
+    model: "Dell Pro Thunderbolt 4 — WD25TB4",
+    qty: "2",
+    config: "Docking station para centralizar periféricos, energía y conectividad.",
+    use: "Soporte de las estaciones de gestión.",
   },
   {
-    category: "Energía / Rack",
-    item: "Rack y accesorios (PDU, organizadores, cableado)",
-    qty: "1",
-    specs: "Rack estándar 19” compatible con el data center de CEL",
-    role: "Alojamiento físico del silo dentro del data center",
-    status: "por-confirmar",
+    domain: "Monitores",
+    model: "Dell 32 Plus 4K Monitor — S3225QS",
+    qty: "4",
+    config: "Monitores 32\" 4K UHD; dos por estación de trabajo.",
+    use: "Visualización extendida para operación, análisis y gestión.",
+  },
+  {
+    domain: "Accesorios",
+    model: "Brazos duales MDA20 + teclado/mouse KM332W",
+    qty: "2 sets",
+    config: "Brazos duales para monitores y periféricos Dell.",
+    use: "Ergonomía y productividad de estaciones.",
+  },
+  {
+    domain: "Soporte fabricante",
+    model: "Dell ProSupport Plus Mission Critical",
+    qty: "3 años",
+    config: "Soporte técnico 24×7, diagnóstico remoto, SLA, reemplazo de partes críticas; herramientas Dell AI Ops, Secure Connect Gateway, TechDirect y MyService360.",
+    use: "Continuidad y soporte de infraestructura — responsabilidad de CEL/Dell/Martinexsa.",
+  },
+  {
+    domain: "Soporte / licencia GPU",
+    model: "NVIDIA AI Enterprise",
+    qty: "3 años por GPU",
+    config: "Subscription y soporte 24×7 por GPU; frameworks optimizados, contenedores certificados, bibliotecas aceleradas y soporte especializado NVIDIA.",
+    use: "Habilitador del entorno acelerado NVIDIA — administración y licenciamiento bajo CEL/proveedor.",
+  },
+  {
+    domain: "Acompañamiento técnico",
+    model: "TechCircle",
+    qty: "30 horas remotas",
+    config: "Asistencia especializada para evolución, revisión de arquitectura, recomendaciones de crecimiento, desempeño inicial, ajustes de red/almacenamiento/virtualización y buenas prácticas de IA/datos.",
+    use: "Recurso de soporte de CEL/proveedor; no sustituye ni amplía las obligaciones de la Consultora.",
   },
 ];
 
 export const INFRA_SOFTWARE: SoftwareItem[] = [
   {
-    layer: "Sistema operativo",
-    product: "Ubuntu Server LTS",
-    version: "22.04 LTS (o LTS vigente)",
-    purpose: "Base de todos los nodos del silo; soporte largo plazo y compatibilidad con CUDA",
-    status: "confirmado",
+    bucket: "Base provista por plataforma",
+    component: "Ubuntu Server 24.04 LTS",
+    purpose: "Sistema operativo base de los servidores Linux del silo.",
+    responsable: "CEL / Martinexsa / Dell",
+    faseImplication: "Debe estar instalado, actualizado, accesible y documentado antes de la certificación funcional de Fase 0 (§6.3).",
   },
   {
-    layer: "Sistema operativo",
-    product: "NVIDIA Driver + CUDA Toolkit",
-    version: "Driver ≥ 535 / CUDA 12.x",
-    purpose: "Aceleración GPU para entrenamiento e inferencia del LSTM",
-    status: "confirmado",
+    bucket: "Base provista por plataforma",
+    component: "Docker Engine + Docker Compose",
+    purpose: "Runtime de contenedores instalado en el servidor ML/IA y/o host designado.",
+    responsable: "CEL / Martinexsa / Dell",
+    faseImplication: "La Consultora puede desplegar Mage y servicios del piloto sobre este runtime; la administración base queda fuera de su alcance.",
   },
   {
-    layer: "Bases de datos",
-    product: "PostgreSQL + PostGIS",
-    version: "PostgreSQL 16 / PostGIS 3.x",
-    purpose: "Históricos depurados, geometrías de cuenca y mapas de inundación",
-    status: "confirmado",
+    bucket: "Base provista por plataforma",
+    component: "Windows Server 2025 Standard",
+    purpose: "Sistema operativo del NAS / File Server R570.",
+    responsable: "CEL / Martinexsa / Dell",
+    faseImplication: "Habilita SMB/NFS y servicios de archivo; su administración no corresponde a la Consultora.",
   },
   {
-    layer: "Bases de datos",
-    product: "MongoDB Community",
-    version: "7.x",
-    purpose: "Datos operativos en tiempo real (lluvia reciente, caudales, predicciones diarias)",
-    status: "confirmado",
+    bucket: "Base provista por plataforma",
+    component: "Dell SmartFabric OS10",
+    purpose: "Sistema operativo del switch S5224F-ON.",
+    responsable: "CEL / Martinexsa / Dell",
+    faseImplication: "Configuración de red, VLANs, ACLs y routing bajo CEL/proveedor.",
   },
   {
-    layer: "Orquestación / ETL",
-    product: "Mage",
-    version: "Última estable LTS — versión exacta Por confirmar con CEL",
-    purpose: "Orquestación de pipelines ETL en Python, monitoreo y reintentos",
-    status: "por-confirmar",
+    bucket: "Base provista por plataforma",
+    component: "iDRAC Enterprise",
+    purpose: "Administración remota de los servidores Dell.",
+    responsable: "CEL / Martinexsa / Dell",
+    faseImplication: "Credenciales y uso restringidos a TI/proveedor salvo que CEL otorgue acceso específico.",
   },
   {
-    layer: "Orquestación / ETL",
-    product: "Python + librerías de datos",
-    version: "Python 3.11 + Pandas, GeoPandas, rasterio, psycopg2, pymongo",
-    purpose: "Extracción, transformación y limpieza de datos meteorológicos, hidrológicos y geoespaciales",
-    status: "confirmado",
+    bucket: "Base provista por plataforma",
+    component: "NVIDIA AI Enterprise (subscription + soporte 24×7)",
+    purpose: "Licencia y soporte por GPU para uso enterprise de aceleración NVIDIA.",
+    responsable: "CEL / Martinexsa / Dell / NVIDIA",
+    faseImplication: "Debe confirmarse activación, drivers, CUDA, container runtime y acceso a NGC si aplica.",
   },
   {
-    layer: "ML / Modelos",
-    product: "PyTorch + NeuralHydrology",
-    version: "PyTorch 2.x (con CUDA)",
-    purpose: "Entrenamiento e inferencia del modelo LSTM hidrológico",
-    status: "confirmado",
+    bucket: "Base provista por plataforma",
+    component: "Dell AI Ops, Secure Connect Gateway, TechDirect, MyService360",
+    purpose: "Herramientas de soporte y telemetría asociadas a Dell ProSupport.",
+    responsable: "CEL / Dell / Martinexsa",
+    faseImplication: "Monitoreo y soporte de fabricante; no constituye monitoreo operativo del pipeline del piloto (§6.4).",
   },
   {
-    layer: "ML / Modelos",
-    product: "Optuna",
-    version: "Última estable",
-    purpose: "Búsqueda bayesiana de hiperparámetros del LSTM",
-    status: "confirmado",
+    bucket: "Stack funcional del piloto",
+    component: "Mage",
+    purpose: "Orquestación de pipelines, ejecución diaria, dependencias, logs, retries y observabilidad operacional del flujo del piloto.",
+    responsable: "Consultora configura y desarrolla; CEL/TI provee host y accesos.",
+    faseImplication: "Sustituye a Pentaho y a Grafana en el plano operativo del piloto (§6.4).",
   },
   {
-    layer: "Aplicación",
-    product: "Node.js + React (dashboard)",
-    version: "Node.js LTS",
-    purpose: "API y dashboard interactivo del portal interno de CEL",
-    status: "confirmado",
+    bucket: "Stack funcional del piloto",
+    component: "Python + librerías científicas",
+    purpose: "Pandas, NumPy, GeoPandas, Rasterio/GDAL, scikit-learn, requests, psycopg2, pymongo y similares.",
+    responsable: "Consultora",
+    faseImplication: "ETL, QA/QC, features, procesamiento geoespacial y conectividad de datos del piloto.",
   },
   {
-    layer: "Aplicación",
-    product: "Leaflet / Mapbox GL JS",
-    version: "Última estable",
-    purpose: "Mapas interactivos con capas dinámicas de inundación",
-    status: "confirmado",
+    bucket: "Stack funcional del piloto",
+    component: "PyTorch + NeuralHydrology + Optuna",
+    purpose: "Framework de modelado LSTM, entrenamiento, validación, inferencia y optimización bayesiana de hiperparámetros.",
+    responsable: "Consultora",
+    faseImplication: "Utiliza la GPU H100 NVL del servidor R770 IA para entrenamiento e inferencia.",
   },
   {
-    layer: "Monitoreo / Seguridad",
-    product: "Prometheus + Grafana",
-    version: "Última estable (Por confirmar con CEL)",
-    purpose: "Monitoreo de hardware, GPU, pipelines y bases de datos",
-    status: "por-confirmar",
+    bucket: "Stack funcional del piloto",
+    component: "PostgreSQL + PostGIS",
+    purpose: "Series históricas depuradas, geometrías de cuenca y mapas de inundación.",
+    responsable: "Consultora opera para el piloto; CEL/TI define hospedaje y administración base.",
+    faseImplication: "La ubicación final (servidor IA, virtualización o NAS) la define CEL/TI antes de certificar Fase 0.",
   },
   {
-    layer: "Monitoreo / Seguridad",
-    product: "GitLab (versionamiento de código y modelos)",
-    version: "Self-hosted o instancia CEL — Por confirmar con CEL",
-    purpose: "Repositorio de pipelines ETL, código del modelo y configuración como código",
-    status: "por-confirmar",
+    bucket: "Stack funcional del piloto",
+    component: "MongoDB",
+    purpose: "Datos operativos del piloto en tiempo real consumidos por el dashboard.",
+    responsable: "Consultora opera para el piloto; CEL/TI define hospedaje.",
+    faseImplication: "La ubicación final queda sujeta a la decisión de CEL/TI/proveedor.",
   },
   {
-    layer: "Monitoreo / Seguridad",
-    product: "Backup tool (restic / Borg / nativo NAS)",
-    version: "Por confirmar con CEL",
-    purpose: "Respaldos cifrados de DBs, modelos y artefactos al NAS",
-    status: "por-confirmar",
+    bucket: "Stack funcional del piloto",
+    component: "Git / repositorio de pipelines",
+    purpose: "Fuente única de verdad para pipelines, código del modelo y configuración como código.",
+    responsable: "Consultora; CEL/TI define si vive en silo, GitLab corporativo u otra instancia.",
+    faseImplication: "Decisión de hospedaje (ver OD-12) requerida antes de Fase 0.",
+  },
+  {
+    bucket: "Stack funcional del piloto",
+    component: "Node.js + React + Leaflet (dashboard/API)",
+    purpose: "API y dashboard interactivo del portal interno de CEL.",
+    responsable: "Consultora",
+    faseImplication: "Servido desde el silo y expuesto en la intranet de CEL.",
   },
 ];
 
-export const INFRA_COMMISSIONING: CommissioningTest[] = [
+export const INFRA_DEFENSIBLE_CLAUSES: DefensibleClause[] = [
   {
-    id: "C1",
-    area: "GPU / Cómputo",
-    test: "Benchmark de la RTX 4090 (nvidia-smi, PyTorch, entrenamiento corto del LSTM)",
-    criteria: "Uso estable de VRAM, throughput esperado y temperatura dentro de rango bajo carga sostenida",
-    status: "por-confirmar",
+    id: "6.1",
+    title: "Cláusula de alineación técnica",
+    body: "Para efectos de ejecución del piloto, las referencias técnicas contenidas en el DSP, Anexo Técnico B y Anexo Técnico C relativas a una arquitectura física específica de tres nodos, GPU NVIDIA RTX 4090, NAS basado en ZFS/OpenZFS, switch 10GbE, Grafana, Pentaho o CAPEX/OPEX de infraestructura original deberán entenderse sustituidas, únicamente en lo relativo a infraestructura física efectivamente provista, por la arquitectura que CEL adquiera y ponga a disposición a través de su proveedor. Las referencias metodológicas, entregables, fases, lógica funcional del sistema, uso de Mage, bases de datos, pipelines, modelo hidrológico, dashboard, alertas, documentación y transferencia se mantienen conforme al alcance del DSP, salvo modificación expresa.",
   },
   {
-    id: "C2",
-    area: "Almacenamiento / E-S",
-    test: "Pruebas de I/O secuencial y aleatorio en NVMe local y en NAS (fio)",
-    criteria: "Cumple umbrales mínimos definidos con CEL para ingesta y backups (Por confirmar con CEL)",
-    status: "por-confirmar",
+    id: "6.2",
+    title: "Cláusula de no ampliación de alcance",
+    body: "La adquisición, disponibilidad o inclusión de componentes adicionales por parte de CEL no ampliará tácitamente el alcance, las obligaciones, el precio, el plazo ni las responsabilidades de la Consultora. Cualquier servicio adicional relativo a administración de infraestructura, soporte, operación continua, monitoreo 24/7, hardening corporativo, alta disponibilidad, recuperación ante desastres, integración de identidad, SIEM, backup corporativo, virtualización institucional, configuración avanzada de red, estaciones de trabajo o cualquier servicio explícitamente excluido por el proveedor requerirá formalización expresa mediante instrumento contractual, orden de cambio o contratación independiente.",
   },
   {
-    id: "C3",
-    area: "Red / VPN",
-    test: "Latencia y ancho de banda entre silo ↔ DBs productivas y consultor ↔ silo vía VPN",
-    criteria: "Latencia estable, sin pérdidas y suficiente ancho de banda para descargas ECMWF/GPM",
-    status: "por-confirmar",
+    id: "6.3",
+    title: "Cláusula de inicio efectivo de Fase 0",
+    body: "La ejecución técnica plena de Fase 0 quedará condicionada a que CEL entregue a la Consultora un entorno mínimo operacional, accesible y verificable, incluyendo como mínimo: equipos instalados y energizados, red base funcional, acceso remoto seguro, credenciales, sistema operativo base, GPU y drivers verificables, almacenamiento disponible, rutas y permisos, responsables técnicos identificados de CEL/proveedor y documentación de soporte. Los atrasos, fallas, limitaciones o pendientes asociados a adquisición, instalación, garantía, licenciamiento, red corporativa, soporte del proveedor o acceso institucional no serán imputables a la Consultora.",
   },
   {
-    id: "C4",
-    area: "Datos / ETL",
-    test: "Ejecución end-to-end de un pipeline Mage (descarga ECMWF → preprocesamiento → carga en DBs)",
-    criteria: "Pipeline corre sin errores, datos llegan a PostgreSQL/MongoDB y pasan QA/QC",
-    status: "por-confirmar",
+    id: "6.4",
+    title: "Cláusula Mage / observabilidad operacional",
+    body: "La orquestación, trazabilidad, programación, monitoreo operacional de pipelines, logs, retries y gestión de errores del sistema de pronóstico se realizará mediante Mage. Esta observabilidad se limita al flujo de datos, IA y automatización del piloto, y no sustituye herramientas corporativas de monitoreo de infraestructura, SIEM, NOC, observabilidad de data center, administración 24/7 ni plataformas como Grafana, salvo decisión y alcance adicional formalmente acordados con CEL.",
   },
   {
-    id: "C5",
-    area: "Aplicación",
-    test: "Despliegue del dashboard y verificación de un pronóstico simulado end-to-end",
-    criteria: "Dashboard renderiza mapa e hidrograma; alerta de prueba se envía por email/SMS",
-    status: "por-confirmar",
+    id: "6.5",
+    title: "Cláusula de ownership de infraestructura",
+    body: "CEL, su área de Informática/Seguridad y el proveedor de infraestructura conservarán la responsabilidad primaria sobre la plataforma física, la red, la seguridad institucional, las garantías, el soporte, la administración continua, los parches corporativos, los usuarios, las credenciales, los backups institucionales, las licencias y la operación de los componentes Dell/NVIDIA/Martinexsa. La Consultora documentará las dependencias técnicas del piloto y validará funcionalmente el entorno para los fines del proyecto, sin asumir titularidad operacional sobre la infraestructura institucional.",
   },
 ];
 
-export const INFRA_BACKUP_POLICIES: BackupPolicy[] = [
-  {
-    title: "Respaldo de bases de datos",
-    body: "Dumps diarios de PostgreSQL y MongoDB al NAS, con retención semanal y mensual. Verificación periódica de restauración en entorno aislado.",
-    status: "por-confirmar",
-  },
-  {
-    title: "Respaldo de modelos y artefactos",
-    body: "Checkpoints del LSTM y artefactos del modelo de inundación versionados en GitLab + copia en NAS por release.",
-    status: "por-confirmar",
-  },
-  {
-    title: "Recuperación ante desastre (DR)",
-    body: "Procedimiento documentado de re-instalación del silo (SO, drivers, stack) y restauración desde NAS. RTO/RPO objetivo Por confirmar con CEL.",
-    status: "por-confirmar",
-  },
-  {
-    title: "Seguridad de red",
-    body: "Silo detrás de los firewalls de CEL, segmentado en VLAN propia. Acceso a DBs productivas solo en lectura y desde el Nodo de Datos. Acceso remoto exclusivamente por VPN.",
-    status: "confirmado",
-  },
-  {
-    title: "Gestión de identidades y secretos",
-    body: "Usuarios nominales con MFA donde el stack lo permita, llaves SSH gestionadas y secretos fuera del repositorio (gestor a definir con CEL).",
-    status: "por-confirmar",
-  },
-  {
-    title: "Monitoreo y alertas operativas",
-    body: "Métricas de hardware, GPU, pipelines y bases de datos en Prometheus/Grafana; notificación de fallas críticas a administradores por email/Slack.",
-    status: "por-confirmar",
-  },
-];
+
 
 export const LEMPA = {
   title: "Anexo Técnico — Dinámicas Hidrológicas y Gobernanza Trinacional",

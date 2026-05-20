@@ -63,7 +63,7 @@ export const INFRA_AI_SILO = {
     {
       id: "comisionamiento",
       title: "Comisionamiento de infraestructura física",
-      body: "En colaboración con el equipo de TI de CEL, supervisar la adquisición, instalación física (racking) y conexión eléctrica y de red de los 3 nodos de servidores especificados: ML/Compute, Data/ETL y Backup NAS. Se valida que cada componente cumpla con las especificaciones técnicas requeridas.",
+      body: "En colaboración con el equipo de TI de CEL y el proveedor (Martinexsa/Dell), supervisar la recepción, instalación física (racking) y conexión eléctrica y de red de la plataforma adquirida conforme al Paquete Maestro §8.2: 2× Dell PowerEdge R770 (IA y virtualización), 1× Dell PowerEdge R570 (NAS) y 1× Dell PowerSwitch S5224F-ON, además de las estaciones de gestión Pro Max. Se valida que cada componente cumpla con las especificaciones aprobadas.",
     },
     {
       id: "red-seguridad",
@@ -122,7 +122,7 @@ export const INFRA_FASES_OPERATIVAS: InfraFaseOperativa[] = [
     reviewNote:
       "El doc original no separa explícitamente el versionado de experimentos/MLOps entre F2 y F3. Aquí lo asignamos a F2 (modelado) por estar ligado a entrenamiento.",
     resumen:
-      "El entrenamiento del modelo LSTM se ejecuta sobre la GPU NVIDIA RTX 4090 (24 GB VRAM) del nodo ML/Compute, aprovechando el paralelismo para manejar grandes volúmenes de datos en menos tiempo.",
+      "El entrenamiento del modelo LSTM se ejecuta sobre la GPU NVIDIA H100 NVL PCIe (94 GB HBM3) del servidor IA Dell PowerEdge R770 (Paquete Maestro §8.2), aprovechando el paralelismo para manejar grandes volúmenes de datos en menos tiempo.",
     componentes: [
       "Stack PyTorch + NeuralHydrology desplegado en el nodo ML/Compute del silo.",
       "Búsqueda automatizada de hiperparámetros con Optuna integrado a PyTorch, ejecutando decenas de corridas en paralelo sobre la GPU.",
@@ -176,7 +176,7 @@ export const METODOLOGIA_PHASES: MetodologiaPhase[] = [
     narrative:
       "Esta fase inicial y fundamental se dedica a la construcción y comisionamiento de la infraestructura de servidores on-premise dedicada para el silo de IA de CEL. La finalización exitosa de esta fase — que incluye la instalación del hardware y la configuración del stack de software — es el requisito indispensable para dar paso a la primera etapa operativa de ingesta de datos.",
     actividades: [
-      "Comisionamiento físico de los 3 nodos del AI Silo (ML/Compute, Data/ETL, Backup NAS) con TI de CEL.",
+      "Comisionamiento físico de la plataforma adquirida del AI Silo (Dell PowerEdge R770 IA, R770 virtualización, R570 NAS y switch S5224F-ON) con TI de CEL y el proveedor.",
       "Diseño e implementación de la red aislada del silo: VLANs, firewalls, políticas de acceso y VPN para acceso remoto seguro.",
       "Instalación y configuración del stack: Ubuntu Server LTS, PostgreSQL/PostGIS, MongoDB y Mage como orquestador de pipelines.",
       "Benchmarks de GPU, E/S de discos NVMe/SSD y conectividad entre nodos y fuentes externas.",
@@ -240,7 +240,7 @@ export const METODOLOGIA_PHASES: MetodologiaPhase[] = [
     narrative:
       "Es la fase más larga y técnica del piloto. Se entrenan y calibran los modelos LSTM para el pronóstico de caudales del Río Lempa. La valiosa perspectiva del equipo de CEL es fundamental para asegurar la calidad y relevancia del modelo: su conocimiento profundo del comportamiento histórico del sistema hidrológico permite evaluar la validez de los patrones que el modelo aprende y guiar el ajuste de hiperparámetros.",
     actividades: [
-      "Implementación del modelo LSTM con NeuralHydrology/PyTorch sobre la GPU RTX 4090 del silo.",
+      "Implementación del modelo LSTM con NeuralHydrology/PyTorch sobre la GPU NVIDIA H100 NVL del servidor R770 IA del silo.",
       "Selección y justificación de variables de entrada en función del contexto del Río Lempa.",
       "Entrenamiento y validación cruzada con origen rodante (rolling validation) sobre datos históricos.",
       "Búsqueda automatizada de hiperparámetros (e.g., Optuna) para optimizar arquitectura, ventana temporal y regularización.",
@@ -474,7 +474,7 @@ export const RUTA_DETALLE: RutaDetalle[] = [
     proposito:
       "Entrenar y validar el modelo LSTM de pronóstico a 7 días, calibrado con el conocimiento operativo de los hidrólogos de CEL.",
     tareas: [
-      "Implementación del LSTM con NeuralHydrology/PyTorch sobre la GPU RTX 4090 del silo.",
+      "Implementación del LSTM con NeuralHydrology/PyTorch sobre la GPU NVIDIA H100 NVL del servidor R770 IA del silo.",
       "Selección y justificación de variables de entrada según el contexto del Río Lempa.",
       "Optimización bayesiana de hiperparámetros (longitud de secuencia, unidades ocultas, tasa de aprendizaje).",
       "Validación cruzada con origen rodante (rolling-origin) y comparación contra el baseline operativo.",

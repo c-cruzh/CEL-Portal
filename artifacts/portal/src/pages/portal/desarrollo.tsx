@@ -62,13 +62,10 @@ import {
   RACI_LEGEND,
   INFRA_INTRO,
   INFRA_BOM_DISCLAIMER,
-  INFRA_ARCHITECTURE,
   INFRA_HARDWARE,
   INFRA_SOFTWARE,
-  INFRA_COMMISSIONING,
-  INFRA_BACKUP_POLICIES,
+  INFRA_DEFENSIBLE_CLAUSES,
   LEMPA,
-  type InfraStatus,
 } from "@/lib/desarrolloContent";
 
 type ChapterId =
@@ -103,7 +100,7 @@ const CHAPTERS: ChapterDef[] = [
   { id: "decisiones", num: "6", shortLabel: "Decisiones abiertas y dependencias CEL", title: "Decisiones abiertas y dependencias con CEL", Icon: FileText, Component: DecisionesSection, toc: [{ id: "decisiones-abiertas", label: "Decisiones abiertas" }, { id: "decisiones-confirmadas", label: "Decisiones confirmadas" }] },
   { id: "operacion", num: "7", shortLabel: "Operación diaria", title: "Operación diaria", Icon: Play, Component: OperacionSection, toc: [{ id: "operacion-scheduling", label: "Programación" }, { id: "operacion-flujo", label: "Flujo diario" }, { id: "operacion-monitoreo", label: "Monitoreo y errores" }, { id: "operacion-cel", label: "Responsabilidades CEL" }] },
   { id: "visualizacion", num: "8", shortLabel: "Visualización y alertas", title: "Visualización y alertas", Icon: Activity, Component: VisualizacionSection, toc: [{ id: "visualizacion-features", label: "Funcionalidades" }, { id: "visualizacion-alertas", label: "Sistema de alertas" }, { id: "visualizacion-integracion", label: "Integración con el portal" }, { id: "visualizacion-capacitacion", label: "Capacitación y ejercicios" }] },
-  { id: "infraestructura", num: "9", shortLabel: "BOM final aprobado por CEL", title: "BOM final aprobado por CEL — Silo de IA", Icon: Server, Component: InfraSection, toc: [{ id: "infra-topologia-fisica", label: "Topología física DC" }, { id: "infra-disclaimer", label: "Estado del BOM" }, { id: "infra-arquitectura", label: "Arquitectura" }, { id: "infra-hardware", label: "Hardware" }, { id: "infra-software", label: "Software" }, { id: "infra-comisionamiento", label: "Comisionamiento" }, { id: "infra-respaldo", label: "Respaldo y seguridad" }] },
+  { id: "infraestructura", num: "9", shortLabel: "BOM final aprobado por CEL", title: "BOM final aprobado por CEL — Silo de IA", Icon: Server, Component: InfraSection, toc: [{ id: "infra-topologia-fisica", label: "Topología física DC" }, { id: "infra-disclaimer", label: "Nota de reemplazo del BOM" }, { id: "infra-hardware", label: "BOM de hardware (Paquete §8.2)" }, { id: "infra-software", label: "Software / runtime" }, { id: "infra-clausulas", label: "Cláusulas contractuales clave" }] },
   { id: "anexo-lempa", num: "10", shortLabel: "Anexo Lempa", title: "Anexo — Dinámicas hidrológicas y gobernanza trinacional del Lempa", Icon: MapIcon, Component: LempaSection, toc: [{ id: "lempa-geo", label: "Características geográficas" }, { id: "lempa-climate", label: "Cambio climático" }, { id: "lempa-governance", label: "Gobernanza trinacional" }, { id: "lempa-implications", label: "Implicaciones para la IA" }] },
   { id: "raci", num: "11", shortLabel: "Equipo y RACI", title: "Equipo, FTE y matriz RACI", Icon: AlignLeft, Component: RaciSection, toc: [{ id: "raci-estructura", label: "Cómo está organizado el capítulo" }, { id: "raci-gobernanza", label: "Estructura de gobernanza del piloto" }, { id: "raci-fte", label: "A.1 Estructura operativa y FTE" }, { id: "raci-comite", label: "A.2 Comité de Informática (CEL)" }, { id: "raci-perfiles", label: "A.3 Perfiles del equipo" }, { id: "raci-matriz", label: "B.1 Matriz RACI consolidada" }, { id: "raci-tareas", label: "B.2 Detalle de tareas por fase" }] },
 ];
@@ -1484,29 +1481,9 @@ function RaciSection() {
   );
 }
 
-function StatusBadge({ status }: { status: InfraStatus }) {
-  if (status === "confirmado") {
-    return (
-      <span className="inline-block text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-900/30 text-emerald-900 dark:text-emerald-200 whitespace-nowrap">
-        Confirmado
-      </span>
-    );
-  }
-  return (
-    <span className="inline-block text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-100 dark:bg-amber-900/30 text-amber-900 dark:text-amber-200 whitespace-nowrap">
-      Por confirmar con CEL
-    </span>
-  );
-}
-
 function InfraSection() {
-  const layerStyles: Record<string, string> = {
-    Compute: "border-primary/40 bg-primary/5",
-    "Data & ETL": "border-blue-500/40 bg-blue-500/5",
-    Backup: "border-emerald-500/40 bg-emerald-500/5",
-    Red: "border-violet-500/40 bg-violet-500/5",
-    Energía: "border-amber-500/40 bg-amber-500/5",
-  };
+  const platformSoftware = INFRA_SOFTWARE.filter((s) => s.bucket === "Base provista por plataforma");
+  const pilotSoftware = INFRA_SOFTWARE.filter((s) => s.bucket === "Stack funcional del piloto");
 
   return (
     <section>
@@ -1539,7 +1516,7 @@ function InfraSection() {
             <AlertCircle className="w-5 h-5 text-amber-700 dark:text-amber-300 shrink-0 mt-0.5" />
             <div>
               <h4 className="text-sm font-semibold text-amber-900 dark:text-amber-100 mb-1">
-                Estado del BOM
+                Nota de reemplazo del BOM
               </h4>
               <p className="text-sm text-amber-900/90 dark:text-amber-100/90 leading-relaxed">
                 {INFRA_BOM_DISCLAIMER}
@@ -1550,69 +1527,30 @@ function InfraSection() {
       </div>
 
       <div className="space-y-8">
-        <div id="infra-arquitectura" className="scroll-mt-24">
-          <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-            Diagrama de arquitectura final
-          </h3>
-          <Card className="border-border">
-            <CardContent className="p-5">
-              <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-                {INFRA_ARCHITECTURE.map((n) => (
-                  <div
-                    key={n.id}
-                    className={`rounded-md border-2 p-3 ${layerStyles[n.layer] ?? "border-border bg-muted/30"}`}
-                  >
-                    <div className="flex items-center justify-between mb-1">
-                      <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                        {n.layer}
-                      </span>
-                    </div>
-                    <h4 className="text-sm font-semibold text-foreground">{n.name}</h4>
-                    <p className="text-xs text-muted-foreground mt-1 leading-relaxed">{n.role}</p>
-                    <ul className="mt-2 space-y-1">
-                      {n.specs.map((s, i) => (
-                        <li key={i} className="flex items-start gap-1.5 text-xs text-foreground/80">
-                          <span className="mt-1 h-1 w-1 rounded-full bg-foreground/50 shrink-0" />
-                          <span className="leading-relaxed">{s}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                ))}
-              </div>
-              <p className="text-xs text-muted-foreground mt-4 leading-relaxed">
-                Flujo lógico: <strong>Datos & ETL</strong> ingiere y normaliza, alimenta a <strong>ML / Compute</strong> para entrenamiento e inferencia, los resultados se publican vía <strong>Aplicación</strong>, y todo se respalda al <strong>NAS</strong>. La <strong>Red</strong> conecta el silo a las DBs productivas de CEL en solo-lectura y al consultor por VPN; la <strong>Energía</strong> protegida garantiza continuidad operativa.
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-
         <div id="infra-hardware" className="scroll-mt-24">
           <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-            BOM de hardware
+            BOM de hardware (Paquete Maestro §8.2)
           </h3>
           <Card className="border-border overflow-hidden">
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead className="bg-muted/40 text-muted-foreground">
                   <tr>
-                    <th className="text-left font-medium px-4 py-3">Categoría</th>
-                    <th className="text-left font-medium px-4 py-3">Ítem</th>
-                    <th className="text-left font-medium px-4 py-3 w-16">Cant.</th>
-                    <th className="text-left font-medium px-4 py-3">Especificaciones</th>
-                    <th className="text-left font-medium px-4 py-3">Rol</th>
-                    <th className="text-left font-medium px-4 py-3 w-40">Estado</th>
+                    <th className="text-left font-medium px-4 py-3 w-44">Dominio</th>
+                    <th className="text-left font-medium px-4 py-3">Modelo</th>
+                    <th className="text-left font-medium px-4 py-3 w-24">Cantidad</th>
+                    <th className="text-left font-medium px-4 py-3">Configuración</th>
+                    <th className="text-left font-medium px-4 py-3">Uso</th>
                   </tr>
                 </thead>
                 <tbody>
                   {INFRA_HARDWARE.map((h, i) => (
                     <tr key={i} className="border-t border-border align-top">
-                      <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{h.category}</td>
-                      <td className="px-4 py-3 font-medium text-foreground">{h.item}</td>
-                      <td className="px-4 py-3 text-foreground">{h.qty}</td>
-                      <td className="px-4 py-3 text-muted-foreground leading-relaxed">{h.specs}</td>
-                      <td className="px-4 py-3 text-muted-foreground leading-relaxed">{h.role}</td>
-                      <td className="px-4 py-3"><StatusBadge status={h.status} /></td>
+                      <td className="px-4 py-3 text-muted-foreground whitespace-nowrap font-medium">{h.domain}</td>
+                      <td className="px-4 py-3 font-medium text-foreground">{h.model}</td>
+                      <td className="px-4 py-3 text-foreground whitespace-nowrap">{h.qty}</td>
+                      <td className="px-4 py-3 text-muted-foreground leading-relaxed">{h.config}</td>
+                      <td className="px-4 py-3 text-muted-foreground leading-relaxed">{h.use}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -1621,85 +1559,97 @@ function InfraSection() {
           </Card>
         </div>
 
-        <div id="infra-software" className="scroll-mt-24">
-          <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-            BOM de software
-          </h3>
-          <Card className="border-border overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/40 text-muted-foreground">
-                  <tr>
-                    <th className="text-left font-medium px-4 py-3">Capa</th>
-                    <th className="text-left font-medium px-4 py-3">Producto</th>
-                    <th className="text-left font-medium px-4 py-3">Versión</th>
-                    <th className="text-left font-medium px-4 py-3">Propósito</th>
-                    <th className="text-left font-medium px-4 py-3 w-40">Estado</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {INFRA_SOFTWARE.map((s, i) => (
-                    <tr key={i} className="border-t border-border align-top">
-                      <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{s.layer}</td>
-                      <td className="px-4 py-3 font-medium text-foreground">{s.product}</td>
-                      <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{s.version}</td>
-                      <td className="px-4 py-3 text-muted-foreground leading-relaxed">{s.purpose}</td>
-                      <td className="px-4 py-3"><StatusBadge status={s.status} /></td>
+        <div id="infra-software" className="scroll-mt-24 space-y-6">
+          <div>
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+              Software / runtime — Base provista por plataforma
+            </h3>
+            <p className="text-xs text-muted-foreground italic mb-3">
+              Responsabilidad primaria de CEL, Martinexsa, Dell y NVIDIA conforme a la cláusula §6.5.
+              La Consultora consume estos componentes como entorno habilitante del piloto.
+            </p>
+            <Card className="border-border overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/40 text-muted-foreground">
+                    <tr>
+                      <th className="text-left font-medium px-4 py-3">Componente</th>
+                      <th className="text-left font-medium px-4 py-3">Propósito</th>
+                      <th className="text-left font-medium px-4 py-3 w-56">Responsable</th>
+                      <th className="text-left font-medium px-4 py-3">Implicación para el piloto</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </Card>
+                  </thead>
+                  <tbody>
+                    {platformSoftware.map((s, i) => (
+                      <tr key={i} className="border-t border-border align-top">
+                        <td className="px-4 py-3 font-medium text-foreground leading-relaxed">{s.component}</td>
+                        <td className="px-4 py-3 text-muted-foreground leading-relaxed">{s.purpose}</td>
+                        <td className="px-4 py-3 text-muted-foreground leading-relaxed">{s.responsable}</td>
+                        <td className="px-4 py-3 text-muted-foreground leading-relaxed">{s.faseImplication}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          </div>
+
+          <div>
+            <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+              Software / runtime — Stack funcional del piloto
+            </h3>
+            <p className="text-xs text-muted-foreground italic mb-3">
+              Configurado y operado por la Consultora dentro del entorno habilitado por CEL.
+              Incluye la capa de orquestación y observabilidad operacional (Mage) que sustituye a
+              Pentaho y a Grafana del BOM original conforme a la cláusula §6.4.
+            </p>
+            <Card className="border-border overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead className="bg-muted/40 text-muted-foreground">
+                    <tr>
+                      <th className="text-left font-medium px-4 py-3">Componente</th>
+                      <th className="text-left font-medium px-4 py-3">Propósito</th>
+                      <th className="text-left font-medium px-4 py-3 w-56">Responsable</th>
+                      <th className="text-left font-medium px-4 py-3">Implicación para el piloto</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {pilotSoftware.map((s, i) => (
+                      <tr key={i} className="border-t border-border align-top">
+                        <td className="px-4 py-3 font-medium text-foreground leading-relaxed">{s.component}</td>
+                        <td className="px-4 py-3 text-muted-foreground leading-relaxed">{s.purpose}</td>
+                        <td className="px-4 py-3 text-muted-foreground leading-relaxed">{s.responsable}</td>
+                        <td className="px-4 py-3 text-muted-foreground leading-relaxed">{s.faseImplication}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </Card>
+          </div>
         </div>
 
-        <div id="infra-comisionamiento" className="scroll-mt-24">
-          <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-            Plan de comisionamiento y pruebas de aceptación
+        <div id="infra-clausulas" className="scroll-mt-24">
+          <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+            9.1 Cláusulas contractuales clave (Paquete Maestro §6)
           </h3>
-          <Card className="border-border overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-muted/40 text-muted-foreground">
-                  <tr>
-                    <th className="text-left font-medium px-4 py-3 w-12">ID</th>
-                    <th className="text-left font-medium px-4 py-3">Área</th>
-                    <th className="text-left font-medium px-4 py-3">Prueba</th>
-                    <th className="text-left font-medium px-4 py-3">Criterio de aceptación</th>
-                    <th className="text-left font-medium px-4 py-3 w-40">Estado</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {INFRA_COMMISSIONING.map((c) => (
-                    <tr key={c.id} className="border-t border-border align-top">
-                      <td className="px-4 py-3 font-mono text-foreground">{c.id}</td>
-                      <td className="px-4 py-3 text-muted-foreground whitespace-nowrap">{c.area}</td>
-                      <td className="px-4 py-3 font-medium text-foreground leading-relaxed">{c.test}</td>
-                      <td className="px-4 py-3 text-muted-foreground leading-relaxed">{c.criteria}</td>
-                      <td className="px-4 py-3"><StatusBadge status={c.status} /></td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </Card>
-        </div>
-
-        <div id="infra-respaldo" className="scroll-mt-24">
-          <h3 className="text-sm font-semibold uppercase tracking-wider text-muted-foreground mb-3">
-            Plan de respaldo, recuperación y políticas de seguridad
-          </h3>
-          <div className="grid gap-4 md:grid-cols-2">
-            {INFRA_BACKUP_POLICIES.map((p) => (
-              <Card key={p.title} className="border-border">
+          <p className="text-xs text-muted-foreground italic mb-3">
+            Cinco cláusulas defendibles del Paquete Maestro que enmarcan la sustitución del BOM
+            original, el alcance de la Consultora y el ownership de la infraestructura
+            institucional. Texto disponible aquí para citarse sin abrir el documento fuente.
+          </p>
+          <div className="grid gap-3">
+            {INFRA_DEFENSIBLE_CLAUSES.map((c) => (
+              <Card key={c.id} className="border-border border-l-2 border-l-primary/60">
                 <CardHeader className="pb-2">
-                  <div className="flex items-start justify-between gap-3">
-                    <CardTitle className="text-base">{p.title}</CardTitle>
-                    <StatusBadge status={p.status} />
+                  <div className="flex items-baseline gap-3">
+                    <span className="text-xs font-mono font-semibold text-primary whitespace-nowrap">§{c.id}</span>
+                    <CardTitle className="text-base leading-snug">{c.title}</CardTitle>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  <p className="text-sm text-muted-foreground leading-relaxed">{p.body}</p>
+                  <p className="text-sm text-muted-foreground leading-relaxed">{c.body}</p>
                 </CardContent>
               </Card>
             ))}

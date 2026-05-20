@@ -58,7 +58,7 @@ Documento técnico navegable de 11 capítulos.
 - **Cap. 6 — Decisiones abiertas y dependencias CEL**: tabla `OPEN_DECISIONS` (OD-01..20) con filtro por área. Link a /portal/decisiones para cada decisión formal.
 - **Cap. 7 — Operación diaria**: incluye sub‑sección de responsabilidades diarias CEL.
 - **Cap. 8 — Visualización**: integración + capacitación/ejercicios.
-- **Cap. 9 — Infraestructura local / BOM**: callout aclarando que el BOM definitivo se confirma con CEL (follow-up #50).
+- **Cap. 9 — BOM final aprobado por CEL**: BOM completo del Paquete Maestro §8.2 (Anexo Complementario No. 1) — Dell PowerEdge R770×2 (IA y virtualización), R570 NAS, switch S5224F-ON, GPU H100 NVL 94 GB, estaciones Pro Max, ProSupport Plus, NVIDIA AI Enterprise y TechCircle 30h. Incluye la tabla de software/runtime separando la base provista por la plataforma (Ubuntu 24.04, Docker, Windows Server 2025, SmartFabric OS10, iDRAC, NVIDIA AI Enterprise, Dell AI Ops) del stack funcional del piloto (Mage, Python/PyTorch/NeuralHydrology, PostgreSQL+PostGIS, MongoDB, Node/React) y las 5 cláusulas defendibles §6.1–§6.5 del Paquete (alineación técnica, no ampliación de alcance, inicio efectivo de Fase 0, Mage/observabilidad y ownership de infraestructura).
 - **Cap. 10 — Lempa**: contexto hidrológico del río Lempa con estilo renovado.
 - **Cap. 11 — RACI y equipo**: 2 bloques (A. Quién, B. Cómo) con matriz RACI consolidada + drilldown por fase.
 
