@@ -14,6 +14,7 @@ import decisionsRouter from "./decisions";
 import adminDecisionsRouter from "./adminDecisions";
 import calendarRouter from "./calendar";
 import adminRouter from "./admin";
+import adminAllowedDomainsRouter from "./adminAllowedDomains";
 
 const router: IRouter = Router();
 
@@ -32,5 +33,6 @@ router.use(decisionsRouter);
 router.use(adminDecisionsRouter);
 router.use(calendarRouter);
 router.use(adminRouter);
+router.use(adminAllowedDomainsRouter);
 
 export default router;

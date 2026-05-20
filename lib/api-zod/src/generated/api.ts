@@ -1280,6 +1280,49 @@ export const UpdateRoleResponse = zod.object({
 
 
 /**
+ * @summary List allowed sign-up email domains (admin only)
+ */
+export const ListAllowedDomainsResponseItem = zod.object({
+  "domain": zod.string(),
+  "addedBy": zod.string().nullish(),
+  "note": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+})
+export const ListAllowedDomainsResponse = zod.array(ListAllowedDomainsResponseItem)
+
+
+/**
+ * @summary Add an allowed sign-up email domain (admin only)
+ */
+export const addAllowedDomainBodyDomainMin = 3;
+export const addAllowedDomainBodyDomainMax = 253;
+
+export const addAllowedDomainBodyNoteMax = 500;
+
+
+
+export const AddAllowedDomainBody = zod.object({
+  "domain": zod.string().min(addAllowedDomainBodyDomainMin).max(addAllowedDomainBodyDomainMax),
+  "note": zod.string().max(addAllowedDomainBodyNoteMax).optional()
+})
+
+export const AddAllowedDomainResponse = zod.object({
+  "domain": zod.string(),
+  "addedBy": zod.string().nullish(),
+  "note": zod.string().nullish(),
+  "createdAt": zod.coerce.date()
+})
+
+
+/**
+ * @summary Remove an allowed sign-up email domain (admin only)
+ */
+export const RemoveAllowedDomainParams = zod.object({
+  "domain": zod.coerce.string()
+})
+
+
+/**
  * @summary Request a presigned URL to upload a file to object storage
  */
 export const RequestUploadUrlBody = zod.object({

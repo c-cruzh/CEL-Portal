@@ -13,7 +13,9 @@ export type AdminAuditAction =
   | "notification_recipient.add"
   | "notification_recipient.remove"
   | "notification.test"
-  | "batch.upload";
+  | "batch.upload"
+  | "allowed_domain.add"
+  | "allowed_domain.remove";
 
 export interface LogAdminActionInput {
   actorId: string | null;

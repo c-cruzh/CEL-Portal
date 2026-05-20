@@ -4,6 +4,11 @@ import { eq } from "drizzle-orm";
 import { db, usersTable, userRolesTable, invitationsTable } from "@workspace/db";
 import { notifyAsync } from "../lib/notifications";
 import { logAdminActionAsync } from "../lib/audit";
+import {
+  getAllowedDomains,
+  isEmailAllowed,
+  domainRejectionMessage,
+} from "../lib/allowedDomains";
 
 declare global {
   // eslint-disable-next-line @typescript-eslint/no-namespace
@@ -14,8 +19,6 @@ declare global {
     }
   }
 }
-
-const DEFAULT_ALLOWED_DOMAINS = ["cel.gob.sv", "c2labs.ai"];
 
 const AUTO_PM_EMAILS = new Set<string>([
   "camila@c2labs.ai",
@@ -48,31 +51,6 @@ async function touchLastActivity(userId: string): Promise<void> {
   }
 }
 
-function getAllowedDomains(): string[] {
-  const raw = process.env.ALLOWED_EMAIL_DOMAINS;
-  if (!raw || raw.trim() === "") return DEFAULT_ALLOWED_DOMAINS;
-  if (raw.trim() === "*") return [];
-  return raw
-    .split(",")
-    .map((d) => d.trim().toLowerCase().replace(/^@/, ""))
-    .filter((d) => d.length > 0);
-}
-
-function isEmailAllowed(email: string, allowedDomains: string[]): boolean {
-  if (allowedDomains.length === 0) return true;
-  const domain = email.split("@")[1]?.toLowerCase();
-  if (!domain) return false;
-  return allowedDomains.includes(domain);
-}
-
-function domainRejectionMessage(allowedDomains: string[]): string {
-  if (allowedDomains.length === 0) {
-    return "El registro está restringido. Contacta al administrador.";
-  }
-  const list = allowedDomains.map((d) => `@${d}`).join(", ");
-  return `Solo se permiten cuentas con correo institucional (${list}). Solicita acceso al administrador del portal.`;
-}
-
 export async function requireAuth(
   req: Request,
   res: Response,
@@ -88,7 +66,7 @@ export async function requireAuth(
     return;
   }
 
-  const allowedDomains = getAllowedDomains();
+  const allowedDomains = await getAllowedDomains();
 
   try {
     const [existing] = await db

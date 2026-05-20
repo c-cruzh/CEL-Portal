@@ -22,6 +22,8 @@ import type {
 import type {
   AdminAuditLogEntry,
   AdminRole,
+  AllowedDomain,
+  AllowedDomainInput,
   BatchImportDecisionsBodyTwo,
   BatchImportDecisionsInput,
   BatchImportDecisionsResult,
@@ -4294,6 +4296,224 @@ export const useUpdateRole = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getUpdateRoleMutationOptions(options));
+    }
+
+export const getListAllowedDomainsUrl = () => {
+
+
+
+
+  return `/api/admin/allowed-domains`
+}
+
+/**
+ * @summary List allowed sign-up email domains (admin only)
+ */
+export const listAllowedDomains = async ( options?: RequestInit): Promise<AllowedDomain[]> => {
+
+  return customFetch<AllowedDomain[]>(getListAllowedDomainsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListAllowedDomainsQueryKey = () => {
+    return [
+    `/api/admin/allowed-domains`
+    ] as const;
+    }
+
+
+export const getListAllowedDomainsQueryOptions = <TData = Awaited<ReturnType<typeof listAllowedDomains>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAllowedDomains>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListAllowedDomainsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listAllowedDomains>>> = ({ signal }) => listAllowedDomains({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listAllowedDomains>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListAllowedDomainsQueryResult = NonNullable<Awaited<ReturnType<typeof listAllowedDomains>>>
+export type ListAllowedDomainsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary List allowed sign-up email domains (admin only)
+ */
+
+export function useListAllowedDomains<TData = Awaited<ReturnType<typeof listAllowedDomains>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listAllowedDomains>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListAllowedDomainsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getAddAllowedDomainUrl = () => {
+
+
+
+
+  return `/api/admin/allowed-domains`
+}
+
+/**
+ * @summary Add an allowed sign-up email domain (admin only)
+ */
+export const addAllowedDomain = async (allowedDomainInput: AllowedDomainInput, options?: RequestInit): Promise<AllowedDomain> => {
+
+  return customFetch<AllowedDomain>(getAddAllowedDomainUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      allowedDomainInput,)
+  }
+);}
+
+
+
+
+export const getAddAllowedDomainMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addAllowedDomain>>, TError,{data: BodyType<AllowedDomainInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof addAllowedDomain>>, TError,{data: BodyType<AllowedDomainInput>}, TContext> => {
+
+const mutationKey = ['addAllowedDomain'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof addAllowedDomain>>, {data: BodyType<AllowedDomainInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  addAllowedDomain(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type AddAllowedDomainMutationResult = NonNullable<Awaited<ReturnType<typeof addAllowedDomain>>>
+    export type AddAllowedDomainMutationBody = BodyType<AllowedDomainInput>
+    export type AddAllowedDomainMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Add an allowed sign-up email domain (admin only)
+ */
+export const useAddAllowedDomain = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof addAllowedDomain>>, TError,{data: BodyType<AllowedDomainInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof addAllowedDomain>>,
+        TError,
+        {data: BodyType<AllowedDomainInput>},
+        TContext
+      > => {
+      return useMutation(getAddAllowedDomainMutationOptions(options));
+    }
+
+export const getRemoveAllowedDomainUrl = (domain: string,) => {
+
+
+
+
+  return `/api/admin/allowed-domains/${domain}`
+}
+
+/**
+ * @summary Remove an allowed sign-up email domain (admin only)
+ */
+export const removeAllowedDomain = async (domain: string, options?: RequestInit): Promise<void> => {
+
+  return customFetch<void>(getRemoveAllowedDomainUrl(domain),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+export const getRemoveAllowedDomainMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeAllowedDomain>>, TError,{domain: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof removeAllowedDomain>>, TError,{domain: string}, TContext> => {
+
+const mutationKey = ['removeAllowedDomain'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof removeAllowedDomain>>, {domain: string}> = (props) => {
+          const {domain} = props ?? {};
+
+          return  removeAllowedDomain(domain,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RemoveAllowedDomainMutationResult = NonNullable<Awaited<ReturnType<typeof removeAllowedDomain>>>
+
+    export type RemoveAllowedDomainMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Remove an allowed sign-up email domain (admin only)
+ */
+export const useRemoveAllowedDomain = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof removeAllowedDomain>>, TError,{domain: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof removeAllowedDomain>>,
+        TError,
+        {domain: string},
+        TContext
+      > => {
+      return useMutation(getRemoveAllowedDomainMutationOptions(options));
     }
 
 export const getRequestUploadUrlUrl = () => {

@@ -832,6 +832,25 @@ export interface RoleUpdateInput {
   sortOrder?: number;
 }
 
+export interface AllowedDomain {
+  domain: string;
+  /** @nullable */
+  addedBy?: string | null;
+  /** @nullable */
+  note?: string | null;
+  createdAt: string;
+}
+
+export interface AllowedDomainInput {
+  /**
+     * @minLength 3
+     * @maxLength 253
+     */
+  domain: string;
+  /** @maxLength 500 */
+  note?: string;
+}
+
 export interface UploadRequest {
   name: string;
   size: number;

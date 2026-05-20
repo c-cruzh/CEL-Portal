@@ -11,6 +11,10 @@ import {
   useListAdminAuditLog,
   useListAdminRoles,
   useUpdateRole,
+  useListAllowedDomains,
+  useAddAllowedDomain,
+  useRemoveAllowedDomain,
+  getListAllowedDomainsQueryKey,
   useListNotificationRecipients,
   useAddNotificationRecipient,
   useDeleteNotificationRecipient,
@@ -29,6 +33,7 @@ import {
   type Invitation,
   type AdminAuditLogEntry,
   type AdminRole,
+  type AllowedDomain,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ROLES } from "@/lib/projectContent";
@@ -141,6 +146,7 @@ export default function Configuracion() {
           <TabsTrigger value="invitaciones">Invitaciones</TabsTrigger>
           <TabsTrigger value="roles">Roles</TabsTrigger>
           <TabsTrigger value="notificaciones">Notificaciones</TabsTrigger>
+          <TabsTrigger value="dominios">Dominios</TabsTrigger>
           <TabsTrigger value="auditoria">Auditoría</TabsTrigger>
           <TabsTrigger value="documentacion">Documentación</TabsTrigger>
         </TabsList>
@@ -157,6 +163,9 @@ export default function Configuracion() {
         <TabsContent value="notificaciones" className="space-y-6">
           <NotificationRecipientsSection />
           <NotificationLogSection />
+        </TabsContent>
+        <TabsContent value="dominios" className="space-y-6">
+          <AllowedDomainsSection />
         </TabsContent>
         <TabsContent value="auditoria" className="space-y-6">
           <AuditLogSection />
@@ -1265,6 +1274,8 @@ const ACTION_LABELS: Record<string, string> = {
   "notification_recipient.add": "Destinatario agregado",
   "notification_recipient.remove": "Destinatario eliminado",
   "notification.test": "Correo de prueba",
+  "allowed_domain.add": "Dominio permitido agregado",
+  "allowed_domain.remove": "Dominio permitido eliminado",
 };
 
 function AuditLogSection() {
@@ -1387,5 +1398,162 @@ function AuditEntryRow({ entry }: { entry: AdminAuditLogEntry }) {
         </pre>
       )}
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Dominios institucionales permitidos
+// ---------------------------------------------------------------------------
+
+function AllowedDomainsSection() {
+  const { data, isLoading } = useListAllowedDomains();
+  const addMutation = useAddAllowedDomain();
+  const removeMutation = useRemoveAllowedDomain();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const [domain, setDomain] = useState("");
+  const [note, setNote] = useState("");
+
+  const invalidate = () =>
+    Promise.all([
+      queryClient.invalidateQueries({
+        queryKey: getListAllowedDomainsQueryKey(),
+      }),
+      queryClient.invalidateQueries({
+        queryKey: getListAdminAuditLogQueryKey(),
+      }),
+    ]);
+
+  const handleAdd = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = domain.trim().toLowerCase().replace(/^@/, "");
+    if (!trimmed) return;
+    try {
+      await addMutation.mutateAsync({
+        data: { domain: trimmed, ...(note.trim() ? { note: note.trim() } : {}) },
+      });
+      setDomain("");
+      setNote("");
+      await invalidate();
+      toast({
+        title: "Dominio agregado",
+        description: `Ahora se permiten registros con @${trimmed}.`,
+      });
+    } catch (err) {
+      toast({
+        title: "No se pudo agregar el dominio",
+        description: describeError(err),
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleRemove = async (d: AllowedDomain) => {
+    if (
+      !window.confirm(
+        `¿Quitar @${d.domain} de la lista de dominios permitidos? Los usuarios existentes con ese dominio quedarán bloqueados.`,
+      )
+    ) {
+      return;
+    }
+    try {
+      await removeMutation.mutateAsync({ domain: d.domain });
+      await invalidate();
+      toast({
+        title: "Dominio eliminado",
+        description: `@${d.domain} ya no podrá registrarse.`,
+      });
+    } catch (err) {
+      toast({
+        title: "No se pudo eliminar el dominio",
+        description: describeError(err),
+        variant: "destructive",
+      });
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Dominios institucionales permitidos</CardTitle>
+        <CardDescription>
+          Lista de dominios de correo aceptados al registrarse en el portal.
+          Cualquier persona con un correo de estos dominios puede crear su
+          cuenta. El resto verá un mensaje de acceso restringido.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <form
+          onSubmit={handleAdd}
+          className="grid grid-cols-1 sm:grid-cols-[1fr_1fr_auto] gap-3 sm:items-end"
+        >
+          <div className="space-y-2">
+            <Label htmlFor="allowed-domain">Dominio</Label>
+            <Input
+              id="allowed-domain"
+              type="text"
+              placeholder="ejemplo.com"
+              value={domain}
+              onChange={(e) => setDomain(e.target.value)}
+              autoComplete="off"
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="allowed-domain-note">Nota (opcional)</Label>
+            <Input
+              id="allowed-domain-note"
+              type="text"
+              placeholder="Ej: Contratista externo"
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              autoComplete="off"
+            />
+          </div>
+          <Button type="submit" disabled={addMutation.isPending}>
+            {addMutation.isPending ? "Agregando..." : "Agregar"}
+          </Button>
+        </form>
+
+        <div className="border rounded-lg divide-y">
+          {isLoading && (
+            <div className="p-4 space-y-2">
+              <Skeleton className="h-5 w-3/4" />
+              <Skeleton className="h-5 w-2/3" />
+            </div>
+          )}
+          {!isLoading && (!data || data.length === 0) && (
+            <div className="p-6 text-center text-sm text-muted-foreground">
+              No hay dominios permitidos configurados. Agrega al menos uno
+              para que el registro funcione.
+            </div>
+          )}
+          {!isLoading &&
+            data?.map((d) => (
+              <div
+                key={d.domain}
+                className="p-4 flex items-center justify-between gap-3"
+              >
+                <div className="min-w-0">
+                  <p className="font-medium text-sm truncate">@{d.domain}</p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {d.note ? `${d.note} · ` : ""}
+                    Agregado{d.addedBy ? ` por ${d.addedBy}` : ""} el{" "}
+                    {formatDateTime(d.createdAt)}
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleRemove(d)}
+                  disabled={removeMutation.isPending}
+                >
+                  Quitar
+                </Button>
+              </div>
+            ))}
+        </div>
+      </CardContent>
+    </Card>
   );
 }

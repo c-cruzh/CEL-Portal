@@ -8,6 +8,7 @@ import {
   documentFoldersTable,
   usersTable,
   userRolesTable,
+  allowedEmailDomainsTable,
 } from "./index";
 import { sql } from "drizzle-orm";
 import { PHASES_FOR_SEED } from "@workspace/project-domain";
@@ -264,6 +265,19 @@ async function main(): Promise<void> {
   }
 
   await bootstrapAdminRoles();
+
+  // Ensure historical default allowed sign-up domains are present. Admins can
+  // add/remove additional domains from the portal after seeding.
+  const DEFAULT_ALLOWED_DOMAINS: Array<{ domain: string; note: string }> = [
+    { domain: "cel.gob.sv", note: "Dominio institucional CEL (default)" },
+    { domain: "c2labs.ai", note: "Dominio institucional C2Labs (default)" },
+  ];
+  for (const d of DEFAULT_ALLOWED_DOMAINS) {
+    await db
+      .insert(allowedEmailDomainsTable)
+      .values({ domain: d.domain, addedBy: "system", note: d.note })
+      .onConflictDoNothing();
+  }
 
   const count = await db.execute(sql`SELECT COUNT(*)::int AS n FROM roles`);
   // eslint-disable-next-line no-console

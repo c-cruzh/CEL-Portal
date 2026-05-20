@@ -1264,6 +1264,76 @@ paths:
               schema:
                 $ref: "#/components/schemas/AdminRole"
 
+  /admin/allowed-domains:
+    get:
+      operationId: listAllowedDomains
+      tags: [admin]
+      summary: List allowed sign-up email domains (admin only)
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/AllowedDomain"
+    post:
+      operationId: addAllowedDomain
+      tags: [admin]
+      summary: Add an allowed sign-up email domain (admin only)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AllowedDomainInput"
+      responses:
+        "200":
+          description: Already existed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AllowedDomain"
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AllowedDomain"
+        "400":
+          description: Invalid domain
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/allowed-domains/{domain}:
+    delete:
+      operationId: removeAllowedDomain
+      tags: [admin]
+      summary: Remove an allowed sign-up email domain (admin only)
+      parameters:
+        - name: domain
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "204":
+          description: No content
+        "400":
+          description: Cannot remove the last allowed domain
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Domain still in use by existing members
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
   /storage/uploads/request-url:
     post:
       operationId: requestUploadUrl
@@ -2322,6 +2392,32 @@ components:
           maxLength: 2000
         sortOrder:
           type: integer
+
+    AllowedDomain:
+      type: object
+      required: [domain, createdAt]
+      properties:
+        domain:
+          type: string
+        addedBy:
+          type: ["string", "null"]
+        note:
+          type: ["string", "null"]
+        createdAt:
+          type: string
+          format: date-time
+
+    AllowedDomainInput:
+      type: object
+      required: [domain]
+      properties:
+        domain:
+          type: string
+          minLength: 3
+          maxLength: 253
+        note:
+          type: string
+          maxLength: 500
 
     UploadRequest:
       type: object

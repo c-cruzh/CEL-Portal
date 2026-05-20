@@ -11,3 +11,4 @@ export * from "./documents";
 export * from "./decisions";
 export * from "./invitations";
 export * from "./adminAuditLog";
+export * from "./allowedDomains";
