@@ -1,0 +1,58 @@
+%%{init: {"theme": "base", "themeVariables": {"fontFamily": "Inter, Arial", "lineColor": "#9CA3AF"}}}%%
+flowchart TB
+
+subgraph C2Group["C2 Labs Project Leadership"]
+direction TB
+Camila["Lider de Proyecto - Camila Cruz / CEO & Founder / camila@c2labs.ai. Orquesta, gobierna y delega. Owner de la relacion completa."]
+Kevin["Project Manager - Kevin Centeno / Operaciones / kevin@c2labs.ai. Coordina ejecucion, seguimiento y operacion PM del piloto."]
+Camila <-->|direccion, PM execution y coordinacion interna| Kevin
+end
+
+subgraph CELCore["CEL Core Pilot Team"]
+direction TB
+Mauricio["PM / Lider de Proyecto CEL + Administracion del Contrato - Ing. Jose Mauricio Herrera Mercado / Gerencia de Produccion / jmherreram@cel.gob.sv"]
+Victor["Lider Tecnico en Hidrologia - Ing. Victor Alabi / Gerencia de Produccion / vialabi@cel.gob.sv"]
+Fernando["Especialista SIG / Teledeteccion - Ing. Fernando Garay / Catastro GIS / fgaray@cel.gob.sv"]
+William["Ingeniero de Datos y Backend - Ing. William Juarez / Gerencia Comercial / wjuarez@cel.gob.sv"]
+JoseDevOps["Administrador de Sistemas / Ingeniero DevOps - Ing. Jose Manuel Guardado / Unidad de Informatica / jmguardado@cel.gob.sv. Enlace Core Pilot Team / Comite de Informatica."]
+end
+
+Camila <-->|owner relacion global| Mauricio
+Kevin <-->|cadencia PM / seguimiento| Mauricio
+Mauricio <-->|trabajan de la mano| Victor
+Mauricio -->|coordina operatividad| William
+Mauricio -->|coordina operatividad| Fernando
+Mauricio -->|coordina infra / deployment| JoseDevOps
+Victor <-->|requerimientos hidrologicos| William
+Victor <-->|validacion SIG| Fernando
+JoseDevOps <-->|infraestructura y despliegue| William
+
+Victor --> HydroLiaison["Victor lidera la relacion tecnica directa con las cinco centrales"]
+subgraph PlantsGroup["Centrales Hidroelectricas"]
+direction LR
+P15["15 de Septiembre"]
+P5N["5 de Noviembre"]
+PCG["Cerron Grande"]
+P3F["3 de Febrero"]
+PGU["Guajoyo"]
+end
+HydroLiaison --> P15 & P5N & PCG & P3F & PGU
+
+subgraph ITCommittee["Comite de Informatica"]
+direction TB
+Lorena["Jefa de Unidad de Informatica - Lic. Lorena Pineda / alpineda@cel.gob.sv. Autoridad final: aprueba/autoriza, permanece informada. Owner de infraestructura."]
+Nelson["Jefe de Administracion de Redes e Informatica - Nelson Flores / nfloresc@cel.gob.sv. Aprueba, autoriza, delega y maneja recursos."]
+Adrian["Administrador de Sistemas y Redes - Adrian Miranda. Ejecuta y entrega recursos para DevOps."]
+Carlos["Administrador de Base de Datos - Carlos Sanchez. Ejecuta y entrega recursos para DevOps."]
+Miladis["Especialista de Ciberseguridad - Miladis. Ejecuta y entrega recursos para DevOps."]
+end
+
+JoseDevOps <-->|liaison operativo Comite| Lorena
+JoseDevOps <-->|coordina y escala| Nelson
+Lorena -->|lidera comite / autoridad final| Nelson
+Nelson -->|delega / maneja recursos| Adrian
+Nelson -->|delega / maneja recursos| Carlos
+Nelson -->|delega / maneja recursos| Miladis
+Adrian -->|entrega recursos a DevOps| JoseDevOps
+Carlos -->|entrega recursos a DevOps| JoseDevOps
+Miladis -->|entrega recursos a DevOps| JoseDevOps

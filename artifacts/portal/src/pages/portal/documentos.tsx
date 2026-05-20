@@ -102,6 +102,13 @@ export default function Documentos() {
 
       </div>
 
+      <div className="rounded-lg border border-primary/30 bg-primary/5 px-4 py-3 text-sm text-foreground">
+        <span className="font-medium">Paquete Maestro</span> — fuente canónica
+        del traspaso del piloto (versión 1, mayo 2026). Las carpetas con prefijo
+        <span className="font-mono mx-1">Paquete Maestro v1 / NN — …</span>
+        contienen los 7 documentos clave, los diagramas y el ZIP completo.
+      </div>
+
       <div className="grid grid-cols-1 lg:grid-cols-[260px_1fr] gap-6">
         <aside className="space-y-4">
           <Card>

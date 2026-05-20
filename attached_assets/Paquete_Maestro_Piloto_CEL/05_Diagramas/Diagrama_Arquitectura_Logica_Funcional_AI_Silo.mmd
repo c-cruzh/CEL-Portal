@@ -1,0 +1,181 @@
+flowchart TB
+    %% ============================================================
+    %% AI SILO — LOGICAL ARCHITECTURE
+    %% Logical / functional view, not physical infrastructure view.
+    %% ============================================================
+
+    %% -------------------------------
+    %% 1. External and Internal Inputs
+    %% -------------------------------
+    subgraph INPUTS["1. Data Sources / Inputs"]
+        METEO["Meteorological Inputs<br/>ECMWF / ERA5<br/>GPM / IMERG<br/>CHIRPS<br/>temperature, rainfall, forecast variables"]
+        HYDRO["Hydrological Inputs<br/>CEL gauges / aforos<br/>reservoir levels<br/>plant records<br/>historical inflows / outflows"]
+        GEO["Geospatial Inputs<br/>DEM / MDE<br/>HydroATLAS / HydroSHEDS<br/>soil, land cover, basin attributes<br/>Sentinel-1 flood extents"]
+        OPSDATA["Operational Inputs<br/>CEL Excel workbooks / macros<br/>operator thresholds<br/>plant-specific operating logic<br/>critical points of interest"]
+    end
+
+    %% -------------------------------
+    %% 2. Access / Security Boundary
+    %% -------------------------------
+    subgraph ACCESS["2. Access, Security & Data Boundary"]
+        READONLY["Read-only connectors / replicas<br/>No direct modification of CEL production systems"]
+        VPN["Secure access layer<br/>VPN / bastion / firewall rules<br/>CEL-approved credentials"]
+        POLICY["Data governance rules<br/>source registry<br/>access controls<br/>data ownership / audit trail"]
+    end
+
+    %% -------------------------------
+    %% 3. AI Silo Logical Core
+    %% -------------------------------
+    subgraph SILO["AI Silo Logical Core"]
+        
+        %% Orchestration Layer
+        subgraph ORCH["3. Orchestration Layer"]
+            MAGE["Mage<br/>central orchestration layer<br/>schedules, DAGs, retries, logs,<br/>pipeline state, operational monitoring"]
+            GIT["Git Repository<br/>pipeline code<br/>model code<br/>configs<br/>documentation"]
+        end
+
+        %% Data Engineering Layer
+        subgraph DATAENG["4. Data Engineering / ETL Layer"]
+            INGEST["Ingestion Pipelines<br/>API pulls<br/>file ingestion<br/>database connectors<br/>satellite/geospatial downloads"]
+            STAGING["Raw / Staging Zone<br/>raw files<br/>unvalidated tables<br/>source-level snapshots"]
+            QAQC["QA/QC + Validation<br/>schema checks<br/>missing data checks<br/>range checks<br/>temporal alignment<br/>unit normalization"]
+            FEATURES["Feature Engineering<br/>basin aggregation<br/>rainfall over sub-basins<br/>time-series windows<br/>static catchment attributes<br/>model-ready tensors"]
+        end
+
+        %% Storage Layer
+        subgraph STORAGE["5. Logical Data Storage Layer"]
+            PG["PostgreSQL + PostGIS<br/>historical datasets<br/>geospatial layers<br/>sub-basins<br/>flood maps<br/>model outputs archive"]
+            MONGO["MongoDB<br/>operational / near-real-time data<br/>latest forecasts<br/>dashboard state<br/>alert state"]
+            ARTIFACTS["Model & Data Artifacts<br/>trained weights<br/>checkpoints<br/>validation outputs<br/>benchmark reports<br/>run metadata"]
+        end
+
+        %% Modeling Layer
+        subgraph MODELING["6. Modeling & Analytics Layer"]
+            TRAIN["Training Workflow<br/>NeuralHydrology / PyTorch<br/>LSTM training<br/>hyperparameter search<br/>rolling-origin validation"]
+            INFER["Inference Workflow<br/>daily forecast execution<br/>7-day hydrological forecast<br/>virtual gauges / control points"]
+            FLOOD["Flood / Impact Modeling<br/>threshold model<br/>inundation layers<br/>flood extent estimation<br/>risk zones"]
+            METRICS["Model Evaluation<br/>NSE, RMSE, MAE<br/>skill vs persistence<br/>POD / FAR<br/>spatial validation"]
+        end
+
+        %% Decision Layer
+        subgraph DECISION["7. Decision Products Layer"]
+            FORECASTS["Forecast Products<br/>hydrographs<br/>inflow forecasts<br/>risk levels<br/>lead-time windows"]
+            MAPS["Spatial Products<br/>dynamic flood layers<br/>critical zones<br/>affected areas<br/>basin/sub-basin views"]
+            ALERTLOGIC["Alert Logic<br/>threshold crossing<br/>severity levels<br/>anti-spam / deduplication<br/>event audit trail"]
+        end
+
+        %% Interface Layer
+        subgraph INTERFACE["8. Interface & Delivery Layer"]
+            API["Backend / API Layer<br/>serves forecasts<br/>serves map layers<br/>serves alert state<br/>exports data to dashboard"]
+            DASH["Web Dashboard<br/>React / Leaflet or Mapbox<br/>maps, charts, filters, toggles<br/>single operational view"]
+            ALERTS["Notifications<br/>email via CEL SMTP<br/>SMS gateway if enabled<br/>distribution lists<br/>alert history"]
+            DOCS["Operational Documentation<br/>POE / SOP<br/>technical docs<br/>handoff materials<br/>training guides"]
+        end
+    end
+
+    %% -------------------------------
+    %% 4. Users and Operational Consumers
+    %% -------------------------------
+    subgraph USERS["9. Users / Operational Consumers"]
+        HYDROTEAM["CEL Hydrology Team<br/>validates patterns, thresholds,<br/>forecast reasonableness"]
+        PLANTS["Plant Operators<br/>Cerrón Grande<br/>5 de Noviembre / G9<br/>Guajoyo<br/>15 de Septiembre"]
+        SIG["SIG / Teledetection Team<br/>validates geospatial layers<br/>DEM, flood extents, Sentinel-1"]
+        MANAGEMENT["CEL Leadership / Decision Makers<br/>situational awareness<br/>risk and operations visibility"]
+    end
+
+    %% -------------------------------
+    %% 5. Flow Connections
+    %% -------------------------------
+
+    %% Inputs into access layer
+    METEO --> VPN
+    HYDRO --> READONLY
+    GEO --> VPN
+    OPSDATA --> READONLY
+
+    READONLY --> POLICY
+    VPN --> POLICY
+    POLICY --> MAGE
+
+    %% Orchestration controls ETL
+    GIT --> MAGE
+    MAGE --> INGEST
+    INGEST --> STAGING
+    STAGING --> QAQC
+    QAQC --> FEATURES
+
+    %% ETL to storage
+    STAGING --> PG
+    QAQC --> PG
+    QAQC --> MONGO
+    FEATURES --> PG
+    FEATURES --> ARTIFACTS
+
+    %% Storage to modeling
+    PG --> TRAIN
+    PG --> INFER
+    MONGO --> INFER
+    ARTIFACTS --> TRAIN
+    TRAIN --> ARTIFACTS
+    TRAIN --> METRICS
+
+    %% Forecast and flood modeling
+    INFER --> FORECASTS
+    INFER --> FLOOD
+    FLOOD --> MAPS
+    FLOOD --> ALERTLOGIC
+    METRICS --> ARTIFACTS
+
+    %% Store outputs
+    FORECASTS --> MONGO
+    FORECASTS --> PG
+    MAPS --> PG
+    ALERTLOGIC --> MONGO
+
+    %% Delivery layer
+    PG --> API
+    MONGO --> API
+    API --> DASH
+    ALERTLOGIC --> ALERTS
+    API --> DOCS
+
+    %% Users consume and validate
+    DASH --> HYDROTEAM
+    DASH --> PLANTS
+    DASH --> SIG
+    DASH --> MANAGEMENT
+    ALERTS --> HYDROTEAM
+    ALERTS --> PLANTS
+    DOCS --> HYDROTEAM
+    DOCS --> PLANTS
+    DOCS --> SIG
+
+    %% Feedback loops
+    HYDROTEAM -. validation feedback .-> METRICS
+    HYDROTEAM -. threshold calibration .-> ALERTLOGIC
+    PLANTS -. operational feedback .-> OPSDATA
+    SIG -. geospatial validation .-> MAPS
+    MANAGEMENT -. decision requirements .-> DASH
+
+    %% -------------------------------
+    %% Styling
+    %% -------------------------------
+    classDef input fill:#FFF8E6,stroke:#B38B00,stroke-width:1px,color:#111;
+    classDef boundary fill:#FCEEEE,stroke:#B85C5C,stroke-width:1px,color:#111;
+    classDef orchestration fill:#EEF4FF,stroke:#4C6FB3,stroke-width:1px,color:#111;
+    classDef data fill:#F2FFF5,stroke:#4D9A63,stroke-width:1px,color:#111;
+    classDef storage fill:#F4F0FF,stroke:#7A5CB8,stroke-width:1px,color:#111;
+    classDef model fill:#EFFFFF,stroke:#3C9EA3,stroke-width:1px,color:#111;
+    classDef decision fill:#FFF2E8,stroke:#C97932,stroke-width:1px,color:#111;
+    classDef interface fill:#F7F7F7,stroke:#555,stroke-width:1px,color:#111;
+    classDef users fill:#EAF7FF,stroke:#4B8BBE,stroke-width:1px,color:#111;
+
+    class METEO,HYDRO,GEO,OPSDATA input;
+    class READONLY,VPN,POLICY boundary;
+    class MAGE,GIT orchestration;
+    class INGEST,STAGING,QAQC,FEATURES data;
+    class PG,MONGO,ARTIFACTS storage;
+    class TRAIN,INFER,FLOOD,METRICS model;
+    class FORECASTS,MAPS,ALERTLOGIC decision;
+    class API,DASH,ALERTS,DOCS interface;
+    class HYDROTEAM,PLANTS,SIG,MANAGEMENT users;
