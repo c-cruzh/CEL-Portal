@@ -2,11 +2,19 @@ import { useState, useRef } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Mermaid } from "@/components/Mermaid";
 import {
   ChevronDown,
   ChevronUp,
   Download,
+  Eye,
   FileText,
   FileSpreadsheet,
   Presentation,
@@ -65,6 +73,25 @@ interface SwapState {
   isPM: boolean;
 }
 
+type PreviewKind = "pdf" | "image";
+
+type PreviewTarget = {
+  src: string;
+  downloadHref: string;
+  filename: string;
+  title: string;
+  kind: PreviewKind;
+};
+
+function resolveAssetUrl(
+  assetPath: string,
+  swap: SwapState,
+): { url: string; isOverride: boolean } {
+  const override = swap.overridesByAsset.get(assetPath);
+  if (override) return { url: override.downloadUrl, isOverride: true };
+  return { url: bundledAsset(assetPath), isOverride: false };
+}
+
 function DownloadLink({
   assetPath,
   label,
@@ -78,11 +105,15 @@ function DownloadLink({
   icon: typeof Download;
   swap: SwapState;
 }) {
-  const override = swap.overridesByAsset.get(assetPath);
-  const href = override ? override.downloadUrl : bundledAsset(assetPath);
+  const { url, isOverride } = resolveAssetUrl(assetPath, swap);
   return (
     <Button asChild size="sm" variant="outline" className="gap-2">
-      <a href={href} download={filename} target={override ? "_blank" : undefined} rel={override ? "noopener noreferrer" : undefined}>
+      <a
+        href={url}
+        download={filename}
+        target={isOverride ? "_blank" : undefined}
+        rel={isOverride ? "noopener noreferrer" : undefined}
+      >
         <Icon className="h-4 w-4" />
         {label}
       </a>
@@ -244,8 +275,70 @@ function OverrideBadge({
   );
 }
 
+function PreviewButton({
+  onClick,
+  label = "Ver",
+}: {
+  onClick: () => void;
+  label?: string;
+}) {
+  return (
+    <Button size="sm" variant="secondary" className="gap-2" onClick={onClick}>
+      <Eye className="h-4 w-4" />
+      {label}
+    </Button>
+  );
+}
+
+function AssetPreviewDialog({
+  target,
+  onOpenChange,
+}: {
+  target: PreviewTarget | null;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const open = target !== null;
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-5xl w-[95vw]">
+        <DialogHeader>
+          <DialogTitle className="truncate pr-8">
+            {target?.title ?? ""}
+          </DialogTitle>
+        </DialogHeader>
+        <div className="min-h-[60vh] flex items-center justify-center bg-muted/30 rounded-md overflow-hidden">
+          {target?.kind === "pdf" ? (
+            <iframe
+              src={target.src}
+              title={target.title}
+              className="w-full h-[75vh] border-0 bg-white"
+            />
+          ) : target?.kind === "image" ? (
+            <img
+              src={target.src}
+              alt={target.title}
+              className="max-h-[75vh] max-w-full object-contain"
+            />
+          ) : null}
+        </div>
+        <DialogFooter>
+          {target && (
+            <Button asChild variant="outline">
+              <a href={target.downloadHref} download={target.filename}>
+                Descargar
+              </a>
+            </Button>
+          )}
+          <Button onClick={() => onOpenChange(false)}>Cerrar</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function PaqueteFase0() {
   const [correoOpen, setCorreoOpen] = useState(false);
+  const [preview, setPreview] = useState<PreviewTarget | null>(null);
   const { data: me } = useGetMe();
   const isPM = me?.roles?.some((r: string) => PM_ROLE_IDS.includes(r)) ?? false;
   const { data: overridesList } = useListPaqueteFase0Overrides({
@@ -258,6 +351,16 @@ export default function PaqueteFase0() {
     (overridesList ?? []).map((o) => [o.assetPath, o]),
   );
   const swap: SwapState = { overridesByAsset, isPM };
+
+  const openPreview = (
+    assetPath: string,
+    filename: string,
+    title: string,
+    kind: PreviewKind,
+  ) => {
+    const { url } = resolveAssetUrl(assetPath, swap);
+    setPreview({ src: url, downloadHref: url, filename, title, kind });
+  };
 
   return (
     <div className="space-y-8 animate-in fade-in duration-500">
@@ -421,6 +524,16 @@ export default function PaqueteFase0() {
                   </p>
                   <div className="space-y-2">
                     <div className="flex flex-wrap gap-2 items-center">
+                      <PreviewButton
+                        onClick={() =>
+                          openPreview(
+                            doc.pdf,
+                            `${filenameBase}.pdf`,
+                            doc.title,
+                            "pdf",
+                          )
+                        }
+                      />
                       <DownloadLink
                         assetPath={doc.pdf}
                         label="PDF"
@@ -473,6 +586,16 @@ export default function PaqueteFase0() {
             <p className="text-sm text-muted-foreground">{DECK.description}</p>
             <div className="space-y-2">
               <div className="flex flex-wrap gap-2 items-center">
+                <PreviewButton
+                  onClick={() =>
+                    openPreview(
+                      DECK.pdf,
+                      "06_Deck_Ejecutivo_AI_Silo_Fase0.pdf",
+                      DECK.title,
+                      "pdf",
+                    )
+                  }
+                />
                 <DownloadLink
                   assetPath={DECK.pptx}
                   label="Descargar PPTX"
@@ -514,8 +637,8 @@ export default function PaqueteFase0() {
         </div>
         <p className="text-sm text-muted-foreground max-w-3xl">
           Los seis diagramas del paquete se renderizan abajo desde el código
-          Mermaid editable. Cada uno puede descargarse en su versión PNG final
-          o como archivo <code>.mmd</code> editable.
+          Mermaid editable. Cada uno puede ampliarse en pantalla, descargarse en
+          su versión PNG final o como archivo <code>.mmd</code> editable.
         </p>
         <div className="space-y-6">
           {PAQUETE_DIAGRAMS.map((d) => {
@@ -533,6 +656,12 @@ export default function PaqueteFase0() {
                     </div>
                     <div className="flex flex-col gap-2 shrink-0">
                       <div className="flex flex-wrap gap-2 items-center justify-end">
+                        <PreviewButton
+                          label="Ampliar PNG"
+                          onClick={() =>
+                            openPreview(d.png, pngName, d.title, "image")
+                          }
+                        />
                         <DownloadLink
                           assetPath={d.png}
                           label="PNG"
@@ -573,7 +702,13 @@ export default function PaqueteFase0() {
           })}
         </div>
       </section>
+
+      <AssetPreviewDialog
+        target={preview}
+        onOpenChange={(open) => {
+          if (!open) setPreview(null);
+        }}
+      />
     </div>
   );
 }
-
