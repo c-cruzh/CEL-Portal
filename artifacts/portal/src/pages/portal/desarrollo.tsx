@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,8 @@ import {
 import { Mermaid } from "@/components/Mermaid";
 import {
   FLUJO_DIAGRAM,
+  AI_SILO_LOGICAL_DIAGRAM,
+  DC_PHYSICAL_TOPOLOGY_DIAGRAM,
   FLUJO_INTRO,
   FLUJO_STAGES,
   FLUJO_OUTRO,
@@ -101,7 +103,7 @@ const CHAPTERS: ChapterDef[] = [
   { id: "decisiones", num: "6", shortLabel: "Decisiones abiertas y dependencias CEL", title: "Decisiones abiertas y dependencias con CEL", Icon: FileText, Component: DecisionesSection, toc: [{ id: "decisiones-abiertas", label: "Decisiones abiertas" }, { id: "decisiones-confirmadas", label: "Decisiones confirmadas" }] },
   { id: "operacion", num: "7", shortLabel: "Operación diaria", title: "Operación diaria", Icon: Play, Component: OperacionSection, toc: [{ id: "operacion-scheduling", label: "Programación" }, { id: "operacion-flujo", label: "Flujo diario" }, { id: "operacion-monitoreo", label: "Monitoreo y errores" }, { id: "operacion-cel", label: "Responsabilidades CEL" }] },
   { id: "visualizacion", num: "8", shortLabel: "Visualización y alertas", title: "Visualización y alertas", Icon: Activity, Component: VisualizacionSection, toc: [{ id: "visualizacion-features", label: "Funcionalidades" }, { id: "visualizacion-alertas", label: "Sistema de alertas" }, { id: "visualizacion-integracion", label: "Integración con el portal" }, { id: "visualizacion-capacitacion", label: "Capacitación y ejercicios" }] },
-  { id: "infraestructura", num: "9", shortLabel: "BOM final aprobado por CEL", title: "BOM final aprobado por CEL — Silo de IA", Icon: Server, Component: InfraSection, toc: [{ id: "infra-disclaimer", label: "Estado del BOM" }, { id: "infra-arquitectura", label: "Arquitectura" }, { id: "infra-hardware", label: "Hardware" }, { id: "infra-software", label: "Software" }, { id: "infra-comisionamiento", label: "Comisionamiento" }, { id: "infra-respaldo", label: "Respaldo y seguridad" }] },
+  { id: "infraestructura", num: "9", shortLabel: "BOM final aprobado por CEL", title: "BOM final aprobado por CEL — Silo de IA", Icon: Server, Component: InfraSection, toc: [{ id: "infra-topologia-fisica", label: "Topología física DC" }, { id: "infra-disclaimer", label: "Estado del BOM" }, { id: "infra-arquitectura", label: "Arquitectura" }, { id: "infra-hardware", label: "Hardware" }, { id: "infra-software", label: "Software" }, { id: "infra-comisionamiento", label: "Comisionamiento" }, { id: "infra-respaldo", label: "Respaldo y seguridad" }] },
   { id: "anexo-lempa", num: "10", shortLabel: "Anexo Lempa", title: "Anexo — Dinámicas hidrológicas y gobernanza trinacional del Lempa", Icon: MapIcon, Component: LempaSection, toc: [{ id: "lempa-geo", label: "Características geográficas" }, { id: "lempa-climate", label: "Cambio climático" }, { id: "lempa-governance", label: "Gobernanza trinacional" }, { id: "lempa-implications", label: "Implicaciones para la IA" }] },
   { id: "raci", num: "11", shortLabel: "Equipo y RACI", title: "Equipo, FTE y matriz RACI", Icon: AlignLeft, Component: RaciSection, toc: [{ id: "raci-estructura", label: "Cómo está organizado el capítulo" }, { id: "raci-gobernanza", label: "Estructura de gobernanza del piloto" }, { id: "raci-fte", label: "A.1 Estructura operativa y FTE" }, { id: "raci-comite", label: "A.2 Comité de Informática (CEL)" }, { id: "raci-perfiles", label: "A.3 Perfiles del equipo" }, { id: "raci-matriz", label: "B.1 Matriz RACI consolidada" }, { id: "raci-tareas", label: "B.2 Detalle de tareas por fase" }] },
 ];
@@ -134,14 +136,79 @@ const ANEXO_GROUPS: { id: string; title: string; chapters: ChapterId[] }[] = [
   },
 ];
 
+const CHAPTER_IDS: ChapterId[] = [
+  "flujo",
+  "datos",
+  "etl",
+  "modelos",
+  "validacion",
+  "decisiones",
+  "operacion",
+  "visualizacion",
+  "infraestructura",
+  "anexo-lempa",
+  "raci",
+];
+
+function parseDeepLink(): { chapter: ChapterId | null; anchor: string | null } {
+  if (typeof window === "undefined") return { chapter: null, anchor: null };
+  const params = new URLSearchParams(window.location.search);
+  const capParam = params.get("cap") ?? params.get("chapter");
+  const hash = window.location.hash.replace(/^#/, "") || null;
+  let chapter: ChapterId | null = null;
+  if (capParam && (CHAPTER_IDS as string[]).includes(capParam)) {
+    chapter = capParam as ChapterId;
+  } else if (hash) {
+    if ((CHAPTER_IDS as string[]).includes(hash)) {
+      chapter = hash as ChapterId;
+    } else {
+      const match = CHAPTERS.find((c) => c.toc.some((t) => t.id === hash));
+      if (match) chapter = match.id;
+    }
+  }
+  return { chapter, anchor: hash };
+}
+
 export default function Desarrollo() {
-  const [activeId, setActiveId] = useState<ChapterId>("flujo");
+  const initial = typeof window !== "undefined" ? parseDeepLink() : { chapter: null, anchor: null };
+  const [activeId, setActiveId] = useState<ChapterId>(initial.chapter ?? "flujo");
   const [expanded, setExpanded] = useState<Record<string, boolean>>({
     "tecnico": true,
     "lempa": false,
     "equipo-roles": false,
   });
   const [query, setQuery] = useState("");
+
+  useEffect(() => {
+    const { chapter, anchor } = parseDeepLink();
+    if (chapter) {
+      setActiveId(chapter);
+      const anexo = ANEXO_GROUPS.find((g) => g.chapters.includes(chapter));
+      if (anexo) setExpanded((prev) => ({ ...prev, [anexo.id]: true }));
+    }
+    if (anchor) {
+      setTimeout(() => {
+        const el = document.getElementById(anchor);
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 120);
+    }
+    const onHashChange = () => {
+      const dl = parseDeepLink();
+      if (dl.chapter) {
+        setActiveId(dl.chapter);
+        const anexo = ANEXO_GROUPS.find((g) => g.chapters.includes(dl.chapter!));
+        if (anexo) setExpanded((prev) => ({ ...prev, [anexo.id]: true }));
+      }
+      if (dl.anchor) {
+        setTimeout(() => {
+          const el = document.getElementById(dl.anchor!);
+          if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+        }, 120);
+      }
+    };
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
 
   const activeIdx = CHAPTERS.findIndex((c) => c.id === activeId);
   const active = CHAPTERS[activeIdx];
@@ -381,6 +448,27 @@ function FlujoSection() {
           chart={FLUJO_DIAGRAM}
           caption="Flujo propuesto del sistema desde la adquisición de datos hasta la emisión de alertas."
         />
+        <div className="mt-8">
+          <h3 className="text-lg font-semibold text-foreground mb-1">
+            Vista lógica por capas (Paquete Maestro)
+          </h3>
+          <p className="text-sm text-muted-foreground leading-relaxed mb-3">
+            Vista complementaria al flujo de arriba: el mismo sistema visto como nueve capas
+            funcionales (Inputs → Access → Orchestration → Data Eng → Storage → Modeling →
+            Decision → Interface → Users), con loops de retroalimentación desde los equipos de
+            CEL hacia métricas, umbrales y datos operativos. Mientras el diagrama anterior
+            muestra "de qué fuente a qué destino", éste muestra "qué función cumple cada pieza"
+            dentro del silo de IA.
+          </p>
+          <p className="text-xs text-muted-foreground italic mb-2">
+            Frozen — fuente: Paquete Maestro §7.3. Labels conservados en inglés según el
+            fuente del Paquete (la traducción permanece como asunto abierto).
+          </p>
+          <Mermaid
+            chart={AI_SILO_LOGICAL_DIAGRAM}
+            caption="AI Silo — arquitectura lógica/funcional por capas (Paquete Maestro §7.3)."
+          />
+        </div>
       </div>
       <div id="flujo-etapas" className="space-y-3 scroll-mt-24">
         <p className="text-xs text-muted-foreground leading-relaxed mb-2">
@@ -1423,6 +1511,27 @@ function InfraSection() {
   return (
     <section>
       <SectionHeader intro={INFRA_INTRO} />
+
+      <div id="infra-topologia-fisica" className="scroll-mt-24 mb-8">
+        <h3 className="text-lg font-semibold text-foreground mb-1">
+          Topología física del data center (Paquete Maestro)
+        </h3>
+        <p className="text-sm text-muted-foreground leading-relaxed mb-3">
+          Vista canónica de la infraestructura del silo: External Edge → Security Boundary →
+          Facility → Network Fabric con 5 VLANs (Management, AI Compute, Virtualization,
+          Storage, User) → Servidores R770 (ML/IA y Virtualización) y R570 (NAS) +
+          Workstations → AI Silo Workload Landing Zone → Scope Boundary explícito entre
+          CEL/Martinexsa/Dell y la Consultora.
+        </p>
+        <p className="text-xs text-muted-foreground italic mb-2">
+          Frozen — fuente: Paquete Maestro §7.4. Labels conservados en inglés según el
+          fuente del Paquete (la traducción permanece como asunto abierto).
+        </p>
+        <Mermaid
+          chart={DC_PHYSICAL_TOPOLOGY_DIAGRAM}
+          caption="AI Silo — topología física del data center on-premise (Paquete Maestro §7.4)."
+        />
+      </div>
 
       <div id="infra-disclaimer" className="scroll-mt-24 mb-8">
         <Card className="border-amber-300 dark:border-amber-700 bg-amber-50/70 dark:bg-amber-900/15">

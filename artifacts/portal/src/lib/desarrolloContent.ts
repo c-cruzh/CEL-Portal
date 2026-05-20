@@ -60,6 +60,377 @@ export const FLUJO_DIAGRAM = `flowchart TD
   style SILO fill:#ffffdf,stroke:#c9c96b,stroke-width:1px
 `;
 
+export const AI_SILO_LOGICAL_DIAGRAM = `flowchart TB
+    %% ============================================================
+    %% AI SILO — LOGICAL ARCHITECTURE
+    %% Logical / functional view, not physical infrastructure view.
+    %% ============================================================
+
+    %% -------------------------------
+    %% 1. External and Internal Inputs
+    %% -------------------------------
+    subgraph INPUTS["1. Data Sources / Inputs"]
+        METEO["Meteorological Inputs<br/>ECMWF / ERA5<br/>GPM / IMERG<br/>CHIRPS<br/>temperature, rainfall, forecast variables"]
+        HYDRO["Hydrological Inputs<br/>CEL gauges / aforos<br/>reservoir levels<br/>plant records<br/>historical inflows / outflows"]
+        GEO["Geospatial Inputs<br/>DEM / MDE<br/>HydroATLAS / HydroSHEDS<br/>soil, land cover, basin attributes<br/>Sentinel-1 flood extents"]
+        OPSDATA["Operational Inputs<br/>CEL Excel workbooks / macros<br/>operator thresholds<br/>plant-specific operating logic<br/>critical points of interest"]
+    end
+
+    %% -------------------------------
+    %% 2. Access / Security Boundary
+    %% -------------------------------
+    subgraph ACCESS["2. Access, Security & Data Boundary"]
+        READONLY["Read-only connectors / replicas<br/>No direct modification of CEL production systems"]
+        VPN["Secure access layer<br/>VPN / bastion / firewall rules<br/>CEL-approved credentials"]
+        POLICY["Data governance rules<br/>source registry<br/>access controls<br/>data ownership / audit trail"]
+    end
+
+    %% -------------------------------
+    %% 3. AI Silo Logical Core
+    %% -------------------------------
+    subgraph SILO["AI Silo Logical Core"]
+
+        %% Orchestration Layer
+        subgraph ORCH["3. Orchestration Layer"]
+            MAGE["Mage<br/>central orchestration layer<br/>schedules, DAGs, retries, logs,<br/>pipeline state, operational monitoring"]
+            GIT["Git Repository<br/>pipeline code<br/>model code<br/>configs<br/>documentation"]
+        end
+
+        %% Data Engineering Layer
+        subgraph DATAENG["4. Data Engineering / ETL Layer"]
+            INGEST["Ingestion Pipelines<br/>API pulls<br/>file ingestion<br/>database connectors<br/>satellite/geospatial downloads"]
+            STAGING["Raw / Staging Zone<br/>raw files<br/>unvalidated tables<br/>source-level snapshots"]
+            QAQC["QA/QC + Validation<br/>schema checks<br/>missing data checks<br/>range checks<br/>temporal alignment<br/>unit normalization"]
+            FEATURES["Feature Engineering<br/>basin aggregation<br/>rainfall over sub-basins<br/>time-series windows<br/>static catchment attributes<br/>model-ready tensors"]
+        end
+
+        %% Storage Layer
+        subgraph STORAGE["5. Logical Data Storage Layer"]
+            PG["PostgreSQL + PostGIS<br/>historical datasets<br/>geospatial layers<br/>sub-basins<br/>flood maps<br/>model outputs archive"]
+            MONGO["MongoDB<br/>operational / near-real-time data<br/>latest forecasts<br/>dashboard state<br/>alert state"]
+            ARTIFACTS["Model & Data Artifacts<br/>trained weights<br/>checkpoints<br/>validation outputs<br/>benchmark reports<br/>run metadata"]
+        end
+
+        %% Modeling Layer
+        subgraph MODELING["6. Modeling & Analytics Layer"]
+            TRAIN["Training Workflow<br/>NeuralHydrology / PyTorch<br/>LSTM training<br/>hyperparameter search<br/>rolling-origin validation"]
+            INFER["Inference Workflow<br/>daily forecast execution<br/>7-day hydrological forecast<br/>virtual gauges / control points"]
+            FLOOD["Flood / Impact Modeling<br/>threshold model<br/>inundation layers<br/>flood extent estimation<br/>risk zones"]
+            METRICS["Model Evaluation<br/>NSE, RMSE, MAE<br/>skill vs persistence<br/>POD / FAR<br/>spatial validation"]
+        end
+
+        %% Decision Layer
+        subgraph DECISION["7. Decision Products Layer"]
+            FORECASTS["Forecast Products<br/>hydrographs<br/>inflow forecasts<br/>risk levels<br/>lead-time windows"]
+            MAPS["Spatial Products<br/>dynamic flood layers<br/>critical zones<br/>affected areas<br/>basin/sub-basin views"]
+            ALERTLOGIC["Alert Logic<br/>threshold crossing<br/>severity levels<br/>anti-spam / deduplication<br/>event audit trail"]
+        end
+
+        %% Interface Layer
+        subgraph INTERFACE["8. Interface & Delivery Layer"]
+            API["Backend / API Layer<br/>serves forecasts<br/>serves map layers<br/>serves alert state<br/>exports data to dashboard"]
+            DASH["Web Dashboard<br/>React / Leaflet or Mapbox<br/>maps, charts, filters, toggles<br/>single operational view"]
+            ALERTS["Notifications<br/>email via CEL SMTP<br/>SMS gateway if enabled<br/>distribution lists<br/>alert history"]
+            DOCS["Operational Documentation<br/>POE / SOP<br/>technical docs<br/>handoff materials<br/>training guides"]
+        end
+    end
+
+    %% -------------------------------
+    %% 4. Users and Operational Consumers
+    %% -------------------------------
+    subgraph USERS["9. Users / Operational Consumers"]
+        HYDROTEAM["CEL Hydrology Team<br/>validates patterns, thresholds,<br/>forecast reasonableness"]
+        PLANTS["Plant Operators<br/>Cerrón Grande<br/>5 de Noviembre / G9<br/>Guajoyo<br/>15 de Septiembre"]
+        SIG["SIG / Teledetection Team<br/>validates geospatial layers<br/>DEM, flood extents, Sentinel-1"]
+        MANAGEMENT["CEL Leadership / Decision Makers<br/>situational awareness<br/>risk and operations visibility"]
+    end
+
+    %% -------------------------------
+    %% 5. Flow Connections
+    %% -------------------------------
+
+    %% Inputs into access layer
+    METEO --> VPN
+    HYDRO --> READONLY
+    GEO --> VPN
+    OPSDATA --> READONLY
+
+    READONLY --> POLICY
+    VPN --> POLICY
+    POLICY --> MAGE
+
+    %% Orchestration controls ETL
+    GIT --> MAGE
+    MAGE --> INGEST
+    INGEST --> STAGING
+    STAGING --> QAQC
+    QAQC --> FEATURES
+
+    %% ETL to storage
+    STAGING --> PG
+    QAQC --> PG
+    QAQC --> MONGO
+    FEATURES --> PG
+    FEATURES --> ARTIFACTS
+
+    %% Storage to modeling
+    PG --> TRAIN
+    PG --> INFER
+    MONGO --> INFER
+    ARTIFACTS --> TRAIN
+    TRAIN --> ARTIFACTS
+    TRAIN --> METRICS
+
+    %% Forecast and flood modeling
+    INFER --> FORECASTS
+    INFER --> FLOOD
+    FLOOD --> MAPS
+    FLOOD --> ALERTLOGIC
+    METRICS --> ARTIFACTS
+
+    %% Store outputs
+    FORECASTS --> MONGO
+    FORECASTS --> PG
+    MAPS --> PG
+    ALERTLOGIC --> MONGO
+
+    %% Delivery layer
+    PG --> API
+    MONGO --> API
+    API --> DASH
+    ALERTLOGIC --> ALERTS
+    API --> DOCS
+
+    %% Users consume and validate
+    DASH --> HYDROTEAM
+    DASH --> PLANTS
+    DASH --> SIG
+    DASH --> MANAGEMENT
+    ALERTS --> HYDROTEAM
+    ALERTS --> PLANTS
+    DOCS --> HYDROTEAM
+    DOCS --> PLANTS
+    DOCS --> SIG
+
+    %% Feedback loops
+    HYDROTEAM -. validation feedback .-> METRICS
+    HYDROTEAM -. threshold calibration .-> ALERTLOGIC
+    PLANTS -. operational feedback .-> OPSDATA
+    SIG -. geospatial validation .-> MAPS
+    MANAGEMENT -. decision requirements .-> DASH
+
+    %% -------------------------------
+    %% Styling
+    %% -------------------------------
+    classDef input fill:#FFF8E6,stroke:#B38B00,stroke-width:1px,color:#111;
+    classDef boundary fill:#FCEEEE,stroke:#B85C5C,stroke-width:1px,color:#111;
+    classDef orchestration fill:#EEF4FF,stroke:#4C6FB3,stroke-width:1px,color:#111;
+    classDef data fill:#F2FFF5,stroke:#4D9A63,stroke-width:1px,color:#111;
+    classDef storage fill:#F4F0FF,stroke:#7A5CB8,stroke-width:1px,color:#111;
+    classDef model fill:#EFFFFF,stroke:#3C9EA3,stroke-width:1px,color:#111;
+    classDef decision fill:#FFF2E8,stroke:#C97932,stroke-width:1px,color:#111;
+    classDef interface fill:#F7F7F7,stroke:#555,stroke-width:1px,color:#111;
+    classDef users fill:#EAF7FF,stroke:#4B8BBE,stroke-width:1px,color:#111;
+
+    class METEO,HYDRO,GEO,OPSDATA input;
+    class READONLY,VPN,POLICY boundary;
+    class MAGE,GIT orchestration;
+    class INGEST,STAGING,QAQC,FEATURES data;
+    class PG,MONGO,ARTIFACTS storage;
+    class TRAIN,INFER,FLOOD,METRICS model;
+    class FORECASTS,MAPS,ALERTLOGIC decision;
+    class API,DASH,ALERTS,DOCS interface;
+    class HYDROTEAM,PLANTS,SIG,MANAGEMENT users;
+`;
+
+export const DC_PHYSICAL_TOPOLOGY_DIAGRAM = `flowchart TB
+    %% ============================================================
+    %% AI SILO — DATA CENTER / PHYSICAL TOPOLOGY ARCHITECTURE
+    %% Vista del data center en sí, no de la lógica de datos/modelo.
+    %% ============================================================
+
+    %% -------------------------------
+    %% External / Enterprise Edge
+    %% -------------------------------
+    subgraph EXT["External / Enterprise Edge"]
+        INTERNET["Internet / External Data Sources<br/>ECMWF, Copernicus, NASA, Sentinel, CHIRPS<br/>egress controlled by CEL"]
+        REMOTE["Authorized Remote Access<br/>Consultora / technical support<br/>via VPN or bastion approved by CEL"]
+        CEL_LAN["CEL Enterprise LAN / Users<br/>operators, hydrology, SIG, leadership"]
+        DELL_CLOUD["Dell / NVIDIA Support Cloud<br/>ProSupport, TechDirect, MyService360,<br/>Dell AIOps, Secure Connect Gateway"]
+    end
+
+    %% -------------------------------
+    %% Security Boundary
+    %% -------------------------------
+    subgraph EDGE["CEL Security Boundary"]
+        FW["Firewall / VPN / Bastion / NAT<br/>ACLs, egress allowlist, access policies<br/>owned by CEL / TI"]
+        CORE["CEL Core Network / WAN<br/>routing to institutional systems<br/>and corporate services"]
+    end
+
+    %% -------------------------------
+    %% Data Center Footprint
+    %% -------------------------------
+    subgraph DC["AI Silo Data Center Footprint — On-Prem CEL"]
+
+        FAC["Facility Layer<br/>rack space, power circuits, grounding,<br/>PDU / UPS / cooling / physical access<br/>to be confirmed and operated by CEL / provider"]
+
+        %% ---------------------------
+        %% Network Fabric
+        %% ---------------------------
+        subgraph NET["Data Center Network Fabric"]
+            TOR["Dell PowerSwitch S5224F-ON<br/>Top-of-Rack Switch — 1RU<br/>24 x 25GbE SFP28<br/>4 x 100GbE QSFP28<br/>Dell SmartFabric OS10<br/>L2/L3, VLAN, ACL, OSPF/BGP capable"]
+
+            MGMT_VLAN["Management VLAN<br/>iDRAC, switch admin,<br/>support telemetry"]
+            AI_VLAN["AI Compute VLAN<br/>GPU workloads, model training,<br/>inference runtime"]
+            VIRT_VLAN["Virtualization / Services VLAN<br/>VMs, internal services,<br/>platform services as defined by CEL"]
+            STORAGE_VLAN["Storage VLAN<br/>SMB / NFS, datasets,<br/>model artifacts, backups"]
+            USER_VLAN["User / Access VLAN<br/>dashboard access,<br/>operator workstations,<br/>management endpoints"]
+        end
+
+        %% ---------------------------
+        %% Management and Support Plane
+        %% ---------------------------
+        subgraph MGMT["Out-of-Band Management & Support Plane"]
+            IDRAC["iDRAC Enterprise<br/>remote administration for Dell servers<br/>firmware, health, power, diagnostics"]
+            SCG["Secure Connect Gateway<br/>Dell AIOps / TechDirect / MyService360<br/>support telemetry and incident workflow"]
+            PROSUPPORT["Dell ProSupport Plus Mission Critical<br/>24x7 support<br/>critical parts replacement<br/>severity escalation"]
+            TECHCIRCLE["TechCircle Advisory Support<br/>30h remote specialized support<br/>architecture review, growth recommendations,<br/>GPU/container/data best practices"]
+        end
+
+        %% ---------------------------
+        %% Server and Storage Layer
+        %% ---------------------------
+        subgraph SERVERS["Server & Storage Layer"]
+
+            R770_AI["Dell PowerEdge R770 — ML / IA Server<br/>2 x Intel Xeon 6515P<br/>256GB DDR5<br/>NVIDIA GPU installed by provider<br/>H100 NVL 94GB HBM3 listed in accepted offer<br/>final effective GPU to validate on delivery<br/>Ubuntu Server 24.04 LTS<br/>Docker Engine + Docker Compose<br/>NVIDIA AI Enterprise per offer<br/>High-speed NVMe workspace"]
+
+            R770_VIRT["Dell PowerEdge R770 — Virtualization Server<br/>2 x Intel Xeon 6515P<br/>256GB DDR5<br/>enterprise SSD RAID storage<br/>institutional VM / services layer<br/>hypervisor and final VM topology<br/>to be defined by CEL / provider"]
+
+            R570_NAS["Dell PowerEdge R570 — NAS / File Server<br/>Intel Xeon 6511P<br/>64GB DDR5<br/>Windows Server 2025 Standard<br/>BOSS-N1 RAID1 for OS<br/>6 x 14TB HDD configured RAID6<br/>SMB / NFS file sharing<br/>central repository for institutional data,<br/>AI datasets, artifacts and historical files"]
+        end
+
+        %% ---------------------------
+        %% Platform Management Endpoints
+        %% ---------------------------
+        subgraph ENDPOINTS["Platform Management & Visualization Endpoints"]
+            WS1["Dell Pro Max 16 Plus — Workstation 01<br/>NVIDIA RTX PRO 3000 Blackwell<br/>64GB RAM<br/>Thunderbolt dock<br/>dual 32in 4K monitors"]
+            WS2["Dell Pro Max 16 Plus — Workstation 02<br/>NVIDIA RTX PRO 3000 Blackwell<br/>64GB RAM<br/>Thunderbolt dock<br/>dual 32in 4K monitors"]
+        end
+
+        %% ---------------------------
+        %% AI Workload Landing Zone
+        %% ---------------------------
+        subgraph LANDING["AI Silo Workload Landing Zone — consumed by the pilot"]
+            LANDING_NOTE["Pilot runtime placement to be confirmed by CEL / TI<br/>Mage, PostgreSQL/PostGIS, MongoDB, API/backend,<br/>model runtime and dashboard services<br/>must be mapped to the final host topology"]
+            VALIDATION["Fase 0 Readiness Validation<br/>GPU visibility<br/>storage mounts<br/>network throughput<br/>remote access<br/>database/runtime availability<br/>benchmark GPU / IO / Red"]
+        end
+
+        %% ---------------------------
+        %% Explicit Scope Boundary
+        %% ---------------------------
+        SCOPE_NOTE["Scope Boundary<br/>CEL / Martinexsa / Dell: procurement, delivery, racking, power,<br/>base cabling, base VLAN/switch config, iDRAC, firmware,<br/>base OS, storage sharing, support, warranties, platform administration.<br/><br/>Consultora: consumes the enabled environment,<br/>defines pilot requirements, deploys/configures pilot stack as applicable,<br/>and validates readiness for the hydrological AI pilot.<br/><br/>Excluded unless expressly added:<br/>Kubernetes/OpenShift, AD/LDAP integration, SIEM/NAC,<br/>advanced hardening, HA/DR, microsegmentation,<br/>WAN/provider integration, continuous platform administration."]
+    end
+
+    %% -------------------------------
+    %% External connections
+    %% -------------------------------
+    INTERNET -->|controlled outbound data pulls| FW
+    REMOTE -->|VPN / bastion| FW
+    CEL_LAN --> CORE
+    CORE --> FW
+    DELL_CLOUD -->|support telemetry / outbound support path<br/>if enabled by CEL| FW
+    FW -->|uplink to AI Silo network| TOR
+
+    %% -------------------------------
+    %% Facility hosting
+    %% -------------------------------
+    FAC -. hosts / powers / cools .-> TOR
+    FAC -. hosts / powers / cools .-> R770_AI
+    FAC -. hosts / powers / cools .-> R770_VIRT
+    FAC -. hosts / powers / cools .-> R570_NAS
+    FAC -. houses endpoints as applicable .-> WS1
+    FAC -. houses endpoints as applicable .-> WS2
+
+    %% -------------------------------
+    %% Network segmentation
+    %% -------------------------------
+    TOR --> MGMT_VLAN
+    TOR --> AI_VLAN
+    TOR --> VIRT_VLAN
+    TOR --> STORAGE_VLAN
+    TOR --> USER_VLAN
+
+    %% -------------------------------
+    %% Server connections
+    %% -------------------------------
+    AI_VLAN <-->|25GbE / 100GbE as configured| R770_AI
+    VIRT_VLAN <-->|25GbE as configured| R770_VIRT
+    STORAGE_VLAN <-->|25GbE as configured| R570_NAS
+    USER_VLAN <-->|client / admin access| WS1
+    USER_VLAN <-->|client / admin access| WS2
+
+    %% -------------------------------
+    %% Storage flows
+    %% -------------------------------
+    R770_AI <-->|datasets, checkpoints,<br/>model artifacts| R570_NAS
+    R770_VIRT <-->|VM data / service data<br/>as defined by CEL| R570_NAS
+    WS1 <-->|admin / visualization access| R570_NAS
+    WS2 <-->|admin / visualization access| R570_NAS
+
+    %% -------------------------------
+    %% Management and support
+    %% -------------------------------
+    MGMT_VLAN <--> IDRAC
+    IDRAC -. manages .-> R770_AI
+    IDRAC -. manages .-> R770_VIRT
+    IDRAC -. manages .-> R570_NAS
+    SCG -. telemetry / support path .-> IDRAC
+    PROSUPPORT -. escalation / warranty .-> SCG
+    TECHCIRCLE -. advisory support .-> R770_AI
+    TECHCIRCLE -. advisory support .-> R770_VIRT
+    TECHCIRCLE -. advisory support .-> R570_NAS
+
+    %% -------------------------------
+    %% AI workload landing zone
+    %% -------------------------------
+    R770_AI -. GPU runtime target .-> LANDING_NOTE
+    R770_VIRT -. possible service host .-> LANDING_NOTE
+    R570_NAS -. storage dependency .-> LANDING_NOTE
+    TOR -. network dependency .-> LANDING_NOTE
+    LANDING_NOTE --> VALIDATION
+
+    %% -------------------------------
+    %% Scope note
+    %% -------------------------------
+    SCOPE_NOTE -. applies to .-> FAC
+    SCOPE_NOTE -. applies to .-> NET
+    SCOPE_NOTE -. applies to .-> SERVERS
+    SCOPE_NOTE -. applies to .-> LANDING
+
+    %% -------------------------------
+    %% Styling
+    %% -------------------------------
+    classDef external fill:#FFF8E6,stroke:#B38B00,stroke-width:1px,color:#111;
+    classDef security fill:#FCEEEE,stroke:#B85C5C,stroke-width:1px,color:#111;
+    classDef facility fill:#F7F7F7,stroke:#555,stroke-width:1px,color:#111;
+    classDef network fill:#EEF4FF,stroke:#4C6FB3,stroke-width:1px,color:#111;
+    classDef mgmt fill:#F4F0FF,stroke:#7A5CB8,stroke-width:1px,color:#111;
+    classDef server fill:#F2FFF5,stroke:#4D9A63,stroke-width:1px,color:#111;
+    classDef endpoint fill:#EFFFFF,stroke:#3C9EA3,stroke-width:1px,color:#111;
+    classDef landing fill:#FFF2E8,stroke:#C97932,stroke-width:1px,color:#111;
+    classDef scope fill:#FFECEC,stroke:#A33,stroke-width:1px,color:#111;
+
+    class INTERNET,REMOTE,CEL_LAN,DELL_CLOUD external;
+    class FW,CORE security;
+    class FAC facility;
+    class TOR,MGMT_VLAN,AI_VLAN,VIRT_VLAN,STORAGE_VLAN,USER_VLAN network;
+    class IDRAC,SCG,PROSUPPORT,TECHCIRCLE mgmt;
+    class R770_AI,R770_VIRT,R570_NAS server;
+    class WS1,WS2 endpoint;
+    class LANDING_NOTE,VALIDATION landing;
+    class SCOPE_NOTE scope;
+`;
+
 export const FLUJO_INTRO =
   "El sistema de pronóstico hidrológico basado en IA seguirá un flujo de procesamiento de extremo a extremo, desde la recopilación de datos hasta la generación de alertas tempranas de inundación. Se compone de cuatro subsistemas principales —inspirados en Google Flood Hub (Nevo et al., 2022)— integrados en la plataforma de CEL, precedidos por una Fase 0 de habilitación de infraestructura.";
 

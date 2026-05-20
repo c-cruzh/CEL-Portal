@@ -627,6 +627,20 @@ function InfraestructuraChapter() {
           </CardHeader>
           <CardContent>
             <InfraStackDiagram />
+            <div className="mt-4 rounded-md border border-border bg-background/60 p-3 text-sm">
+              <p className="text-foreground leading-relaxed">
+                <span className="font-medium">Topología física completa: </span>
+                este diagrama de capas es una vista resumen. La topología canónica del data
+                center (rack, switch, VLANs, servidores R770/R570, workstations y scope
+                boundary) vive en{" "}
+                <Link href="/portal/desarrollo?cap=infraestructura#infra-topologia-fisica">
+                  <a className="text-primary font-medium hover:underline">
+                    Desarrollo Técnico → Cap. 9 "BOM final aprobado por CEL"
+                  </a>
+                </Link>
+                {" "}— frozen del Paquete Maestro §7.4.
+              </p>
+            </div>
           </CardContent>
         </Card>
       </section>
