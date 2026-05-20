@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { asc, eq } from "drizzle-orm";
+import { and, asc, eq, ne, notLike } from "drizzle-orm";
 import {
   db,
   usersTable,
@@ -25,6 +25,16 @@ const router: IRouter = Router();
 // Basic phone validation: 6-30 chars, digits / spaces / + - ( ) only.
 const PHONE_REGEX = /^[\d+()\-\s]{6,30}$/;
 
+// The synthetic "system" user (seeded so the Paquete Maestro can sign
+// decisions/documents) must stay in the DB to satisfy FKs, but should never
+// appear in member-facing or admin-facing listings.
+const SYSTEM_USER_ID = "system";
+const SYSTEM_EMAIL_DOMAIN_SUFFIX = "%@portal.local";
+const visibleUserFilter = and(
+  ne(usersTable.id, SYSTEM_USER_ID),
+  notLike(usersTable.email, SYSTEM_EMAIL_DOMAIN_SUFFIX),
+);
+
 router.get(
   "/team/members",
   requireAuth,
@@ -32,6 +42,7 @@ router.get(
     const users = await db
       .select()
       .from(usersTable)
+      .where(visibleUserFilter)
       .orderBy(asc(usersTable.createdAt));
 
     const roles = await db
@@ -150,7 +161,7 @@ router.get(
   "/team/summary",
   requireAuth,
   async (_req, res): Promise<void> => {
-    const users = await db.select().from(usersTable);
+    const users = await db.select().from(usersTable).where(visibleUserFilter);
     const roles = await db
       .select()
       .from(rolesTable)

@@ -571,6 +571,22 @@ async function seedDecisions(): Promise<number> {
   return inserted;
 }
 
+// Removes any leftover e2e test accounts so reruns of the Playwright suite
+// don't accumulate suciedad en la DB. Matches the id prefix that
+// requireAuth.ts assigns to bypass-auth users (`e2e_*`) plus the legacy
+// `member-e2e-` / `member-actor-e2e-` email patterns used by the test helpers.
+// Dependent rows (user_roles, kanban_cards, decisions, etc.) cascade or are
+// FK-nullable, so deleting from `users` is enough.
+async function cleanupE2EAccounts(): Promise<number> {
+  const result = await db.execute(
+    sql`DELETE FROM users
+        WHERE id LIKE 'e2e_%'
+           OR email LIKE 'member-e2e-%@%'
+           OR email LIKE 'member-actor-e2e-%@%'`,
+  );
+  return result.rowCount ?? 0;
+}
+
 async function main(): Promise<void> {
   const validIds = ROLES.map((r) => r.id);
   await db.execute(
@@ -647,10 +663,12 @@ async function main(): Promise<void> {
       .onConflictDoNothing();
   }
 
+  const removedE2E = await cleanupE2EAccounts();
+
   const count = await db.execute(sql`SELECT COUNT(*)::int AS n FROM roles`);
   // eslint-disable-next-line no-console
   console.log(
-    `Seed complete. Roles: ${(count.rows[0] as { n: number }).n}. System milestones: ${milestoneCount}.`,
+    `Seed complete. Roles: ${(count.rows[0] as { n: number }).n}. System milestones: ${milestoneCount}. E2E accounts removed: ${removedE2E}.`,
   );
 }
 
