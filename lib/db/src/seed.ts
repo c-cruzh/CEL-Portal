@@ -9,8 +9,9 @@ import {
   usersTable,
   userRolesTable,
   allowedEmailDomainsTable,
+  decisionsTable,
 } from "./index";
-import { sql } from "drizzle-orm";
+import { sql, eq } from "drizzle-orm";
 import { PHASES_FOR_SEED } from "@workspace/project-domain";
 
 const KANBAN_COLUMNS: Array<{ key: string; label: string; sortOrder: number }> = [
@@ -223,6 +224,150 @@ async function bootstrapAdminRoles(): Promise<void> {
   void usersTable;
 }
 
+type SeedDecision = {
+  title: string;
+  context: string;
+  optionsConsidered: string;
+  phase: string | null;
+  ownerEmail: string | null;
+  ownerRole: string | null;
+  status: "open" | "in_analysis" | "resolved" | "cancelled";
+  decidedOutcome?: string;
+  decidedAt?: Date;
+  decidedByEmail?: string | null;
+};
+
+const SEED_DECISIONS: SeedDecision[] = [
+  {
+    title:
+      "[Bloqueante Fase 0] Host final de Mage / PostgreSQL+PostGIS / MongoDB / API",
+    context:
+      "Fuente: Paquete Maestro §6 — Asuntos abiertos; referencia cruzada: Anexo Técnico §6.1.\n\nCEL/TI debe definir en qué host físico/virtual corren Mage, PostgreSQL+PostGIS, MongoDB y la API del piloto. La oferta Martinexsa/Dell entrega ML server (R770), virtualización (R770) y NAS (R570) — falta la decisión de mapeo final, incluyendo IPs/DNS/VLANs, credenciales, storage mounts y política de backup. Bloquea el cierre formal de Fase 0 porque ningún pipeline puede desplegarse hasta que el host esté autorizado por el Comité de Informática.",
+    optionsConsidered:
+      "Opción A: Servidor de virtualización R770 como host principal (Mage + API + BDs).\nOpción B: Mage e inferencia en el ML server R770; BDs en virtualización.\nOpción C: BDs en el NAS R570 (no recomendado por performance).",
+    phase: "F0",
+    ownerEmail: null,
+    ownerRole: "it_committee_lead",
+    status: "open",
+  },
+  {
+    title: "[Bloqueante Fase 0] Validación de GPU efectiva entregada",
+    context:
+      "Fuente: Paquete Maestro §6 — Asuntos abiertos; referencia cruzada: Anexo Técnico §6.2.\n\nLa oferta aceptada Martinexsa/Dell lista una NVIDIA H100 NVL 94GB para el servidor ML (R770). Hay que confirmar contra la entrega física que efectivamente es esa GPU (modelo y VRAM), porque el dimensionamiento del entrenamiento LSTM/NeuralHydrology y el throughput de inferencia diaria asumen ese hardware. Bloqueante de Fase 0: sin GPU validada no se puede comprometer ventana de entrenamiento ni SLA de inferencia.",
+    optionsConsidered:
+      "Confirmación documental (orden + remisión + acta de entrega) + verificación en sitio con nvidia-smi por parte de DevOps.",
+    phase: "F0",
+    ownerEmail: "jmguardado@cel.gob.sv",
+    ownerRole: "infra_devops",
+    status: "open",
+  },
+  {
+    title:
+      "[Bloqueante Fase 0] Zona de responsabilidad intermedia (admin continua, backups, hardening, identidad)",
+    context:
+      "Fuente: Paquete Maestro §6 — Asuntos abiertos; referencia cruzada: Anexo Técnico §6.3.\n\nLa administración continua del entorno, backups corporativos, hardening avanzado, SIEM, AD/LDAP, HA/DR y soporte de plataforma NO están dentro del alcance de la Consultora y tampoco están en la oferta base de Martinexsa/Dell. Default: quedan en CEL salvo adenda expresa. Hay que documentar formalmente la exclusión y confirmar que el Comité de Informática asume estas funciones — o emitir adenda con quien sí las asuma. Bloqueante de Fase 0 porque define quién opera el silo después del piloto.",
+    optionsConsidered:
+      "Opción A: CEL asume vía Unidad de Informática (default, sin adenda).\nOpción B: Adenda con Martinexsa para administración gestionada.\nOpción C: Adenda con la Consultora para alcance ampliado (fuera del DSP actual).",
+    phase: "F0",
+    ownerEmail: null,
+    ownerRole: "it_committee_lead",
+    status: "open",
+  },
+  {
+    title: "SLAs Comité de Informática ↔ DevOps",
+    context:
+      "Fuente: Paquete Maestro §6 — Asuntos abiertos; referencia cruzada: Anexo Técnico §6.4.\n\nLa dinámica acordada es Consultora → Mauricio Herrera Mercado → (Lorena / Nelson); José Manuel Guardado es el enlace operativo. Falta definir los tiempos de respuesta esperados para que el Comité autorice acciones (exposición externa, cambios de red, accesos, credenciales) y para que DevOps ejecute. Sin estos SLAs el piloto puede quedar bloqueado en cualquier gate de autorización.",
+    optionsConsidered:
+      "Propuesta inicial: 2 días hábiles para autorizaciones estándar; mismo día para emergencias operativas; semanal para cambios de arquitectura.",
+    phase: "F1",
+    ownerEmail: "alpineda@cel.gob.sv",
+    ownerRole: "it_committee_lead",
+    status: "open",
+  },
+  {
+    title: "Equipo de Dirección — alcance e involucramiento por etapa",
+    context:
+      "Fuente: Paquete Maestro §6 — Asuntos abiertos; referencia cruzada: Anexo Técnico §6.5.\n\nEl Equipo de Dirección — Ing. Guillermo Colorado, Ing. Gerardo Ávalos, Ing. Mauricio Herrera Landaverde (distinto de Mauricio Herrera Mercado) e Ing. Rigoberto Ávila (ravila@cel.gob.sv) — está nombrado pero su rol concreto en el piloto está TBD. Hay que derivar del DSP, etapa por etapa, qué deciden, qué aprueban y en qué hitos se les presenta avance. Sin esto el piloto no tiene un canal claro de escalamiento ejecutivo.",
+    optionsConsidered:
+      "Opción A: Comité de Dirección como aprobador formal en cierres de fase.\nOpción B: Rol consultivo / informado en sesiones de avance mensuales.\nOpción C: Un único Sponsor Ejecutivo del grupo, los demás como informados.",
+    phase: "F0",
+    ownerEmail: "jmherreram@cel.gob.sv",
+    ownerRole: "pm_cel",
+    status: "open",
+  },
+  {
+    title: "Idioma de diagramas técnicos (arquitectura lógica y topología física)",
+    context:
+      "Fuente: Paquete Maestro §6 — Asuntos abiertos; referencia cruzada: Anexo Técnico §6.6.\n\nLos dos diagramas Mermaid nuevos — arquitectura lógica/funcional por capas y topología física del data center — están en inglés. El resto del Paquete Maestro está en español. Hay que decidir si se traducen para alinear con la documentación entregable al cliente, o si se mantienen en inglés por consistencia con la convención técnica del equipo.",
+    optionsConsidered:
+      "Opción A: Traducir ambos al español para coherencia con el Paquete.\nOpción B: Mantener en inglés, agregar leyenda bilingüe.\nOpción C: Versión bilingüe (cada nodo con etiqueta ES/EN).",
+    phase: "F0",
+    ownerEmail: "camila@c2labs.ai",
+    ownerRole: "pm_lead",
+    status: "open",
+  },
+  {
+    title:
+      "Propagación de las 3 reconciliaciones a Sección 10 / RACI del DSP",
+    context:
+      "Fuente: Paquete Maestro §5 — Las tres reconciliaciones; referencia cruzada: Comunicación de Seguimiento Apr 1 (refresh Sección 10 + RACI + modelo FTE).\n\nLas tres reconciliaciones acordadas por el equipo son:\n1. DevOps confirmado: José Manuel Guardado deja de ser TBD; queda en perfiles y en la columna RACI.\n2. FTE limpio: José Manuel = DevOps FTE 1.0 únicamente; el Comité Consultivo de TI (0.35) lo integran los otros 5 (Lorena, Nelson, Adrián, Carlos, Miladis). Sin doble conteo.\n3. Perfiles desdoblados: separar \"Líder Técnico en Hidrología y Gerente de Proyecto\" en Mauricio Herrera Mercado (PM + Contrato) y Víctor Alabí (Líder Hidrología). En la RACI, Víctor pasa de \"Operaciones\" a \"Líder Técnico Hidrología\" (C/A en validación de modelo y variables, no solo I).\n\nÚnico pendiente: comunicación formal a CEL para que la versión vigente de Sección 10 / RACI refleje estos tres ajustes.",
+    optionsConsidered: "",
+    phase: null,
+    ownerEmail: "kevin@c2labs.ai",
+    ownerRole: "pm_lead",
+    status: "resolved",
+    decidedOutcome:
+      "Acuerdo de equipo registrado en Paquete Maestro §5; las tres reconciliaciones quedan aprobadas internamente. Pendiente sólo la comunicación formal a CEL para que la próxima versión de Sección 10 / RACI las refleje.",
+    decidedAt: new Date(),
+    decidedByEmail: "kevin@c2labs.ai",
+  },
+];
+
+async function lookupUserId(email: string | null | undefined): Promise<string | null> {
+  if (!email) return null;
+  const rows = await db.execute(
+    sql`SELECT id FROM users WHERE lower(email) = ${email.toLowerCase()} LIMIT 1`,
+  );
+  const userId = (rows.rows[0] as { id?: string } | undefined)?.id;
+  return userId ?? null;
+}
+
+async function seedDecisions(): Promise<number> {
+  let inserted = 0;
+  for (const d of SEED_DECISIONS) {
+    const [existing] = await db
+      .select({ id: decisionsTable.id })
+      .from(decisionsTable)
+      .where(eq(decisionsTable.title, d.title))
+      .limit(1);
+    if (existing) continue;
+
+    const ownerUserId = await lookupUserId(d.ownerEmail);
+    const decidedByUserId =
+      d.status === "resolved"
+        ? await lookupUserId(d.decidedByEmail ?? null)
+        : null;
+
+    await db.insert(decisionsTable).values({
+      title: d.title,
+      context: d.context,
+      optionsConsidered: d.optionsConsidered,
+      phase: d.phase,
+      ownerUserId,
+      ownerRole: ownerUserId ? null : d.ownerRole,
+      status: d.status,
+      decidedOutcome: d.status === "resolved" ? d.decidedOutcome ?? null : null,
+      resolution: d.status === "resolved" ? d.decidedOutcome ?? null : null,
+      decidedAt: d.status === "resolved" ? d.decidedAt ?? new Date() : null,
+      resolvedAt: d.status === "resolved" ? d.decidedAt ?? new Date() : null,
+      decidedByUserId,
+      resolvedBy: decidedByUserId,
+    });
+    inserted += 1;
+  }
+  return inserted;
+}
+
 async function main(): Promise<void> {
   const validIds = ROLES.map((r) => r.id);
   await db.execute(
@@ -270,6 +415,8 @@ async function main(): Promise<void> {
   }
 
   await bootstrapAdminRoles();
+
+  await seedDecisions();
 
   // Ensure historical default allowed sign-up domains are present. Admins can
   // add/remove additional domains from the portal after seeding.
