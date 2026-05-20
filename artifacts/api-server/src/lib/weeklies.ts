@@ -1,7 +1,7 @@
 import { and, eq, sql } from "drizzle-orm";
 import { db, milestonesTable } from "@workspace/db";
 
-export const DEFAULT_WEEKLY_COUNT = 28;
+export const DEFAULT_WEEKLY_COUNT = 30;
 
 function seedKeyFor(week: number): string {
   return `weekly_${week}`;

@@ -1,10 +1,10 @@
 import { useGetProjectConfig, useUpdateProjectConfig, getGetProjectConfigQueryKey, useGetTeamSummary } from "@workspace/api-client-react";
 import type { ProjectConfig } from "@workspace/api-client-react";
 import { PHASES } from "@/lib/projectContent";
-import { GANTT_PHASES, GANTT_TOTAL_MONTHS } from "@/lib/ganttContent";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { GANTT_PHASES, GANTT_TOTAL_WEEKS } from "@/lib/ganttContent";
+import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { addMonths, format, parseISO } from "date-fns";
+import { addWeeks, format, parseISO, differenceInDays } from "date-fns";
 import { es } from "date-fns/locale";
 import { useEffect, useMemo, useState } from "react";
 import { Input } from "@/components/ui/input";
@@ -13,7 +13,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { PhaseInvolvementCard } from "@/components/PhaseInvolvementCard";
 import { PHASE_INVOLVEMENT } from "@/lib/phaseInvolvement";
 
-const MONTH_COL_WIDTH = 56;
+const WEEK_COL_WIDTH = 28;
 const LABEL_WIDTH = 320;
 
 export default function Cronograma() {
@@ -65,8 +65,8 @@ export default function Cronograma() {
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Cronograma del Piloto</h1>
           <p className="text-muted-foreground mt-1">
-            Distribución mensual de fases y actividades a lo largo de 12 meses
-            {startDate ? ` desde ${format(startDate, "MMMM yyyy", { locale: es })}` : ""}.
+            Distribución semanal de fases y actividades a lo largo de {GANTT_TOTAL_WEEKS} semanas
+            {startDate ? ` desde el ${format(startDate, "dd 'de' MMMM yyyy", { locale: es })}` : " (modo date-agnostic; fija T0 para ver fechas calendario)"}.
           </p>
         </div>
         <ConfigDate config={config} />
@@ -79,23 +79,21 @@ export default function Cronograma() {
             del equipo CEL y respeta los feriados nacionales. Confirma fechas críticas con Gerencia de Proyecto antes de
             comprometer entregables externos.
           </span>
-          <span className="text-xs text-muted-foreground/80">12 meses planificados</span>
+          <span className="text-xs text-muted-foreground/80">{GANTT_TOTAL_WEEKS} semanas planificadas (Fase 0–4 + Contingencia)</span>
         </CardContent>
       </Card>
 
-      <MonthlyGantt startDate={startDate} />
+      <WeeklyGantt startDate={startDate} />
 
       <div className="flex flex-wrap gap-3">
         {GANTT_PHASES.map((p) => (
-          <div key={p.num} className="flex items-center gap-2 text-xs text-muted-foreground">
+          <div key={p.id} className="flex items-center gap-2 text-xs text-muted-foreground">
             <span
               className="inline-block h-3 w-3 rounded-sm"
               style={{ backgroundColor: p.color }}
               aria-hidden="true"
             />
-            <span>
-              <span className="font-semibold text-foreground">{p.num}.</span> {p.label}
-            </span>
+            <span>{p.label}</span>
           </div>
         ))}
       </div>
@@ -124,11 +122,63 @@ export default function Cronograma() {
   );
 }
 
-function MonthlyGantt({ startDate }: { startDate: Date | null }) {
-  const totalWidth = LABEL_WIDTH + MONTH_COL_WIDTH * GANTT_TOTAL_MONTHS;
+function WeeklyGantt({ startDate }: { startDate: Date | null }) {
+  const totalWidth = LABEL_WIDTH + WEEK_COL_WIDTH * GANTT_TOTAL_WEEKS;
+
+  // Compute current week index (1-based) when a real T0 is set, so the
+  // "Hoy" marker only appears in calendar mode and within range.
+  // Uses day-floor math (not calendar weeks) so it matches the
+  // `weekOffset` semantics used by the milestone seed and `addWeeks(T0, n-1)`
+  // elsewhere; otherwise a mid-week T0 would shift the marker by one week.
+  const todayWeek = startDate
+    ? Math.floor(differenceInDays(new Date(), startDate) / 7) + 1
+    : null;
+  const showToday = todayWeek !== null && todayWeek >= 1 && todayWeek <= GANTT_TOTAL_WEEKS;
+
+  // Month bands above the week numbers, only when T0 is set.
+  const monthBands: { label: string; startWeek: number; span: number }[] = [];
+  if (startDate) {
+    let cursorMonth = "";
+    let cursorStart = 1;
+    for (let i = 0; i < GANTT_TOTAL_WEEKS; i++) {
+      const monthLabel = format(addWeeks(startDate, i), "MMM yy", { locale: es });
+      if (i === 0) {
+        cursorMonth = monthLabel;
+        cursorStart = 1;
+      } else if (monthLabel !== cursorMonth) {
+        monthBands.push({ label: cursorMonth, startWeek: cursorStart, span: i + 1 - cursorStart });
+        cursorMonth = monthLabel;
+        cursorStart = i + 1;
+      }
+      if (i === GANTT_TOTAL_WEEKS - 1) {
+        monthBands.push({ label: cursorMonth, startWeek: cursorStart, span: i + 2 - cursorStart });
+      }
+    }
+  }
+
   return (
     <Card className="overflow-x-auto border-border bg-card">
       <div className="p-6" style={{ minWidth: `${totalWidth + 48}px` }}>
+        {monthBands.length > 0 && (
+          <div className="flex">
+            <div style={{ width: LABEL_WIDTH }} className="shrink-0" />
+            <div
+              className="grid border-b border-border/40"
+              style={{ gridTemplateColumns: `repeat(${GANTT_TOTAL_WEEKS}, ${WEEK_COL_WIDTH}px)` }}
+            >
+              {monthBands.map((b) => (
+                <div
+                  key={`${b.label}-${b.startWeek}`}
+                  className="text-[10px] text-muted-foreground/80 capitalize text-center py-1 border-l border-border/30 first:border-l-0"
+                  style={{ gridColumn: `${b.startWeek} / span ${b.span}` }}
+                >
+                  {b.label}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div className="flex border-b border-border bg-muted/30 rounded-t-md">
           <div
             style={{ width: LABEL_WIDTH }}
@@ -138,54 +188,74 @@ function MonthlyGantt({ startDate }: { startDate: Date | null }) {
           </div>
           <div
             className="grid"
-            style={{ gridTemplateColumns: `repeat(${GANTT_TOTAL_MONTHS}, ${MONTH_COL_WIDTH}px)` }}
+            style={{ gridTemplateColumns: `repeat(${GANTT_TOTAL_WEEKS}, ${WEEK_COL_WIDTH}px)` }}
           >
-            {Array.from({ length: GANTT_TOTAL_MONTHS }).map((_, i) => {
-              const m = i + 1;
-              const dateLabel = startDate
-                ? format(addMonths(startDate, i), "MMM yy", { locale: es })
-                : null;
+            {Array.from({ length: GANTT_TOTAL_WEEKS }).map((_, i) => {
+              const w = i + 1;
               return (
                 <div
-                  key={m}
-                  className="flex flex-col items-center justify-end py-2 border-l border-border/40 first:border-l-0"
+                  key={w}
+                  className="flex flex-col items-center justify-end py-1.5 border-l border-border/40 first:border-l-0"
                 >
-                  {dateLabel && (
-                    <span className="text-[10px] text-muted-foreground/70 capitalize">
-                      {dateLabel}
-                    </span>
-                  )}
-                  <span className="text-xs font-semibold text-foreground">M{m}</span>
+                  <span className="text-[10px] font-semibold text-foreground">S{w}</span>
                 </div>
               );
             })}
           </div>
         </div>
 
-        <div>
+        <div className="relative">
+          {showToday && (
+            <div
+              className="absolute top-0 bottom-0 z-10 pointer-events-none"
+              style={{
+                left: `${LABEL_WIDTH + (todayWeek - 1) * WEEK_COL_WIDTH + WEEK_COL_WIDTH / 2}px`,
+              }}
+              aria-label={`Hoy (semana ${todayWeek})`}
+            >
+              <div className="h-full w-px bg-destructive/70" />
+              <div className="absolute -top-2 -translate-x-1/2 text-[10px] font-semibold text-destructive bg-card px-1 rounded">
+                Hoy
+              </div>
+            </div>
+          )}
+
           {GANTT_PHASES.map((phase) => (
-            <div key={phase.num}>
+            <div key={phase.id}>
               <div className="flex items-center bg-muted/15 border-b border-border/60">
                 <div
                   style={{ width: LABEL_WIDTH }}
                   className="shrink-0 px-4 py-2.5 text-sm font-semibold text-foreground"
                 >
-                  {phase.num}. {phase.label}
+                  {phase.label}{" "}
+                  <span className="text-xs font-normal text-muted-foreground">
+                    · S{phase.startWeek}–S{phase.endWeek}
+                  </span>
                 </div>
                 <div
-                  className="grid"
+                  className="grid relative"
                   style={{
-                    gridTemplateColumns: `repeat(${GANTT_TOTAL_MONTHS}, ${MONTH_COL_WIDTH}px)`,
+                    gridTemplateColumns: `repeat(${GANTT_TOTAL_WEEKS}, ${WEEK_COL_WIDTH}px)`,
                   }}
                 >
-                  {Array.from({ length: GANTT_TOTAL_MONTHS }).map((_, i) => (
-                    <div key={i} className="border-l border-border/30 first:border-l-0 h-full" />
+                  {Array.from({ length: GANTT_TOTAL_WEEKS }).map((_, i) => (
+                    <div key={i} className="border-l border-border/30 first:border-l-0 h-9" />
                   ))}
+                  <div
+                    className="absolute top-1/2 -translate-y-1/2 rounded-sm opacity-50"
+                    style={{
+                      left: `${(phase.startWeek - 1) * WEEK_COL_WIDTH + 2}px`,
+                      width: `${(phase.endWeek - phase.startWeek + 1) * WEEK_COL_WIDTH - 4}px`,
+                      height: 6,
+                      backgroundColor: phase.color,
+                    }}
+                    aria-hidden="true"
+                  />
                 </div>
               </div>
 
               {phase.tasks.map((task, idx) => {
-                const span = task.endMonth - task.startMonth + 1;
+                const span = task.endWeek - task.startWeek + 1;
                 return (
                   <div
                     key={idx}
@@ -202,25 +272,22 @@ function MonthlyGantt({ startDate }: { startDate: Date | null }) {
                     <div
                       className="grid relative"
                       style={{
-                        gridTemplateColumns: `repeat(${GANTT_TOTAL_MONTHS}, ${MONTH_COL_WIDTH}px)`,
+                        gridTemplateColumns: `repeat(${GANTT_TOTAL_WEEKS}, ${WEEK_COL_WIDTH}px)`,
                       }}
                     >
-                      {Array.from({ length: GANTT_TOTAL_MONTHS }).map((_, i) => (
-                        <div
-                          key={i}
-                          className="border-l border-border/20 first:border-l-0 h-9"
-                        />
+                      {Array.from({ length: GANTT_TOTAL_WEEKS }).map((_, i) => (
+                        <div key={i} className="border-l border-border/20 first:border-l-0 h-9" />
                       ))}
                       <div
                         className="absolute top-1/2 -translate-y-1/2 rounded-sm shadow-sm"
                         style={{
-                          left: `${(task.startMonth - 1) * MONTH_COL_WIDTH + 6}px`,
-                          width: `${span * MONTH_COL_WIDTH - 12}px`,
-                          height: 12,
+                          left: `${(task.startWeek - 1) * WEEK_COL_WIDTH + 3}px`,
+                          width: `${span * WEEK_COL_WIDTH - 6}px`,
+                          height: 10,
                           backgroundColor: phase.color,
                         }}
-                        aria-label={`${task.label} (M${task.startMonth}${
-                          task.endMonth !== task.startMonth ? `–M${task.endMonth}` : ""
+                        aria-label={`${task.label} (S${task.startWeek}${
+                          task.endWeek !== task.startWeek ? `–S${task.endWeek}` : ""
                         })`}
                       />
                     </div>
