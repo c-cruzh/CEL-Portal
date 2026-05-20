@@ -55,7 +55,7 @@ import {
 } from "date-fns";
 import { es } from "date-fns/locale";
 
-const PM_ROLE_IDS = ["pm_lead", "pm_cel"];
+const PM_ROLE_IDS = ["project_lead", "pm_lead", "pm_cel"];
 
 type Kind = Milestone["kind"];
 

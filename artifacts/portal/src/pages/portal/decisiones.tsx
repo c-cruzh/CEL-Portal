@@ -50,7 +50,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { BatchImportDecisionsDialog } from "./BatchImportDecisionsDialog";
 
-const PM_ROLE_IDS = ["pm_lead", "pm_cel"];
+const PM_ROLE_IDS = ["project_lead", "pm_lead", "pm_cel"];
 const NONE_VALUE = "__none__";
 
 const STATUS_OPTIONS: Array<{ value: Decision["status"]; label: string }> = [

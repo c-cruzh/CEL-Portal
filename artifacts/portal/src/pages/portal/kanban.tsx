@@ -66,7 +66,7 @@ import { BatchImportKanbanCardsDialog } from "./BatchImportKanbanCardsDialog";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 
-const PM_ROLE_IDS = ["pm_lead", "pm_cel"];
+const PM_ROLE_IDS = ["project_lead", "pm_lead", "pm_cel"];
 
 type Priority = "alta" | "media" | "baja";
 type Category = "preproyecto" | "piloto";

@@ -50,7 +50,7 @@ import {
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
 
-const PM_ROLE_IDS = ["pm_lead", "pm_cel"];
+const PM_ROLE_IDS = ["project_lead", "pm_lead", "pm_cel"];
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;

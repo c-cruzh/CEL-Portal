@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { isDecisionOverdue } from "./decisiones";
 
-const PM_ROLE_IDS = ["pm_lead", "pm_cel"];
+const PM_ROLE_IDS = ["project_lead", "pm_lead", "pm_cel"];
 
 export default function PortalLayout({ children }: { children: ReactNode }) {
   const { signOut } = useClerk();
