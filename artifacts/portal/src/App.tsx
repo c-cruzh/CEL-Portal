@@ -95,6 +95,7 @@ function SignInPage() {
   return (
     <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-background px-4 py-8">
       <DomainRejectionBanner />
+      <ApprovalRejectionBanner />
       <SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} />
     </div>
   );
@@ -104,6 +105,7 @@ function SignUpPage() {
   return (
     <div className="flex min-h-[100dvh] flex-col items-center justify-center bg-background px-4 py-8">
       <DomainRejectionBanner />
+      <ApprovalRejectionBanner />
       <SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} />
     </div>
   );
@@ -132,6 +134,7 @@ function ClerkQueryClientCacheInvalidator() {
 }
 
 const DOMAIN_REJECTION_STORAGE_KEY = "cel.portal.emailDomainRejection";
+const APPROVAL_REJECTION_STORAGE_KEY = "cel.portal.approvalRejection";
 
 function readDomainRejection(): string | null {
   if (typeof window === "undefined") return null;
@@ -155,6 +158,28 @@ function setDomainRejection(message: string | null): void {
   }
 }
 
+function readApprovalRejection(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    return window.sessionStorage.getItem(APPROVAL_REJECTION_STORAGE_KEY);
+  } catch {
+    return null;
+  }
+}
+
+function setApprovalRejection(message: string | null): void {
+  if (typeof window === "undefined") return;
+  try {
+    if (message) {
+      window.sessionStorage.setItem(APPROVAL_REJECTION_STORAGE_KEY, message);
+    } else {
+      window.sessionStorage.removeItem(APPROVAL_REJECTION_STORAGE_KEY);
+    }
+  } catch {
+    // ignore
+  }
+}
+
 function useDomainRejectionMessage(): [string | null, () => void] {
   const [message, setMessage] = useState<string | null>(() => readDomainRejection());
 
@@ -172,10 +197,34 @@ function useDomainRejectionMessage(): [string | null, () => void] {
   return [message, clear];
 }
 
+function useApprovalRejectionMessage(): [string | null, () => void] {
+  const [message, setMessage] = useState<string | null>(() => readApprovalRejection());
+
+  useEffect(() => {
+    const handler = () => setMessage(readApprovalRejection());
+    window.addEventListener("cel:approval-rejection", handler);
+    return () => window.removeEventListener("cel:approval-rejection", handler);
+  }, []);
+
+  const clear = () => {
+    setApprovalRejection(null);
+    setMessage(null);
+  };
+
+  return [message, clear];
+}
+
 function publishDomainRejection(message: string): void {
   setDomainRejection(message);
   if (typeof window !== "undefined") {
     window.dispatchEvent(new Event("cel:domain-rejection"));
+  }
+}
+
+function publishApprovalRejection(message: string): void {
+  setApprovalRejection(message);
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new Event("cel:approval-rejection"));
   }
 }
 
@@ -184,7 +233,7 @@ function EmailDomainGuard({ children }: { children: ReactNode }) {
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
 
-  const { data, error, isLoading } = useGetMe({
+  const { data, error, isLoading, refetch, isFetching } = useGetMe({
     query: {
       queryKey: getGetMeQueryKey(),
       retry: false,
@@ -192,23 +241,45 @@ function EmailDomainGuard({ children }: { children: ReactNode }) {
     },
   });
 
-  useEffect(() => {
-    if (!error || !(error instanceof ApiError)) return;
-    if (error.status !== 403) return;
-    const payload = error.data as { code?: string; error?: string } | null;
-    if (payload?.code !== "email_domain_not_allowed") return;
+  const errorPayload =
+    error && error instanceof ApiError && error.status === 403
+      ? (error.data as { code?: string; error?: string } | null)
+      : null;
+  const isPending = errorPayload?.code === "approval_pending";
+  const isRejected = errorPayload?.code === "approval_rejected";
+  const isDomainBlocked = errorPayload?.code === "email_domain_not_allowed";
 
-    const message =
-      payload.error ??
-      "Tu correo no está autorizado para acceder al portal.";
-    publishDomainRejection(message);
+  useEffect(() => {
+    if (!isDomainBlocked && !isRejected) return;
+
+    const fallbackMessage = isDomainBlocked
+      ? "Tu correo no está autorizado para acceder al portal."
+      : "Tu solicitud de acceso fue denegada.";
+    const message = errorPayload?.error ?? fallbackMessage;
+
+    if (isDomainBlocked) {
+      publishDomainRejection(message);
+    } else {
+      publishApprovalRejection(message);
+    }
     queryClient.clear();
     void signOut({ redirectUrl: `${basePath}/sign-in` }).then(() => {
       setLocation("/sign-in");
     });
-  }, [error, queryClient, setLocation, signOut]);
+  }, [
+    isDomainBlocked,
+    isRejected,
+    errorPayload?.error,
+    queryClient,
+    setLocation,
+    signOut,
+  ]);
 
-  if (error && error instanceof ApiError && error.status === 403) {
+  if (isPending) {
+    return <ApprovalPendingScreen onRefresh={() => refetch()} isRefreshing={isFetching} />;
+  }
+
+  if (isDomainBlocked || isRejected) {
     return (
       <div className="min-h-[100dvh] flex items-center justify-center bg-background px-4 text-center text-sm text-muted-foreground">
         Cerrando sesión…
@@ -255,6 +326,79 @@ function DomainRejectionBanner() {
         >
           ×
         </button>
+      </div>
+    </div>
+  );
+}
+
+function ApprovalRejectionBanner() {
+  const [message, clear] = useApprovalRejectionMessage();
+  if (!message) return null;
+  return (
+    <div className="mx-auto mb-4 w-full max-w-[440px] rounded-md border border-destructive/30 bg-destructive/10 px-4 py-3 text-sm text-destructive">
+      <div className="flex items-start justify-between gap-3">
+        <p className="leading-snug">{message}</p>
+        <button
+          type="button"
+          onClick={clear}
+          className="text-xs font-medium uppercase tracking-wide text-destructive/80 hover:text-destructive"
+          aria-label="Cerrar aviso"
+        >
+          ×
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function ApprovalPendingScreen({
+  onRefresh,
+  isRefreshing,
+}: {
+  onRefresh: () => void;
+  isRefreshing: boolean;
+}) {
+  const { signOut } = useClerk();
+  const [, setLocation] = useLocation();
+  const queryClient = useQueryClient();
+  return (
+    <div className="min-h-[100dvh] flex items-center justify-center bg-background px-4 py-12">
+      <div className="max-w-md w-full space-y-5 rounded-2xl border border-border bg-white p-8 text-center shadow-sm">
+        <div className="mx-auto h-12 w-12 rounded-full bg-amber-100 flex items-center justify-center text-amber-700 text-xl font-semibold">
+          ⌛
+        </div>
+        <div className="space-y-2">
+          <h1 className="text-xl font-semibold text-foreground">
+            Cuenta en espera de aprobación
+          </h1>
+          <p className="text-sm text-muted-foreground leading-relaxed">
+            Tu correo institucional fue aceptado, pero un administrador del
+            portal todavía debe aprobar tu cuenta antes de que puedas entrar.
+            Te avisaremos por correo cuando esté listo.
+          </p>
+        </div>
+        <div className="flex flex-col gap-2 pt-2">
+          <button
+            type="button"
+            onClick={onRefresh}
+            disabled={isRefreshing}
+            className="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:opacity-60"
+          >
+            {isRefreshing ? "Comprobando…" : "Volver a comprobar"}
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              queryClient.clear();
+              void signOut({ redirectUrl: `${basePath}/sign-in` }).then(() => {
+                setLocation("/sign-in");
+              });
+            }}
+            className="w-full rounded-md border border-input bg-transparent px-4 py-2 text-sm font-medium text-foreground hover:bg-muted/50"
+          >
+            Cerrar sesión
+          </button>
+        </div>
       </div>
     </div>
   );

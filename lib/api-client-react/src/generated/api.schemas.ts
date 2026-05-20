@@ -851,6 +851,26 @@ export interface AllowedDomainInput {
   note?: string;
 }
 
+export type PendingUserStatus = typeof PendingUserStatus[keyof typeof PendingUserStatus];
+
+
+export const PendingUserStatus = {
+  pending: 'pending',
+  active: 'active',
+  rejected: 'rejected',
+} as const;
+
+export interface PendingUser {
+  id: string;
+  email: string;
+  displayName: string;
+  status: PendingUserStatus;
+  createdAt: string;
+  statusChangedAt: string;
+  /** @nullable */
+  statusChangedBy?: string | null;
+}
+
 export interface UploadRequest {
   name: string;
   size: number;

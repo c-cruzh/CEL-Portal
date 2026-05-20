@@ -73,6 +73,8 @@ export * from './notificationLogEntryStatus';
 export * from './notificationPrefsInput';
 export * from './notificationRecipient';
 export * from './notificationRecipientInput';
+export * from './pendingUser';
+export * from './pendingUserStatus';
 export * from './projectConfig';
 export * from './projectConfigUpdate';
 export * from './regenerateWeekliesResult';

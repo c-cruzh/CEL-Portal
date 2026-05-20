@@ -69,6 +69,7 @@ import type {
   NotificationPrefsInput,
   NotificationRecipient,
   NotificationRecipientInput,
+  PendingUser,
   ProjectConfig,
   ProjectConfigUpdate,
   RegenerateWeekliesResult,
@@ -4514,6 +4515,223 @@ export const useRemoveAllowedDomain = <TError = ErrorType<ErrorResponse>,
         TContext
       > => {
       return useMutation(getRemoveAllowedDomainMutationOptions(options));
+    }
+
+export const getListPendingUsersUrl = () => {
+
+
+
+
+  return `/api/admin/users/pending`
+}
+
+/**
+ * @summary List users awaiting admin approval (PM only)
+ */
+export const listPendingUsers = async ( options?: RequestInit): Promise<PendingUser[]> => {
+
+  return customFetch<PendingUser[]>(getListPendingUsersUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListPendingUsersQueryKey = () => {
+    return [
+    `/api/admin/users/pending`
+    ] as const;
+    }
+
+
+export const getListPendingUsersQueryOptions = <TData = Awaited<ReturnType<typeof listPendingUsers>>, TError = ErrorType<ErrorResponse>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPendingUsers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListPendingUsersQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listPendingUsers>>> = ({ signal }) => listPendingUsers({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listPendingUsers>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListPendingUsersQueryResult = NonNullable<Awaited<ReturnType<typeof listPendingUsers>>>
+export type ListPendingUsersQueryError = ErrorType<ErrorResponse>
+
+
+/**
+ * @summary List users awaiting admin approval (PM only)
+ */
+
+export function useListPendingUsers<TData = Awaited<ReturnType<typeof listPendingUsers>>, TError = ErrorType<ErrorResponse>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listPendingUsers>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListPendingUsersQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+
+
+
+
+
+
+export const getApproveUserUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/users/${id}/approve`
+}
+
+/**
+ * @summary Approve a pending sign-up (PM only)
+ */
+export const approveUser = async (id: string, options?: RequestInit): Promise<PendingUser> => {
+
+  return customFetch<PendingUser>(getApproveUserUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getApproveUserMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveUser>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof approveUser>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['approveUser'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof approveUser>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  approveUser(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type ApproveUserMutationResult = NonNullable<Awaited<ReturnType<typeof approveUser>>>
+
+    export type ApproveUserMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Approve a pending sign-up (PM only)
+ */
+export const useApproveUser = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof approveUser>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof approveUser>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getApproveUserMutationOptions(options));
+    }
+
+export const getRejectUserUrl = (id: string,) => {
+
+
+
+
+  return `/api/admin/users/${id}/reject`
+}
+
+/**
+ * @summary Reject a pending sign-up (PM only)
+ */
+export const rejectUser = async (id: string, options?: RequestInit): Promise<PendingUser> => {
+
+  return customFetch<PendingUser>(getRejectUserUrl(id),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getRejectUserMutationOptions = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rejectUser>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof rejectUser>>, TError,{id: string}, TContext> => {
+
+const mutationKey = ['rejectUser'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof rejectUser>>, {id: string}> = (props) => {
+          const {id} = props ?? {};
+
+          return  rejectUser(id,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RejectUserMutationResult = NonNullable<Awaited<ReturnType<typeof rejectUser>>>
+
+    export type RejectUserMutationError = ErrorType<ErrorResponse>
+
+    /**
+ * @summary Reject a pending sign-up (PM only)
+ */
+export const useRejectUser = <TError = ErrorType<ErrorResponse>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof rejectUser>>, TError,{id: string}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof rejectUser>>,
+        TError,
+        {id: string},
+        TContext
+      > => {
+      return useMutation(getRejectUserMutationOptions(options));
     }
 
 export const getRequestUploadUrlUrl = () => {

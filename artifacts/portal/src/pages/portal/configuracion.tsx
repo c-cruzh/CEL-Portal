@@ -15,6 +15,10 @@ import {
   useAddAllowedDomain,
   useRemoveAllowedDomain,
   getListAllowedDomainsQueryKey,
+  useListPendingUsers,
+  useApproveUser,
+  useRejectUser,
+  getListPendingUsersQueryKey,
   useListNotificationRecipients,
   useAddNotificationRecipient,
   useDeleteNotificationRecipient,
@@ -34,6 +38,7 @@ import {
   type AdminAuditLogEntry,
   type AdminRole,
   type AllowedDomain,
+  type PendingUser,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { ROLES } from "@/lib/projectContent";
@@ -143,6 +148,7 @@ export default function Configuracion() {
       <Tabs defaultValue="miembros" className="space-y-6">
         <TabsList className="flex flex-wrap h-auto">
           <TabsTrigger value="miembros">Miembros</TabsTrigger>
+          <TabsTrigger value="aprobaciones">Aprobaciones</TabsTrigger>
           <TabsTrigger value="invitaciones">Invitaciones</TabsTrigger>
           <TabsTrigger value="roles">Roles</TabsTrigger>
           <TabsTrigger value="notificaciones">Notificaciones</TabsTrigger>
@@ -153,6 +159,9 @@ export default function Configuracion() {
 
         <TabsContent value="miembros" className="space-y-6">
           <MembersSection />
+        </TabsContent>
+        <TabsContent value="aprobaciones" className="space-y-6">
+          <ApprovalsSection />
         </TabsContent>
         <TabsContent value="invitaciones" className="space-y-6">
           <InvitationsSection />
@@ -1553,6 +1562,140 @@ function AllowedDomainsSection() {
               </div>
             ))}
         </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Aprobaciones de nuevas cuentas
+// ---------------------------------------------------------------------------
+
+function ApprovalsSection() {
+  const { data: pending, isLoading } = useListPendingUsers();
+  const approveMut = useApproveUser();
+  const rejectMut = useRejectUser();
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const invalidate = () =>
+    Promise.all([
+      queryClient.invalidateQueries({
+        queryKey: getListPendingUsersQueryKey(),
+      }),
+      queryClient.invalidateQueries({
+        queryKey: getListTeamMembersQueryKey(),
+      }),
+      queryClient.invalidateQueries({
+        queryKey: getGetTeamSummaryQueryKey(),
+      }),
+      queryClient.invalidateQueries({
+        queryKey: getListAdminAuditLogQueryKey(),
+      }),
+    ]);
+
+  const handleApprove = async (user: PendingUser) => {
+    try {
+      await approveMut.mutateAsync({ id: user.id });
+      await invalidate();
+      toast({
+        title: "Cuenta aprobada",
+        description: `${user.email} ya puede entrar al portal.`,
+      });
+    } catch (err) {
+      toast({
+        title: "No se pudo aprobar",
+        description: describeError(err),
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleReject = async (user: PendingUser) => {
+    if (
+      !window.confirm(
+        `¿Rechazar el acceso de ${user.email}? Su próximo intento será denegado.`,
+      )
+    ) {
+      return;
+    }
+    try {
+      await rejectMut.mutateAsync({ id: user.id });
+      await invalidate();
+      toast({
+        title: "Cuenta rechazada",
+        description: `${user.email} no podrá acceder al portal.`,
+      });
+    } catch (err) {
+      toast({
+        title: "No se pudo rechazar",
+        description: describeError(err),
+        variant: "destructive",
+      });
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Cuentas en espera de aprobación</CardTitle>
+        <CardDescription>
+          Personas que se registraron con un correo institucional permitido
+          pero que todavía no han sido aprobadas por un administrador.
+          Mientras estén pendientes ven un aviso en lugar del portal.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {isLoading && (
+          <div className="space-y-2">
+            <Skeleton className="h-14 w-full" />
+            <Skeleton className="h-14 w-full" />
+          </div>
+        )}
+        {!isLoading && (!pending || pending.length === 0) && (
+          <div className="p-6 text-center text-sm text-muted-foreground border border-dashed rounded-lg">
+            No hay cuentas pendientes de aprobación.
+          </div>
+        )}
+        {!isLoading && pending && pending.length > 0 && (
+          <div className="border rounded-lg divide-y">
+            {pending.map((u) => (
+              <div
+                key={u.id}
+                className="p-4 flex flex-col sm:flex-row sm:items-center gap-3"
+              >
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm truncate">
+                    {u.displayName || "Sin nombre"}
+                  </p>
+                  <p className="text-xs text-muted-foreground truncate">
+                    {u.email}
+                  </p>
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    Se registró {formatDateTime(u.createdAt)}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Button
+                    size="sm"
+                    onClick={() => handleApprove(u)}
+                    disabled={approveMut.isPending || rejectMut.isPending}
+                  >
+                    Aprobar
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => handleReject(u)}
+                    disabled={approveMut.isPending || rejectMut.isPending}
+                  >
+                    Rechazar
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </CardContent>
     </Card>
   );

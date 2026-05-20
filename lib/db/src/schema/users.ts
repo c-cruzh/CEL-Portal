@@ -7,6 +7,11 @@ export const usersTable = pgTable("users", {
   emailNotificationsOptOut: boolean("email_notifications_opt_out")
     .notNull()
     .default(false),
+  status: text("status").notNull().default("pending"),
+  statusChangedAt: timestamp("status_changed_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+  statusChangedBy: text("status_changed_by"),
   createdAt: timestamp("created_at", { withTimezone: true })
     .notNull()
     .defaultNow(),

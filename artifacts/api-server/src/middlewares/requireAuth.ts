@@ -51,6 +51,20 @@ async function touchLastActivity(userId: string): Promise<void> {
   }
 }
 
+const APPROVAL_PENDING_MESSAGE =
+  "Tu cuenta está en espera de aprobación por un administrador del portal. Te avisaremos por correo cuando puedas acceder.";
+
+const APPROVAL_REJECTED_MESSAGE =
+  "Un administrador del portal denegó tu solicitud de acceso. Si crees que es un error, contáctalo directamente.";
+
+// Bootstrap emails that bypass manual approval — admin principals and the
+// PM leads are auto-approved on first login so the portal is never locked
+// out of itself.
+const AUTO_APPROVED_EMAILS = new Set<string>([
+  "camila@c2labs.ai",
+  "kevin@c2labs.ai",
+]);
+
 export async function requireAuth(
   req: Request,
   res: Response,
@@ -114,14 +128,45 @@ export async function requireAuth(
         [clerkUser.firstName, clerkUser.lastName].filter(Boolean).join(" ") ||
         primaryEmail.split("@")[0];
 
+      const emailLower = email!.toLowerCase();
+
+      // Decide initial approval status. Admins / PM bootstrap leads are
+      // auto-approved (otherwise the first PM can never get in). Anyone
+      // with a pending, non-expired invitation is also auto-approved
+      // because an admin already vouched for them. Everyone else lands
+      // in `pending` and has to wait for an admin to approve them.
+      const [pendingInvLookup] = await db
+        .select()
+        .from(invitationsTable)
+        .where(eq(invitationsTable.email, emailLower))
+        .limit(1);
+      const now = new Date();
+      const hasUsableInvitation =
+        !!pendingInvLookup &&
+        pendingInvLookup.status === "pending" &&
+        (pendingInvLookup.expiresAt === null ||
+          pendingInvLookup.expiresAt.getTime() >= now.getTime());
+      const isAutoApproved = AUTO_APPROVED_EMAILS.has(emailLower);
+      const initialStatus =
+        isAutoApproved || hasUsableInvitation ? "active" : "pending";
+
       const inserted = await db
         .insert(usersTable)
-        .values({ id: clerkUserId, email, displayName })
+        .values({
+          id: clerkUserId,
+          email,
+          displayName,
+          status: initialStatus,
+          statusChangedBy: isAutoApproved
+            ? "bootstrap"
+            : hasUsableInvitation
+              ? "invitation"
+              : null,
+        })
         .onConflictDoNothing()
         .returning({ id: usersTable.id });
 
       if (inserted.length > 0) {
-        const emailLower = email!.toLowerCase();
         // Auto-asignar roles conocidos para los líderes de C2Labs
         // (Camila y Kevin) en su primer login. Idempotente.
         const bootstrapRoles = AUTO_MULTI_ROLES[emailLower];
@@ -139,32 +184,24 @@ export async function requireAuth(
             .onConflictDoNothing();
         }
 
-        // Auto-accept a pending invitation for this email, if any, and apply
-        // the suggested roles so the new member arrives pre-configured.
-        const [pendingInv] = await db
-          .select()
-          .from(invitationsTable)
-          .where(eq(invitationsTable.email, emailLower))
-          .limit(1);
-        if (pendingInv && pendingInv.status === "pending") {
-          const now = new Date();
-          const isExpired =
-            pendingInv.expiresAt !== null &&
-            pendingInv.expiresAt.getTime() < now.getTime();
-          if (isExpired) {
+        // If this sign-up was covered by an invitation, mark the invitation
+        // accepted (or expired) and apply the suggested roles.
+        if (pendingInvLookup && pendingInvLookup.status === "pending") {
+          if (!hasUsableInvitation) {
+            // The invitation existed but had already expired.
             await db
               .update(invitationsTable)
               .set({ status: "expired" })
-              .where(eq(invitationsTable.id, pendingInv.id));
+              .where(eq(invitationsTable.id, pendingInvLookup.id));
             logAdminActionAsync({
               actorId: clerkUserId,
               actorEmail: emailLower,
               action: "invitation.expired",
               targetType: "invitation",
-              targetId: pendingInv.id,
+              targetId: pendingInvLookup.id,
               payload: {
                 email: emailLower,
-                expiresAt: pendingInv.expiresAt,
+                expiresAt: pendingInvLookup.expiresAt,
               },
             });
           } else {
@@ -175,8 +212,8 @@ export async function requireAuth(
                 acceptedAt: now,
                 acceptedUserId: clerkUserId,
               })
-              .where(eq(invitationsTable.id, pendingInv.id));
-            for (const roleId of pendingInv.suggestedRoles ?? []) {
+              .where(eq(invitationsTable.id, pendingInvLookup.id));
+            for (const roleId of pendingInvLookup.suggestedRoles ?? []) {
               await db
                 .insert(userRolesTable)
                 .values({ userId: clerkUserId, roleId })
@@ -187,23 +224,46 @@ export async function requireAuth(
               actorEmail: emailLower,
               action: "invitation.accepted",
               targetType: "invitation",
-              targetId: pendingInv.id,
+              targetId: pendingInvLookup.id,
               payload: {
                 email: emailLower,
-                suggestedRoles: pendingInv.suggestedRoles ?? [],
+                suggestedRoles: pendingInvLookup.suggestedRoles ?? [],
               },
             });
           }
         }
 
-        notifyAsync({
-          kind: "member_joined",
-          actor: {
-            id: clerkUserId,
-            email: email!,
-            displayName: displayName!,
-          },
+        if (initialStatus === "active") {
+          // The new member is immediately part of the team — fire the
+          // normal "member joined" announcement.
+          notifyAsync({
+            kind: "member_joined",
+            actor: {
+              id: clerkUserId,
+              email: email!,
+              displayName: displayName!,
+            },
+          });
+        } else {
+          // Pending sign-up: leave an audit trail so admins can see who
+          // is waiting and when they signed up.
+          logAdminActionAsync({
+            actorId: clerkUserId,
+            actorEmail: emailLower,
+            action: "user.signup_pending",
+            targetType: "user",
+            targetId: clerkUserId,
+            payload: { email: emailLower, displayName },
+          });
+        }
+      }
+
+      if (initialStatus === "pending") {
+        res.status(403).json({
+          error: APPROVAL_PENDING_MESSAGE,
+          code: "approval_pending",
         });
+        return;
       }
     } else if (email && !isEmailAllowed(email, allowedDomains)) {
       // Domain allowlist tightened after this user was provisioned: deny access.
@@ -211,6 +271,18 @@ export async function requireAuth(
         error: domainRejectionMessage(allowedDomains),
         code: "email_domain_not_allowed",
         allowedDomains,
+      });
+      return;
+    } else if (existing && existing.status === "pending") {
+      res.status(403).json({
+        error: APPROVAL_PENDING_MESSAGE,
+        code: "approval_pending",
+      });
+      return;
+    } else if (existing && existing.status === "rejected") {
+      res.status(403).json({
+        error: APPROVAL_REJECTED_MESSAGE,
+        code: "approval_rejected",
       });
       return;
     }

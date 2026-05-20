@@ -1323,6 +1323,57 @@ export const RemoveAllowedDomainParams = zod.object({
 
 
 /**
+ * @summary List users awaiting admin approval (PM only)
+ */
+export const ListPendingUsersResponseItem = zod.object({
+  "id": zod.string(),
+  "email": zod.string(),
+  "displayName": zod.string(),
+  "status": zod.enum(['pending', 'active', 'rejected']),
+  "createdAt": zod.coerce.date(),
+  "statusChangedAt": zod.coerce.date(),
+  "statusChangedBy": zod.string().nullish()
+})
+export const ListPendingUsersResponse = zod.array(ListPendingUsersResponseItem)
+
+
+/**
+ * @summary Approve a pending sign-up (PM only)
+ */
+export const ApproveUserParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const ApproveUserResponse = zod.object({
+  "id": zod.string(),
+  "email": zod.string(),
+  "displayName": zod.string(),
+  "status": zod.enum(['pending', 'active', 'rejected']),
+  "createdAt": zod.coerce.date(),
+  "statusChangedAt": zod.coerce.date(),
+  "statusChangedBy": zod.string().nullish()
+})
+
+
+/**
+ * @summary Reject a pending sign-up (PM only)
+ */
+export const RejectUserParams = zod.object({
+  "id": zod.coerce.string()
+})
+
+export const RejectUserResponse = zod.object({
+  "id": zod.string(),
+  "email": zod.string(),
+  "displayName": zod.string(),
+  "status": zod.enum(['pending', 'active', 'rejected']),
+  "createdAt": zod.coerce.date(),
+  "statusChangedAt": zod.coerce.date(),
+  "statusChangedBy": zod.string().nullish()
+})
+
+
+/**
  * @summary Request a presigned URL to upload a file to object storage
  */
 export const RequestUploadUrlBody = zod.object({
